@@ -1,5 +1,7 @@
 import services
+from lot51_core import logger
 from lot51_core.utils.injection import add_affordances
+from objects.components.state import ObjectStateValue
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
 
@@ -17,11 +19,17 @@ class TunableObjectStateInjection(HasTunableSingletonFactory, AutoFactoryInit):
     def inject(self):
         if self.object_state is None:
             return
+
+        state_values_to_add = list()
         for obj_state_value in self.state_values:
             if obj_state_value is not None:
+                if not issubclass(obj_state_value, ObjectStateValue):
+                    logger.error("Class does not extend ObjectStateValue: {}, skipping in object state injection to {}".format(obj_state_value, self.object_state))
+                    continue
                 obj_state_value.state = self.object_state
+                state_values_to_add.append(obj_state_value)
 
-        self.object_state._values = self.object_state._values + tuple(self.state_values)
+        self.object_state._values = self.object_state._values + tuple(state_values_to_add)
 
 
 class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryInit):

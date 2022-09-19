@@ -25,6 +25,8 @@ class ObjectFilterRandomMultipleChoice(HasTunableSingletonFactory, AutoFactoryIn
         'limit': TunableInterval(tunable_type=int, default_lower=1, default_upper=1, minimum=0)
     }
 
+    __slots__ = ('limit',)
+
     def filter_objects(self, obj_list=()):
         _obj_list = list(obj_list)
         logger.debug("getting random multiple choice: {}".format(_obj_list))
@@ -46,6 +48,8 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
         'additional_tests': TunableTestSet(),
     }
 
+    __slots__ = ('filter', 'additional_tests',)
+
     def _get_filtered_objects(self, obj_list):
         if self.filter is not None:
             yield from self.filter.filter_objects(obj_list)
@@ -53,7 +57,7 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
             yield from obj_list
 
     def _get_objects_gen(self, resolver=None):
-        pass
+        yield from []
 
     def get_objects_gen(self, resolver=None):
         obj_list = self._get_objects_gen(resolver)
@@ -66,6 +70,8 @@ class GetObjectsFromInventory(_GetObjectsBase):
         'hidden': Tunable(tunable_type=bool, default=False)
     }
 
+    __slots__ = ('subject', 'hidden',)
+
     def get_inventory(self, resolver):
         if resolver is not None:
             subject = resolver.get_participant(self.subject)
@@ -74,14 +80,12 @@ class GetObjectsFromInventory(_GetObjectsBase):
 
     def _get_objects_gen(self, resolver=None):
         inventory = self.get_inventory(resolver)
-        logger.debug("getting inventory: {}".format(inventory))
         if inventory is not None:
             for obj in inventory._storage:
                 if self.hidden and not inventory.is_object_hidden(obj):
                     continue
                 resolver = SingleObjectResolver(obj)
                 if self.additional_tests.run_tests(resolver):
-                    logger.debug("got obj: {}".format(obj))
                     yield obj
 
 
@@ -100,6 +104,8 @@ class GetObjectsByTags(_GetObjectsBase):
         'tags': TunableEnumSet(Tag, enum_default=Tag.INVALID, invalid_enums=(Tag.INVALID,)),
     }
 
+    __slots__ = ('tags',)
+
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().get_objects_with_tags_gen(*self.tags):
             resolver = SingleObjectResolver(obj)
@@ -111,6 +117,8 @@ class GetObjectsByTuning(_GetObjectsBase):
     FACTORY_TUNABLES = {
         'tuning_id': Tunable(tunable_type=int, default=0),
     }
+
+    __slots__ = ('tuning_id',)
 
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().valid_objects():
@@ -124,6 +132,8 @@ class GetObjectsByDefinition(_GetObjectsBase):
     FACTORY_TUNABLES = {
         'definition_id': Tunable(tunable_type=int, default=0),
     }
+
+    __slots__ = ('definition_id',)
 
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().valid_objects():

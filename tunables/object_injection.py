@@ -47,63 +47,74 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
         ),
     }
 
-    # __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component',)
+    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component',)
 
     def get_objects_gen(self):
         raise NotImplementedError
 
+    def _add_affordances(self, obj):
+        if len(self.affordances) > 0:
+            add_affordances(obj, self.affordances)
+        if len(self.phone_affordances) > 0:
+            add_phone_affordances(obj, self.phone_affordances)
+        if len(self.relation_panel_affordances) > 0:
+            add_affordances(obj, self.relation_panel_affordances, key='_relation_panel_affordances')
+
+    def _inject_idle_component(self, obj):
+        if self.idle_animation_map is not None and hasattr(obj, '_components') and hasattr(obj._components, 'idle_component'):
+            idle_component = obj._components.idle_component
+            idle_animation_map = dict(idle_component.idle_animation_map)
+            for key, idle in self.idle_animation_map.items():
+                idle_animation_map[key] = idle
+            idle_component._tuned_values = idle_component._tuned_values.clone_with_overrides(idle_animation_map=idle_animation_map)
+
+    def _inject_routing_component(self, obj):
+        if self.routing_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'routing_component'):
+            routing_component = obj._components.routing_component
+
+            # get nested component
+            object_routing_component = routing_component._tuned_values.object_routing_component
+            routing_behavior_map = dict(object_routing_component.routing_behavior_map)
+            for key, behavior in self.routing_component.routing_behavior_map.items():
+                routing_behavior_map[key] = behavior
+
+            # add routing behaviors
+            object_routing_component._tuned_values = object_routing_component._tuned_values.clone_with_overrides(routing_behavior_map=routing_behavior_map)
+            # then add object routing component
+            routing_component._tuned_values = routing_component._tuned_values.clone_with_overrides(object_routing_component=object_routing_component)
+
+    def _inject_state_component(self, obj):
+        if hasattr(obj, '_components') and hasattr(obj._components, 'state'):
+            state_component = obj._components.state
+            if state_component is not None and len(self.states) > 0:
+                new_states = state_component._tuned_values.states + self.states
+                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(states=new_states)
+                # logger.debug("injected states: {} {}".format(obj, self.states))
+
+            if state_component is not None and len(self.state_triggers) > 0:
+                new_state_triggers = state_component._tuned_values.state_triggers + self.state_triggers
+                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(state_triggers=new_state_triggers)
+
+            if state_component is not None and self.timed_state_triggers is not None:
+                new_timed_state_triggers = dict(state_component._tuned_values.timed_state_triggers)
+                for key, value in self.timed_state_triggers.items():
+                    new_timed_state_triggers[key] = value
+                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(timed_state_triggers=new_timed_state_triggers)
+
+    def _inject_proximity_component(self, obj):
+        if len(self.proximity_buffs) > 0 and hasattr(obj, '_components') and hasattr(obj._components, 'proximity_component'):
+            proximity_component = obj._components.proximity_component
+            if proximity_component is not None:
+                proximity_buffs = tuple(proximity_component._tuned_values.buffs) + self.proximity_buffs
+                proximity_component._tuned_values = proximity_component._tuned_values.clone_with_overrides(buffs=proximity_buffs)
+
     def inject(self):
         for obj in self.get_objects_gen():
-            if len(self.affordances) > 0:
-                add_affordances(obj, self.affordances)
-            if len(self.phone_affordances) > 0:
-                add_phone_affordances(obj, self.phone_affordances)
-            if len(self.relation_panel_affordances) > 0:
-                add_affordances(obj, self.relation_panel_affordances, key='_relation_panel_affordances')
-
-            if self.idle_animation_map is not None and hasattr(obj, '_components') and hasattr(obj._components, 'idle_component'):
-                idle_component = obj._components.idle_component
-                idle_animation_map = dict(idle_component.idle_animation_map)
-                for key, idle in self.idle_animation_map.items():
-                    idle_animation_map[key] = idle
-                idle_component._tuned_values = idle_component._tuned_values.clone_with_overrides(idle_animation_map=idle_animation_map)
-
-            if self.routing_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'routing_component'):
-                routing_component = obj._components.routing_component
-
-                # get nested component
-                object_routing_component = routing_component._tuned_values.object_routing_component
-                routing_behavior_map = dict(object_routing_component.routing_behavior_map)
-                for key, behavior in self.routing_component.routing_behavior_map.items():
-                    routing_behavior_map[key] = behavior
-
-                # add routing behaviors
-                object_routing_component._tuned_values = object_routing_component._tuned_values.clone_with_overrides(routing_behavior_map=routing_behavior_map)
-                # then add object routing component
-                routing_component._tuned_values = routing_component._tuned_values.clone_with_overrides(object_routing_component=object_routing_component)
-
-            if hasattr(obj, '_components') and hasattr(obj._components, 'state'):
-                state_component = obj._components.state
-                if state_component is not None and len(self.states) > 0:
-                    new_states = state_component._tuned_values.states + self.states
-                    state_component._tuned_values = state_component._tuned_values.clone_with_overrides(states=new_states)
-                    # logger.debug("injected states: {} {}".format(obj, self.states))
-
-                if state_component is not None and len(self.state_triggers) > 0:
-                    new_state_triggers = state_component._tuned_values.state_triggers + self.state_triggers
-                    state_component._tuned_values = state_component._tuned_values.clone_with_overrides(state_triggers=new_state_triggers)
-
-                if state_component is not None and self.timed_state_triggers is not None:
-                    new_timed_state_triggers = dict(state_component._tuned_values.timed_state_triggers)
-                    for key, value in self.timed_state_triggers.items():
-                        new_timed_state_triggers[key] = value
-                    state_component._tuned_values = state_component._tuned_values.clone_with_overrides(timed_state_triggers=new_timed_state_triggers)
-
-            if len(self.proximity_buffs) > 0 and hasattr(obj, '_components') and hasattr(obj._components, 'proximity_component'):
-                proximity_component = obj._components.proximity_component
-                if proximity_component is not None:
-                    proximity_buffs = tuple(proximity_component._tuned_values.buffs) + self.proximity_buffs
-                    proximity_component._tuned_values = proximity_component._tuned_values.clone_with_overrides(buffs=proximity_buffs)
+            self._add_affordances(obj)
+            self._inject_idle_component(obj)
+            self._inject_routing_component(obj)
+            self._inject_state_component(obj)
+            self._inject_proximity_component(obj)
 
 
 class TunableObjectInjectionByTuningId(BaseTunableObjectInjection):
