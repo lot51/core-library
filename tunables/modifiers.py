@@ -13,6 +13,8 @@ class LotFiftyOneTunableModifiers(HasTunableSingletonFactory, AutoFactoryInit):
         )
     }
 
+    __slots__ = ('base_rate', 'modifiers',)
+
     def get_modifier(self, resolver):
         if resolver is None:
             return 0

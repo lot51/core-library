@@ -36,6 +36,7 @@ class AffordanceLockOutSnippet(HasTunableReference, metaclass=HashedTunedInstanc
     @classmethod
     def on_load(cls, manager):
         if cls.LOCK_OUT_TEST_SET is None:
+            logger.debug("Lock out test missing, failed to inject")
             return
 
         for snippet in cls.all_snippets_gen():
@@ -49,11 +50,11 @@ class AffordanceLockOutRegistry(RegisterTestEventMixin):
 
     @classmethod
     def get_key(cls, actor, affordance, target=None):
-        return actor, affordance
+        return actor, affordance, target
 
     @classmethod
-    def is_locked_out(cls, actor, affordance):
-        key = cls.get_key(actor, affordance)
+    def is_locked_out(cls, actor, affordance, target=None):
+        key = cls.get_key(actor, affordance, target=target)
         if key in cls._registry:
             return cls._registry[key] >= services.time_service().sim_now
         return False
@@ -76,7 +77,7 @@ class AffordanceLockOutRegistry(RegisterTestEventMixin):
             if duration > 0:
                 lock_out_time = now + create_time_span(minutes=duration)
                 actor = interaction.sim.sim_info
-                key = cls.get_key(actor, interaction.affordance)
+                key = cls.get_key(actor, interaction.affordance, target=interaction.target)
                 cls._registry[key] = lock_out_time
                 logger.debug("interaction is now locked: {} for {} minutes".format(key, duration))
 
@@ -92,17 +93,17 @@ class AffordanceLockOutRegistry(RegisterTestEventMixin):
             interaction = resolver.event_kwargs['interaction']
             AffordanceLockOutRegistry.on_interaction_start(interaction)
 
-#
-# services.get_instance_manager(Types.SNIPPET).add_on_load_complete(AffordanceLockOutSnippet.on_load)
-#
-# lock_out_service = AffordanceLockOutRegistry()
-#
-#
-# @event_handler('zone.loading_screen_lifted')
-# def _lockout_on_zone_load(*args, **kwargs):
-#     lock_out_service.start()
-#
-#
-# @event_handler('zone.unload')
-# def _lockout_on_zone_unload(*args, **kwargs):
-#     lock_out_service.stop()
+
+services.get_instance_manager(Types.SNIPPET).add_on_load_complete(AffordanceLockOutSnippet.on_load)
+
+lock_out_service = AffordanceLockOutRegistry()
+
+
+@event_handler('zone.loading_screen_lifted')
+def _lockout_on_zone_load(*args, **kwargs):
+    lock_out_service.start()
+
+
+@event_handler('zone.unload')
+def _lockout_on_zone_unload(*args, **kwargs):
+    lock_out_service.stop()

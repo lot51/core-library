@@ -1,4 +1,5 @@
 import services
+from lot51_core.utils.injection import add_affordances
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
 
@@ -19,4 +20,4 @@ class TunableClubInteractionGroupInjection(HasTunableSingletonFactory, AutoFacto
 
     def inject(self):
         if self.query is not None:
-            self.query.affordances += self.affordances
+            add_affordances(self.query, self.affordances, key='affordances')

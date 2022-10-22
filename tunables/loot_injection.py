@@ -1,4 +1,5 @@
 import services
+from lot51_core import logger
 from interactions.utils.loot import LootActionVariant
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
@@ -14,5 +15,7 @@ class TunableLootInjection(HasTunableSingletonFactory, AutoFactoryInit):
 
     def inject(self):
         if self.loot is None:
+            logger.error("Failed to inject ops, loot not found")
             return
-        self.loot.loot_actions = self.loot.loot_actions + self.ops
+
+        self.loot.loot_actions += self.ops

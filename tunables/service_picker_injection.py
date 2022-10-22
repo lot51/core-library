@@ -39,4 +39,4 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            picker_tuning.non_service_npcs += self
+            picker_tuning.non_service_npcs += (self,)

@@ -3,7 +3,7 @@ import services
 from ui.ui_dialog import UiDialogResponse, ButtonType
 from ui.ui_dialog_notification import UiDialogNotification
 from sims4.tuning.tunable import AutoFactoryInit, HasTunableSingletonFactory
-from sims4.localization import LocalizationHelperTuning
+from sims4.localization import LocalizationHelperTuning, _create_localized_string
 from ui.ui_dialog_generic import UiDialogTextInputOk, UiDialogOkCancel
 from ui.ui_text_input import UiTextInput
 from sims4.collections import AttributeDict
@@ -17,29 +17,29 @@ class TextInputLength(HasTunableSingletonFactory, AutoFactoryInit):
         msg.input_too_short_tooltip = LocalizationHelperTuning.get_raw_text('Text is too short')
 
 
-def create_input(title="", input_text=""):
+def create_input(title="", input_text="", restricted_characters=None, max_length=255):
     localized_title = lambda **_: LocalizationHelperTuning.get_raw_text(title)
     localized_text_placeholder = lambda **_: LocalizationHelperTuning.get_raw_text(input_text)
-    text_input = UiTextInput(sort_order=0, restricted_characters=None, height=0)
+    text_input = UiTextInput(sort_order=0, restricted_characters=restricted_characters, height=0)
     text_input.default_text = localized_text_placeholder
     text_input.title = localized_title
     text_input.initial_value = localized_text_placeholder
     text_input.check_profanity = False
-    text_input.max_length = 255
+    text_input.max_length = max_length
     text_input.length_restriction = TextInputLength()
     return text_input
 
 
-def create_translated_input(title="", input_text=""):
+def create_translated_input(title="", input_text="", restricted_characters=None, max_length=255):
     localized_title = lambda **_: LocalizationHelperTuning.get_raw_text(title)
     # localized_text_placeholder = lambda **_: _create_localized_string(input_text)
     localized_text_placeholder = lambda **_: LocalizationHelperTuning.get_raw_text(input_text)
-    text_input = UiTextInput(sort_order=0, restricted_characters=None, height=0)
+    text_input = UiTextInput(sort_order=0, restricted_characters=restricted_characters, height=0)
     text_input.default_text = localized_text_placeholder
     text_input.title = localized_title
     text_input.initial_value = localized_text_placeholder
     text_input.check_profanity = False
-    text_input.max_length = 255
+    text_input.max_length = max_length
     text_input.length_restriction = TextInputLength()
     return text_input
 
@@ -49,6 +49,9 @@ class DialogHelper:
     UiDialogNotificationUrgency = UiDialogNotification.UiDialogNotificationUrgency
     UiDialogUiRequest = UiDialogResponse.UiDialogUiRequest
     UiDialogNotificationExpandBehavior = UiDialogNotification.UiDialogNotificationExpandBehavior
+
+    class CharacterRestriction:
+        NUMBERS = lambda *_: _create_localized_string(0x8FE40C44)
 
     @staticmethod
     def create_notification(title="", text="", primary_icon=None, urgency=UiDialogNotification.UiDialogNotificationUrgency.DEFAULT, visual_type=UiDialogNotification.UiDialogNotificationVisualType.INFORMATION, expand_behavior=UiDialogNotification.UiDialogNotificationExpandBehavior.USER_SETTING, ui_responses=()):

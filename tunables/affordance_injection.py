@@ -52,8 +52,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                 if affordance.outfit_change is not None:
                     if affordance.outfit_change.posture_outfit_change_overrides is not None:
                         on_exit = affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit
-                        affordance.outfit_change.posture_outfit_change_overrides[
-                            posture].on_exit = on_exit + (outfit_change,)
+                        affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit = on_exit + (outfit_change,)
                         # logger.debug("{}".format(affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit))
 
             if self.basic_extras is not None:
