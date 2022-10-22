@@ -1,12 +1,14 @@
 import services
 import random
+import sims4.random
 from lot51_core import logger
 from event_testing.tests import TunableTestSet
 from event_testing.resolver import SingleObjectResolver
 from interactions import ParticipantType
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, TunableEnumSet, TunableEnumEntry
-from tag import Tag
 from objects.components.types import INVENTORY_COMPONENT
+from sims4.resources import Types
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, TunableEnumSet, TunableEnumEntry, TunableReference
+from tag import Tag
 
 
 class ObjectFilterRandomSingleChoice(HasTunableSingletonFactory, AutoFactoryInit):
@@ -63,6 +65,25 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
         obj_list = self._get_objects_gen(resolver)
         yield from self._get_filtered_objects(obj_list)
 
+    def get_closest_object(self, relative_position, relative_level, resolver=None):
+        object_list = list(self.get_objects_gen(resolver=resolver))
+        weights = []
+        for obj in object_list:
+            delta = obj.position - relative_position
+            base_weight = delta.magnitude()
+            # score objects on different levels as further away
+            if obj.level != relative_level:
+                base_weight *= 2
+
+            weight = 10/base_weight
+            if obj.parts:
+                for part in obj.parts:
+                    weights.append((weight, part))
+            else:
+                weights.append((weight, obj))
+
+        return sims4.random.weighted_random_item(weights)
+
 
 class GetObjectsFromInventory(_GetObjectsBase):
     FACTORY_TUNABLES = {
@@ -77,16 +98,35 @@ class GetObjectsFromInventory(_GetObjectsBase):
             subject = resolver.get_participant(self.subject)
             return subject.get_sim_instance().get_component(INVENTORY_COMPONENT)
 
-
     def _get_objects_gen(self, resolver=None):
         inventory = self.get_inventory(resolver)
         if inventory is not None:
             for obj in inventory._storage:
-                if self.hidden and not inventory.is_object_hidden(obj):
+                if (self.hidden and not inventory.is_object_hidden(obj)) or (not self.hidden and inventory.is_object_hidden(obj)):
                     continue
                 resolver = SingleObjectResolver(obj)
                 if self.additional_tests.run_tests(resolver):
                     yield obj
+
+
+class GetSituationTargetObject(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'subject': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Actor),
+        'situation': TunableReference(manager=services.get_instance_manager(Types.SITUATION)),
+    }
+
+    __slots__ = ('subject', 'situation')
+
+    def _get_objects_gen(self, resolver=None):
+        situation_manager = services.get_zone_situation_manager()
+        if resolver is not None:
+            sim_info = resolver.get_participant(self.subject)
+            if sim_info and sim_info.is_sim:
+                sim = sim_info.get_sim_instance()
+                for situation in situation_manager.get_situations_sim_is_in(sim):
+                    if situation.guid64 == self.situation.guid64:
+                        if hasattr(situation, 'get_target_object'):
+                            yield situation.get_target_object()
 
 
 class GetObjectsOnActiveLot(_GetObjectsBase):
@@ -146,4 +186,4 @@ class GetObjectsByDefinition(_GetObjectsBase):
 class ObjectSearchMethodVariant(TunableVariant):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, tags=GetObjectsByTags.TunableFactory(), definition=GetObjectsByDefinition.TunableFactory(), tuning=GetObjectsByTuning.TunableFactory(), active_lot=GetObjectsOnActiveLot.TunableFactory(), inventory=GetObjectsFromInventory.TunableFactory(), **kwargs)
+        super().__init__(*args, tags=GetObjectsByTags.TunableFactory(), definition=GetObjectsByDefinition.TunableFactory(), tuning=GetObjectsByTuning.TunableFactory(), active_lot=GetObjectsOnActiveLot.TunableFactory(), inventory=GetObjectsFromInventory.TunableFactory(), situation_target=GetSituationTargetObject.TunableFactory(), **kwargs)

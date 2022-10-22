@@ -1,5 +1,4 @@
 import services
-from event_testing.tests import TunableTestSet
 from lot51_core import logger
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, TunableAffordanceInjectionByUtility
 from lot51_core.tunables.buff_injection import TunableBuffInjection
@@ -13,11 +12,12 @@ from lot51_core.tunables.object_state_injection import TunableObjectStateInjecti
 from lot51_core.tunables.posture_injection import TunablePostureInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
+from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.utils.injection import on_load_complete
 from services import get_instance_manager
 from sims4.tuning.instance_manager import InstanceManager
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableReference, TunableList, TunableReference, TunableTuple
+from sims4.tuning.tunable import HasTunableReference, TunableList
 from sims4.resources import Types
 
 
@@ -60,10 +60,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             tunable=TunableLootInjection.TunableFactory()
         ),
         "inject_to_test_sets": TunableList(
-            tunable=TunableTuple(
-                test_set=TunableReference(manager=services.get_instance_manager(Types.SNIPPET)),
-                tests=TunableTestSet(),
-            )
+            tunable=TunableTestSetInjection.TunableFactory()
         ),
         "inject_to_buffs": TunableList(
             tunable=TunableBuffInjection.TunableFactory(),
@@ -115,13 +112,11 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             except:
                 logger.exception("Object state value injections failed")
 
-        for test_set_data in cls.inject_to_test_sets:
+        for row in cls.inject_to_test_sets:
             try:
-                if test_set_data.test_set is None or test_set_data.tests is None:
-                    continue
-                test_set_data.test_set.test += test_set_data.tests
+                row.inject()
             except:
-                logger.exception("Object state value injections failed")
+                logger.exception("Test set injections failed")
 
         for row in cls.inject_to_buffs:
             try:

@@ -1,6 +1,7 @@
 import services
 from event_testing.tests import TunableTestSet
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
+from objects.components.idle_component import IdleComponent
 from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, TestedStateValueReference
 from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableSimMinute
@@ -10,6 +11,9 @@ from lot51_core import logger
 
 
 class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
+    IDLE_COMPONENT = IdleComponent.TunableFactory()
+    IDLE_COMPONENT = IdleComponent.TunableFactory()
+
     FACTORY_TUNABLES = {
         'affordances': TunableList(
             description='List of affordances to inject',
@@ -60,13 +64,17 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
         if len(self.relation_panel_affordances) > 0:
             add_affordances(obj, self.relation_panel_affordances, key='_relation_panel_affordances')
 
-    def _inject_idle_component(self, obj):
-        if self.idle_animation_map is not None and hasattr(obj, '_components') and hasattr(obj._components, 'idle_component'):
-            idle_component = obj._components.idle_component
-            idle_animation_map = dict(idle_component.idle_animation_map)
-            for key, idle in self.idle_animation_map.items():
-                idle_animation_map[key] = idle
-            idle_component._tuned_values = idle_component._tuned_values.clone_with_overrides(idle_animation_map=idle_animation_map)
+    def _inject_idle_component(self, obj, should_create_component=True):
+        if self.idle_animation_map is not None:
+            if hasattr(obj, '_components') and hasattr(obj._components, 'idle_component') and obj._components.idle_component is not None:
+                idle_component = obj._components.idle_component
+                idle_animation_map = dict(idle_component.idle_animation_map)
+                for key, idle in self.idle_animation_map.items():
+                    idle_animation_map[key] = idle
+                idle_component._tuned_values = idle_component._tuned_values.clone_with_overrides(idle_animation_map=idle_animation_map)
+            elif should_create_component:
+                obj._components = obj._components.clone_with_overrides(idle_component=self.IDLE_COMPONENT)
+                self._inject_idle_component(obj, should_create_component=False)
 
     def _inject_routing_component(self, obj):
         if self.routing_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'routing_component'):
@@ -126,6 +134,8 @@ class TunableObjectInjectionByTuningId(BaseTunableObjectInjection):
         )
     }
 
+    __slots__ = ('query',)
+
     def get_objects_gen(self):
         if self.query is not None:
             yield services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(self.query, Types.OBJECT))
@@ -138,6 +148,8 @@ class TunableObjectInjectionByAffordance(BaseTunableObjectInjection):
             manager=services.get_instance_manager(Types.INTERACTION)
         )
     }
+
+    __slots__ = ('query',)
 
     def get_objects_gen(self):
         for obj in services.get_instance_manager(Types.OBJECT).get_ordered_types():

@@ -1,11 +1,13 @@
 # Learn how to create your own tests following Frankk's guide
 # at https://frankkmods.medium.com/custom-tuning-tests-sims-4-script-modding-3837e214fb68
 from lot51_core.tests.lock_out import AffordanceLockOutTest
+from lot51_core.tests.mood import MoodIntensityTest, MoodWeightTest
+from lot51_core.tests.room import ObjectInRoomTest
+from lot51_core.tests.walkstyle import WalkstyleTest
 from sims4.common import Pack, are_packs_available
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
 from caches import cached_test
-from interactions import ParticipantTypeSingle
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry
 from event_testing.tests import TestSetInstance, TunableTestVariant, _TunableTestSetBase
 
@@ -31,10 +33,15 @@ class PackTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
         return TestResult(False, "Pack not installed", tooltip=self.tooltip)
 
 
+
 class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
     MY_TEST_VARIANTS = {
-        'has_pack': PackTest,
         'affordance_lock_out': AffordanceLockOutTest,
+        'has_pack': PackTest,
+        'mood_intensity': MoodIntensityTest,
+        'mood_weight': MoodWeightTest,
+        'object_in_room': ObjectInRoomTest,
+        'walkstyle': WalkstyleTest,
     }
 
     def __init__(self, **kwargs):
