@@ -3,6 +3,27 @@ from lot51_core import logger
 import sims4
 
 
+class CoreEvent:
+    BUILD_BUY_ENTER = 'build_buy.enter'
+    BUILD_BUY_EXIT = 'build_buy.exit'
+    GAME_SETUP = 'game.setup'
+    GAME_LOAD = 'game.load'
+    GAME_PRE_SAVE = 'game.pre_save'
+    GAME_SAVE = 'game.save'
+    GAME_SERVICES_STARTED = 'game_services.started'
+    GAME_TICK = 'game.update'
+    GLOBAL_SERVICE_START = 'global_service.start'
+    GLOBAL_SERVICE_STOP = 'global_service.stop'
+    HOUSEHOLDS_AND_SIMS_LOADED = 'zone.all_households_and_sim_infos_loaded'
+    LOADING_SCREEN_LIFTED = 'zone.loading_screen_lifted'
+    TUNING_LOADED = 'instance_managers.loaded'
+    ZONE_CLEANUP_OBJECTS = 'zone.cleanup_objects'
+    ZONE_LOAD = 'zone.load'
+    ZONE_UNLOAD = 'zone.unload'
+    OBJECT_ADDED = 'game_object.added'
+    OBJECT_DESTROYED = 'game_object.destroyed'
+
+
 class EventService(EventEmitter):
 
     def __init__(self):

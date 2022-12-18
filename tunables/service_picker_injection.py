@@ -4,12 +4,12 @@ from interactions.utils.tunable_icon import TunableIconAllPacks
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableVariant, TunableList
+from situations.service_npcs.service_npc_tuning import ServiceNpcHireable
 
 
 class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit):
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
-        'description': "The Data needed to display the non service NPC in the Hire A Service' UI.",
         'icon': TunableIconAllPacks(description="The icon to be displayed in 'Hire a Service' UI"),
         'name': TunableLocalizedStringFactory(description="The name to be displayed for this NPC in the 'Hire a Service' UI."),
         'cost_string': TunableVariant(
@@ -21,7 +21,9 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
         ),
         'hire_interaction': TunableReference(
             description='The affordance to push the sim making the call when hiring this service npc from a picker dialog from the phone.',
-            manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
+            manager=services.get_instance_manager(Types.INTERACTION),
+            pack_safe=True
+        ),
         'tests': TunableGlobalTestSet(description='A set of global tests that are always run before other tests. All tests must pass in order for the interaction to run.'),
         'free_service_traits': TunableList(
             description='If any Sim in the household has one of these traits, the non service npc will be free.',
@@ -40,3 +42,21 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
             picker_tuning.non_service_npcs += (self,)
+
+
+class TunableHireableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit):
+    PICKER_TUNING_ID = 9838
+    FACTORY_TUNABLES = {
+        'service_npc': TunableReference(manager=services.get_instance_manager(Types.SERVICE_NPC), class_restrictions=(ServiceNpcHireable,), pack_safe=True),
+        'already_hired_tooltip': TunableLocalizedStringFactory(description='Tooltip that displays if the service has already been hired.'),
+        'tests': TunableGlobalTestSet(),
+    }
+
+    @classmethod
+    def get_picker_tuning(cls):
+        return services.get_instance_manager(Types.INTERACTION).get(cls.PICKER_TUNING_ID)
+
+    def inject(self):
+        picker_tuning = self.get_picker_tuning()
+        if picker_tuning is not None:
+            picker_tuning.service_npcs += (self,)

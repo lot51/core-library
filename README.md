@@ -1,10 +1,15 @@
 # lot51/core-library
 
-Core Library is a collection of useful snippets and tunables for The Sims 4 mods! It's recommended to use it as a dependency to help prevent many injections to common game methods. 
+Core Library is a collection of useful snippets and tunables for The Sims 4 mods! It's recommended to use it as a dependency to help prevent many injections to common game methods.
 
 ## Usage
 
 Download the latest packaged ts4script from https://lot51.cc/core and place in your Mods folder.
+
+## Tuning Snippets
+
+- [TuningInjector](https://lot51.cc/tdesc/Contrib/TuningInjector.tdesc)
+- [PurchasePickerSnippet](https://lot51.cc/tdesc/Contrib/PurchasePickerSnippet.tdesc)
 
 ## Create a Logger
 
@@ -82,6 +87,7 @@ def _on_zone_load(*args, context=None, **kwargs):
  
 *\* denotes an event that receives the context object above as a kwarg*
 
+- `instance_managers.loaded` (after all tuning instance managers have loaded, useful to perform injections)
 - `game.setup` *
 - `global_service.start`
 - `game_services.started` (after all custom services started)

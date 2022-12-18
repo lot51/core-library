@@ -6,7 +6,7 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 class TunableClubInteractionGroupInjection(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
-        'query': TunableReference(manager=services.get_instance_manager(Types.TUNING)),
+        'query': TunableReference(manager=services.get_instance_manager(Types.CLUB_INTERACTION_GROUP)),
         'affordances': TunableList(
             description='List of affordances to inject',
             tunable=TunableReference(

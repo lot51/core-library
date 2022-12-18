@@ -16,11 +16,10 @@ class LotFiftyOneTunableModifiers(HasTunableSingletonFactory, AutoFactoryInit):
     __slots__ = ('base_rate', 'modifiers',)
 
     def get_modifier(self, resolver):
-        if resolver is None:
-            return 0
         rate = self.base_rate
-        for potential_modifer in self.modifiers:
-            if potential_modifer.tests.run_tests(resolver):
-                rate += potential_modifer.modifier
-
+        if resolver is None:
+            return rate
+        for potential_modifier in self.modifiers:
+            if potential_modifier.tests.run_tests(resolver):
+                rate += potential_modifier.modifier
         return rate

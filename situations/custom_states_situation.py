@@ -1,6 +1,7 @@
 import services
 from situations.custom_states.custom_states_situation import CustomStatesSituation
 
+
 class DefaultObjectCustomStatesSituation(CustomStatesSituation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

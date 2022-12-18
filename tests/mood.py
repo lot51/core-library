@@ -63,7 +63,6 @@ class MoodWeightTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
     def __call__(self, subjects=(), **kwargs):
         try:
             actor = next(iter(subjects))
-            logger.debug("MOOD WEIGHT TEST: {}".format(actor))
             if actor and hasattr(actor, 'Buffs'):
                 buff_component = actor.Buffs
                 if self.mood is not None:
@@ -71,7 +70,6 @@ class MoodWeightTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
                 else:
                     active_mood = buff_component._active_mood
                 total_weight = sum(buff_entry.mood_weight for buff_entry in buff_component._active_buffs.values() if buff_entry.mood_type is active_mood)
-                logger.debug("MOOD WEIGHT TEST: {} {} {}".format(actor, active_mood, total_weight))
                 if self.threshold.compare(total_weight):
                     return TestResult.TRUE
             return TestResult(False, "Mood weight does not meet threshold", tooltip=self.tooltip)

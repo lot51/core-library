@@ -78,8 +78,9 @@ class TunableDramaSchedulerInjection(HasTunableSingletonFactory, AutoFactoryInit
                 logger.exception("Failed injecting schedule rule")
 
         try:
-            new_buckets = set(DramaScheduleService.STARTUP_BUCKETS)
-            new_buckets.update(self.startup_buckets)
-            DramaScheduleService.STARTUP_BUCKETS = frozenset(new_buckets)
+            if len(self.startup_buckets) > 0:
+                new_buckets = set(DramaScheduleService.STARTUP_BUCKETS)
+                new_buckets.update(self.startup_buckets)
+                DramaScheduleService.STARTUP_BUCKETS = frozenset(new_buckets)
         except:
             logger.exception("Failed injecting startup buckets")

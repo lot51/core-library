@@ -7,6 +7,7 @@ from sims.outfits.outfit_change import TunableOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, OptionalTunable, TunableEnumEntry
+from snippets import TunableAffordanceListReference
 
 
 class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit):
@@ -31,7 +32,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                 generator=TunableOutfitGeneratorSnippet(),
                 tests=TunableGlobalTestSet(description=' Tests to run when deciding which clothing change entry to use. All of the tests must pass in order for the item to pass.')
             )
-        )
+        ),
     }
 
     __slots__ = ('basic_extras', 'display_name_overrides', 'tests', 'outfit_change_on_exit',)
@@ -40,10 +41,10 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         raise NotImplementedError
 
     def inject(self):
-        # inject to DeathType enum
         for affordance in self.get_affordances_gen():
             if affordance is None:
                 continue
+
             for test in self.tests:
                 if test is not None:
                     affordance.add_additional_test(test)
@@ -53,11 +54,9 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                     if affordance.outfit_change.posture_outfit_change_overrides is not None:
                         on_exit = affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit
                         affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit = on_exit + (outfit_change,)
-                        # logger.debug("{}".format(affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit))
 
             if self.basic_extras is not None:
                 affordance.basic_extras += self.basic_extras
-                # logger.debug("affordance: {} basic_extras: {}".format(affordance, row.basic_extras))
 
 
 class TunableAffordanceInjectionByAffordances(BaseTunableAffordanceInjection):
@@ -77,6 +76,22 @@ class TunableAffordanceInjectionByAffordances(BaseTunableAffordanceInjection):
         yield from self.affordances
 
 
+class TunableAffordanceInjectionByAffordanceList(BaseTunableAffordanceInjection):
+    FACTORY_TUNABLES = {
+        'affordance_lists': TunableList(
+            description='List of affordances to inject to',
+            tunable=TunableAffordanceListReference(),
+        ),
+    }
+
+    __slots__ = ('affordance_lists',)
+
+    def get_affordances_gen(self):
+        for affordance_list in self.affordance_lists:
+            if affordance_list is not None:
+                yield from affordance_list.value
+
+
 class TunableAffordanceInjectionByUtility(BaseTunableAffordanceInjection):
     FACTORY_TUNABLES = {
         'utility': OptionalTunable(tunable=TunableEnumEntry(tunable_type=Utilities, default=None)),
@@ -85,11 +100,8 @@ class TunableAffordanceInjectionByUtility(BaseTunableAffordanceInjection):
     __slots__ = ('utility',)
 
     def get_affordances_gen(self):
-        if self.utility is None:
-            yield from []
-            return
-
-        for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
-            if affordance.utility_info is not None:
-                if self.utility in affordance.utility_info:
-                    yield affordance
+        if self.utility is not None:
+            for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
+                if affordance.utility_info is not None:
+                    if self.utility in affordance.utility_info:
+                        yield affordance

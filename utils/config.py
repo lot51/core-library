@@ -77,5 +77,5 @@ class Config:
                 if data:
                     return self._parse_value(data)
         except:
-            self.logger.error('[Config] failed to load file')
+            self.logger.warn('[Config] using default data')
         return dict(self._default_data)
