@@ -30,10 +30,9 @@ def create_input(title="", input_text="", restricted_characters=None, max_length
     return text_input
 
 
-def create_translated_input(title="", input_text="", restricted_characters=None, max_length=255):
-    localized_title = lambda **_: LocalizationHelperTuning.get_raw_text(title)
-    # localized_text_placeholder = lambda **_: _create_localized_string(input_text)
-    localized_text_placeholder = lambda **_: LocalizationHelperTuning.get_raw_text(input_text)
+def create_translated_input(title=0x0, input_text=0x0, restricted_characters=None, max_length=255):
+    localized_title = lambda **_: _create_localized_string(title)
+    localized_text_placeholder = lambda **_: _create_localized_string(input_text)
     text_input = UiTextInput(sort_order=0, restricted_characters=restricted_characters, height=0)
     text_input.default_text = localized_text_placeholder
     text_input.title = localized_title

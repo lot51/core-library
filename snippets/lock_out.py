@@ -34,9 +34,9 @@ class AffordanceLockOutSnippet(HasTunableReference, metaclass=HashedTunedInstanc
         yield from services.get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=cls)
 
     @classmethod
-    def on_load(cls, manager):
+    def on_load(cls, *args, **kwargs):
         if cls.LOCK_OUT_TEST_SET is None:
-            logger.debug("Lock out test missing, failed to inject")
+            logger.warn("Lock out test set not found.")
             return
 
         for snippet in cls.all_snippets_gen():
@@ -94,9 +94,12 @@ class AffordanceLockOutRegistry(RegisterTestEventMixin):
             AffordanceLockOutRegistry.on_interaction_start(interaction)
 
 
-services.get_instance_manager(Types.SNIPPET).add_on_load_complete(AffordanceLockOutSnippet.on_load)
-
 lock_out_service = AffordanceLockOutRegistry()
+
+
+@event_handler("instance_managers.loaded")
+def _inject_lock_out(*args, **kwargs):
+    AffordanceLockOutSnippet.on_load()
 
 
 @event_handler('zone.loading_screen_lifted')

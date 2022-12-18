@@ -1,8 +1,12 @@
 # Learn how to create your own tests following Frankk's guide
 # at https://frankkmods.medium.com/custom-tuning-tests-sims-4-script-modding-3837e214fb68
+from lot51_core.tests.daytime import DaytimeTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
+from lot51_core.tests.lot import LotSizeTest
 from lot51_core.tests.mood import MoodIntensityTest, MoodWeightTest
 from lot51_core.tests.room import ObjectInRoomTest
+from lot51_core.tests.terrain import TerrainTest
+from lot51_core.tests.resource_test import ResourceExistenceTest
 from lot51_core.tests.walkstyle import WalkstyleTest
 from sims4.common import Pack, are_packs_available
 from event_testing.results import TestResult
@@ -37,10 +41,14 @@ class PackTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
 class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
     MY_TEST_VARIANTS = {
         'affordance_lock_out': AffordanceLockOutTest,
+        'daytime': DaytimeTest,
         'has_pack': PackTest,
+        'lot_size': LotSizeTest,
         'mood_intensity': MoodIntensityTest,
         'mood_weight': MoodWeightTest,
         'object_in_room': ObjectInRoomTest,
+        'resource_existence': ResourceExistenceTest,
+        'terrain_features': TerrainTest,
         'walkstyle': WalkstyleTest,
     }
 

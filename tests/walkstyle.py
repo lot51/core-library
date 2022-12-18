@@ -1,14 +1,12 @@
-from caches import cached_test
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
-from event_testing.test_events import TestEvent
 from interactions import ParticipantTypeSingle
 from routing.walkstyle.walkstyle_tuning import TunableWalkstyle
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry, TunableList
 
 
 class WalkstyleTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
-    test_events = (TestEvent.InteractionStart,)
+    test_events = ()
     FACTORY_TUNABLES = {
         'subject': TunableEnumEntry(
             description='The subject of the test.',
@@ -23,7 +21,6 @@ class WalkstyleTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
     def get_expected_args(self):
         return {'subjects': self.subject}
 
-    @cached_test
     def __call__(self, subjects=(), **kwargs):
         subject = next(iter(subjects))
         if subject is not None and subject.is_sim:

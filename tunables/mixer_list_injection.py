@@ -3,11 +3,12 @@ from interactions.social.social_mixer_interaction import SocialMixerInteraction
 from lot51_core import logger
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
+from snippets import TunableAffordanceListReference
 
 
 class TunableMixerListInjection(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
-        'mixer_list': TunableReference(manager=services.get_instance_manager(Types.SNIPPET)),
+        'mixer_list': TunableAffordanceListReference(),
         'mixers': TunableList(
             tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION)),
         )

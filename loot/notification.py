@@ -6,7 +6,7 @@ from ui.ui_dialog_notification import UiDialogNotification
 
 class SingleNotification(BaseLootOperation):
     FACTORY_TUNABLES = {
-        'notification': UiDialogNotification.TunableFactory(description='Display a notification.'),
+        'notification': UiDialogNotification.TunableFactory(description='Display a notification targeting the active sim'),
     }
 
     def __init__(self, notification=None,**kwargs):

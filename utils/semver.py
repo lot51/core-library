@@ -1,8 +1,8 @@
-# https://github.com/python-semver/python-semver
-# September 15, 2022
-#
 # Copyright (c) 2013, Konstantine Rybnikov
 # All rights reserved.
+#
+# https://github.com/python-semver/python-semver
+# September 15, 2022
 
 import collections
 import re

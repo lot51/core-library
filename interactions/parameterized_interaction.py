@@ -60,13 +60,10 @@ class SpecificInteractionContinuationMixin:
                 break
 
 
-class ObjectSourceMixin:
+class ParameterizedSpecificSuperInteraction(SuperInteraction, SpecificInteractionContinuationMixin):
     INSTANCE_TUNABLES = {
         'object_source': ObjectSearchMethodVariant(),
     }
-
-
-class ParameterizedSpecificSuperInteraction(SuperInteraction, ObjectSourceMixin, SpecificInteractionContinuationMixin):
 
     @flexmethod
     def test(cls, inst, context=DEFAULT, **kwargs):
@@ -75,12 +72,14 @@ class ParameterizedSpecificSuperInteraction(SuperInteraction, ObjectSourceMixin,
         if not bool(original_result):
             return original_result
 
-        resolver = inst_or_cls.get_resolver(context=context, **kwargs)
-
-        for obj in inst_or_cls.object_source.get_objects_gen(resolver=resolver):
+        try:
+            resolver = inst_or_cls.get_resolver(context=context, **kwargs)
+            for obj in inst_or_cls.object_source.get_objects_gen(resolver=resolver):
+                return original_result
+            return TestResult(False, 'No objects found')
+        except:
+            logger.exception("Failed during param interaction test")
             return original_result
-
-        return TestResult(False, 'No objects found')
 
     def _run_interaction_gen(self, timeline):
         try:
@@ -96,7 +95,10 @@ class ParameterizedSpecificSuperInteraction(SuperInteraction, ObjectSourceMixin,
         super()._run_interaction_gen(timeline)
 
 
-class ParameterizedSuperInteraction(SuperInteraction, ObjectSourceMixin, ParameterizedRequestContinuationMixin):
+class ParameterizedSuperInteraction(SuperInteraction, ParameterizedRequestContinuationMixin):
+    INSTANCE_TUNABLES = {
+        'object_source': ObjectSearchMethodVariant(),
+    }
 
     @flexmethod
     def test(cls, inst, context=DEFAULT, **kwargs):
@@ -104,11 +106,15 @@ class ParameterizedSuperInteraction(SuperInteraction, ObjectSourceMixin, Paramet
         original_result = super(__class__, inst_or_cls).test(context=context, **kwargs)
         if not bool(original_result):
             return original_result
-        for obj in inst_or_cls.object_source.get_objects_gen():
-            # logger.debug("got obj {} in {}".format(obj, cls))
-            return original_result
 
-        return TestResult(False, 'No objects found')
+        try:
+            resolver = inst_or_cls.get_resolver(context=context, **kwargs)
+            for obj in inst_or_cls.object_source.get_objects_gen(resolver=resolver):
+                return original_result
+            return TestResult(False, 'No objects found')
+        except:
+            logger.exception("Failed during param interaction test")
+            return original_result
 
     def _run_interaction_gen(self, timeline):
         try:
