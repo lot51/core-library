@@ -14,10 +14,10 @@ from lot51_core.tunables.object_injection import TunableObjectInjectionByAfforda
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
-from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, \
-    TunableHireableServicePickerInjection
+from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
+from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
 from lot51_core.tunables.trait_injection import TunableTraitInjection
 from lot51_core.utils.semver import Version
 from services import get_instance_manager
@@ -29,6 +29,7 @@ from ui.ui_dialog_notification import UiDialogNotification
 
 with sims4.reload.protected(globals()):
     SHOW_VERSION_NOTIFICATION = False
+
 
 class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     VERSION_DIALOG = UiDialogNotification.TunableFactory()
@@ -110,6 +111,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_postures": TunableList(
             tunable=TunablePostureInjection.TunableFactory()
         ),
+        "inject_to_holiday_traditions": TunableList(
+            tunable=TunableHolidayTraditionInjection.TunableFactory(),
+        ),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
@@ -122,11 +126,11 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
     __slots__ = tuple(__injectors__)
 
     def __repr__(self):
-        return str(self.__name__)
+        return '<TuningInjector {}> {} by {};'.format(type(self).__name__, self.mod_name, self.creator_name)
 
     @classmethod
     def _tuning_loaded_callback(cls):
-        logger.info('[TuningInjector] {}'.format(cls))
+        logger.info('[tuning_loaded] {}; minimum core version: {};'.format(cls, cls.minimum_core_version))
 
     @classmethod
     def all_snippets_gen(cls):
@@ -180,7 +184,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
                             except:
                                 logger.exception('[TuningInjector] injector failed: {}'.format(key))
                 elif hasattr(injector, 'inject'):
-                    if hasattr(injector, 'requires_zone') and not injector.requires_zone:
+                    if hasattr(injector, 'requires_zone') and injector.requires_zone:
                         injector.inject()
             except:
                 logger.exception('[TuningInjector] injector failed: {}'.format(key))

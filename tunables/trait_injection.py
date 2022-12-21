@@ -66,10 +66,11 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
             if self.restricted_ingredients is not None:
                 self.trait.restricted_ingredients += tuple(self.restricted_ingredients)
 
-            add_affordances(self.trait, self.super_affordances, key='super_affordances')
+            if self.super_affordances is not None:
+                add_affordances(self.trait, self.super_affordances, key='super_affordances')
 
             if self.target_super_affordances is not None:
-                self.trait.target_super_affordances += tuple(self.target_super_affordances)
+                add_affordances(self.trait, self.target_super_affordances, 'target_super_affordances')
 
             if self.loot_on_trait_add is not None:
                 if self.trait.loot_on_trait_add is None:
