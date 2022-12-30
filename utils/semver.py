@@ -237,23 +237,6 @@ class Version:
         """Return iter(self)."""
         yield from self.to_tuple()
 
-    @staticmethod
-    def _increment_string(string: str) -> str:
-        """
-        Look for the last sequence of number(s) in a string and increment.
-        :param string: the string to search for.
-        :return: the incremented string
-        Source:
-        http://code.activestate.com/recipes/442460-increment-numbers-in-a-string/#c1
-        """
-        match = Version._LAST_NUMBER.search(string)
-        if match:
-            next_ = str(int(match.group(1)) + 1)
-            start, end = match.span(1)
-            string = string[: max(end - len(next_), start)] + next_ + string[end:]
-        return string
-
-
     def compare(self, other: Comparable) -> int:
         """
         Compare self with other.
@@ -299,49 +282,6 @@ class Version:
             return -1
 
         return rccmp
-
-    def next_version(self, part: str, prerelease_token: str = "rc") -> "Version":
-        """
-        Determines next version, preserving natural order.
-        .. versionadded:: 2.10.0
-        This function is taking prereleases into account.
-        The "major", "minor", and "patch" raises the respective parts like
-        the ``bump_*`` functions. The real difference is using the
-        "preprelease" part. It gives you the next patch version of the
-        prerelease, for example:
-        >>> str(semver.parse("0.1.4").next_version("prerelease"))
-        '0.1.5-rc.1'
-        :param part: One of "major", "minor", "patch", or "prerelease"
-        :param prerelease_token: prefix string of prerelease, defaults to 'rc'
-        :return: new object with the appropriate part raised
-        """
-        validparts = {
-            "major",
-            "minor",
-            "patch",
-            "prerelease",
-            # "build", # currently not used
-        }
-        if part not in validparts:
-            raise ValueError(
-                "Invalid part. Expected one of {validparts}, but got {part!r}".format(
-                    validparts=validparts, part=part
-                )
-            )
-        version = self
-        if (version.prerelease or version.build) and (
-            part == "patch"
-            or (part == "minor" and version.patch == 0)
-            or (part == "major" and version.minor == version.patch == 0)
-        ):
-            return version.replace(prerelease=None, build=None)
-
-        if part in ("major", "minor", "patch"):
-            return getattr(version, "bump_" + part)()
-
-        if not version.prerelease:
-            version = version.bump_patch()
-        return version.bump_prerelease(prerelease_token)
 
     @_comparator
     def __eq__(self, other: Comparable) -> bool:  # type: ignore
@@ -418,16 +358,6 @@ class Version:
 
     def __hash__(self) -> int:
         return hash(self.to_tuple()[:4])
-
-    def finalize_version(self) -> "Version":
-        """
-        Remove any prerelease and build metadata from the version.
-        :return: a new instance with the finalized version string
-        >>> str(semver.Version.parse('1.2.3-rc.5').finalize_version())
-        '1.2.3'
-        """
-        cls = type(self)
-        return cls(self.major, self.minor, self.patch)
 
     def match(self, match_expr: str) -> bool:
         """
@@ -523,30 +453,6 @@ prerelease='pre.2', build='build.4')
             matched_version_parts['patch'] = 0
 
         return cls(**matched_version_parts)
-
-    def replace(self, **parts: Union[int, Optional[str]]) -> "Version":
-        """
-        Replace one or more parts of a version and return a new
-        :class:`Version` object, but leave self untouched
-        .. versionadded:: 2.9.0
-           Added :func:`Version.replace`
-        :param parts: the parts to be updated. Valid keys are:
-          ``major``, ``minor``, ``patch``, ``prerelease``, or ``build``
-        :return: the new :class:`Version` object with the changed
-          parts
-        :raises TypeError: if ``parts`` contain invalid keys
-        """
-        version = self.to_dict()
-        version.update(parts)
-        try:
-            return Version(**version)  # type: ignore
-        except TypeError:
-            unknownkeys = set(parts) - set(self.to_dict())
-            error = "replace() got %d unexpected keyword argument(s): %s" % (
-                len(unknownkeys),
-                ", ".join(unknownkeys),
-            )
-            raise TypeError(error)
 
     @classmethod
     def isvalid(cls, version: str) -> bool:

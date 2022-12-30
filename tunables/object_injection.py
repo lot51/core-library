@@ -11,6 +11,7 @@ from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
 from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableSimMinute
 from sims4.resources import Types, get_resource_key
+from sims4.utils import classproperty
 from singletons import UNSET
 from lot51_core import logger
 
@@ -59,7 +60,7 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
 
     __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component',)
 
-    @classmethod
+    @classproperty
     def requires_zone(cls):
         return False
 
@@ -217,7 +218,7 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
 
     __slots__ = ('object_source',)
 
-    @classmethod
+    @classproperty
     def requires_zone(cls):
         return True
 

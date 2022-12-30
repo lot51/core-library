@@ -29,7 +29,7 @@ class TunableObjectStateInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 obj_state_value.state = self.object_state
                 state_values_to_add.append(obj_state_value)
 
-        self.object_state._values = self.object_state._values + tuple(state_values_to_add)
+        self.object_state._values = tuple(self.object_state._values) + tuple(state_values_to_add)
 
 
 class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryInit):

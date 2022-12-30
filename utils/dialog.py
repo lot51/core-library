@@ -44,6 +44,7 @@ def create_translated_input(title=0x0, input_text=0x0, restricted_characters=Non
 
 
 class DialogHelper:
+    ButtonType = ButtonType
     UiDialogNotificationVisualType = UiDialogNotification.UiDialogNotificationVisualType
     UiDialogNotificationUrgency = UiDialogNotification.UiDialogNotificationUrgency
     UiDialogUiRequest = UiDialogResponse.UiDialogUiRequest
@@ -116,6 +117,11 @@ class DialogHelper:
     def create_command(command_name, *args):
         command = namedtuple('Command', ('command', 'arguments'))
         return command(command_name, args)
+
+    @staticmethod
+    def create_arg(arg_type, arg_value):
+        arg = namedtuple('CommandArgument', ('arg_type', 'arg_value'))
+        return arg(arg_type, arg_value)
 
     @staticmethod
     def build_ui_response(response_id=ButtonType.DIALOG_RESPONSE_NO_RESPONSE, text=None, subtext=None, ui_request=UiDialogUiRequest.NO_REQUEST, response_command=None):

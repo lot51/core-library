@@ -132,6 +132,7 @@ class StockManager:
 
     @classmethod
     def get_stock_manager(cls, key, refresh_period=None):
+        logger.debug("getting stock manager: {}".format(key))
         if key in cls.STOCK_MANAGERS:
             return cls.STOCK_MANAGERS[key]
         stock_manager = cls(refresh_period=refresh_period)
@@ -333,9 +334,10 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         dialog.show_dialog()
         return dialog
 
-    def get_stock_manager(self):
-        if self.stock_management is not None:
-            return StockManager.get_stock_manager(type(self), refresh_period=self.stock_management.refresh_period)
+    @classmethod
+    def get_stock_manager(cls):
+        if cls.stock_management is not None:
+            return StockManager.get_stock_manager(cls, refresh_period=cls.stock_management.refresh_period)
 
     def _picker_rows_gen(self):
         resolver = self.get_resolver()
@@ -423,6 +425,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 else:
                     row_description = default_description
 
+                # Cache row info for immediate dialog response
+                # Assumes dialog.purchase_by_object_ids is set to True.
                 self.current_price_data[temp_obj.id] = price
                 self.current_item_data[temp_obj.id] = picker_data
 
@@ -571,7 +575,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     picker_data.quality = quality_info
                     picker_data.stock_key = stock_key
 
-                    # Attach to current instance for immediate dialog response
+                    # Cache row info for immediate dialog response
+                    # Assumes dialog.purchase_by_object_ids is set to True.
                     self.current_price_data[temp_obj.id] = price
                     self.current_item_data[temp_obj.id] = picker_data
 
