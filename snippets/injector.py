@@ -1,7 +1,7 @@
 import services
 import sims4
 from lot51_core import logger, __version__
-from lot51_core.services.events import event_handler
+from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
@@ -27,6 +27,7 @@ from sims4.tuning.tunable import HasTunableReference, TunableList, Tunable
 from sims4.resources import Types
 from ui.ui_dialog_notification import UiDialogNotification
 
+
 with sims4.reload.protected(globals()):
     SHOW_VERSION_NOTIFICATION = False
 
@@ -36,8 +37,8 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     INSTANCE_TUNABLES = {
         "minimum_core_version": Tunable(tunable_type=str, allow_empty=True, default='1.0.0'),
-        "creator_name": Tunable(tunable_type=str, allow_empty=True, default='Unknown'),
-        "mod_name": Tunable(tunable_type=str, allow_empty=True, default='Unknown'),
+        "creator_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
+        "mod_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
         "inject_by_affordance": TunableList(
             description="Inject to object tuning based on an existing affordance",
             tunable=TunableObjectInjectionByAffordance.TunableFactory(),
@@ -122,15 +123,11 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "social_bunny": TunableSocialBunnyInjection.TunableFactory(),
     }
 
-    __injectors__ = tuple(INSTANCE_TUNABLES.keys())
-    __slots__ = tuple(__injectors__)
-
-    def __repr__(self):
-        return '<TuningInjector {}> {} by {};'.format(type(self).__name__, self.mod_name, self.creator_name)
+    __injectors__ = ('inject_by_affordance', 'inject_by_object_tuning', 'inject_by_object_source', 'inject_by_definitions', 'inject_to_affordances', 'inject_to_affordances_by_list', 'inject_to_affordances_by_utility_info', 'inject_by_utility_info', 'inject_to_service_picker', 'inject_to_service_picker_hireable', 'inject_to_club_interaction_group', 'inject_to_affordance_list', 'inject_to_mixer_list', 'inject_to_object_states', 'inject_to_object_state_values', 'inject_to_loot', 'inject_to_test_sets', 'inject_to_buffs', 'inject_to_traits', 'inject_to_postures', 'inject_to_holiday_traditions', 'custom_death_types', 'drama_scheduler', 'satisfaction_store', 'social_bunny',)
 
     @classmethod
     def _tuning_loaded_callback(cls):
-        logger.info('[tuning_loaded] {}; minimum core version: {};'.format(cls, cls.minimum_core_version))
+        logger.info('[TuningInjector] loaded {} by {} ({}); minimum core version: {};'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.minimum_core_version))
 
     @classmethod
     def all_snippets_gen(cls):
@@ -150,7 +147,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     @classmethod
     def perform_injections(cls):
-        logger.info('[TuningInjector] starting snippet injections {}'.format(cls))
+        logger.info('[TuningInjector] starting snippet injections: {}'.format(cls.__name__))
 
         for key in cls.__injectors__:
             try:
@@ -170,7 +167,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
                 logger.exception('[TuningInjector] injector failed: {}'.format(key))
     @classmethod
     def perform_delayed_injections(cls):
-        logger.info('[TuningInjector] starting delayed snippet injections {}'.format(cls))
+        logger.info('[TuningInjector] starting delayed snippet injections: {}'.format(cls.__name__))
 
         for key in cls.__injectors__:
             try:
@@ -190,7 +187,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
                 logger.exception('[TuningInjector] injector failed: {}'.format(key))
 
 
-@event_handler("instance_managers.loaded")
+@event_handler(CoreEvent.TUNING_LOADED)
 def _do_injections(*args, **kwargs):
     global SHOW_VERSION_NOTIFICATION
     core_version = TuningInjector.get_core_version()
@@ -202,30 +199,30 @@ def _do_injections(*args, **kwargs):
                 snippet.perform_injections()
             else:
                 SHOW_VERSION_NOTIFICATION = minimum_version
-                logger.warn("Snippet {} version is incompatible with the current Core Library version. {} < {}".format(snippet, snippet.minimum_core_version, __version__))
+                logger.warn("Snippet {} version is incompatible with the current Core Library version. {} < {}".format(snippet.__name__, snippet.minimum_core_version, __version__))
         except:
-            logger.exception("failed injection to snippet: {}".format(snippet))
+            logger.exception("failed injection for snippet: {}".format(snippet.__name__))
 
 
-@event_handler("zone.cleanup_objects")
+@event_handler(CoreEvent.ZONE_CLEANUP_OBJECTS)
 def _do_delayed_injections(*args, **kwargs):
     for snippet in TuningInjector.all_snippets_gen():
         try:
             if snippet.is_valid_version():
                 snippet.perform_delayed_injections()
         except:
-            logger.exception("failed delayed injection to snippet: {}")
+            logger.exception("failed delayed injection for snippet: {}")
 
 
-@event_handler("zone.loading_screen_lifted")
+@event_handler(CoreEvent.LOADING_SCREEN_LIFTED)
 def _do_version_notifier(*args, **kwargs):
     global SHOW_VERSION_NOTIFICATION
     if SHOW_VERSION_NOTIFICATION:
         active_sim = services.get_active_sim()
         dialog = TuningInjector.VERSION_DIALOG(active_sim)
         dialog.title = lambda *_: LocalizationHelperTuning.get_raw_text("Lot 51 Core Library Issue Detected")
-        dialog_text = "A mod has been installed that requires a newer version of Core Library.\n\nCurrent Version: {}\nRequested Version: {}\n\nPlease download the latest version from https://lot51.cc/core\n\nIf you still experience issues, please join the Lot 51 Discord."
-        dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(dialog_text)
+        text = "A mod has been installed that requires a newer version of Core Library.\n\nCurrent Version: {}\nRequired Version: {}\n\nPlease download the latest version from https://lot51.cc/core\n\nIf you still experience issues, join the Lot 51 Discord."
+        dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(text)
         dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
         dialog.show_dialog()
         SHOW_VERSION_NOTIFICATION = False

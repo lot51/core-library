@@ -4,38 +4,13 @@ from lot51_core.tests.daytime import DaytimeTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
 from lot51_core.tests.lot import LotSizeTest
 from lot51_core.tests.mood import MoodIntensityTest, MoodWeightTest
+from lot51_core.tests.packs import PackTest
 from lot51_core.tests.room import ObjectInRoomTest
+from lot51_core.tests.statistics import StatisticLockedTest
 from lot51_core.tests.terrain import TerrainTest
 from lot51_core.tests.resource_test import ResourceExistenceTest
 from lot51_core.tests.walkstyle import WalkstyleTest
-from sims4.common import Pack, are_packs_available
-from event_testing.results import TestResult
-from event_testing.test_base import BaseTest
-from caches import cached_test
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry
 from event_testing.tests import TestSetInstance, TunableTestVariant, _TunableTestSetBase
-
-
-class PackTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
-    FACTORY_TUNABLES = {
-        'pack': TunableEnumEntry(
-            description='Pack required for this test to pass.',
-            tunable_type=Pack,
-            default=Pack.BASE_GAME
-        )
-    }
-
-    __slots__ = ('pack',)
-
-    def get_expected_args(self):
-        return {}
-
-    @cached_test
-    def __call__(self, **kwargs):
-        if are_packs_available(self.pack):
-            return TestResult.TRUE
-        return TestResult(False, "Pack not installed", tooltip=self.tooltip)
-
 
 
 class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
@@ -48,6 +23,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'mood_weight': MoodWeightTest,
         'object_in_room': ObjectInRoomTest,
         'resource_existence': ResourceExistenceTest,
+        'statistic_locked': StatisticLockedTest,
         'terrain_features': TerrainTest,
         'walkstyle': WalkstyleTest,
     }

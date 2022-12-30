@@ -425,6 +425,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 else:
                     row_description = default_description
 
+                # Cache row info for immediate dialog response
+                # Assumes dialog.purchase_by_object_ids is set to True.
                 self.current_price_data[temp_obj.id] = price
                 self.current_item_data[temp_obj.id] = picker_data
 
@@ -573,7 +575,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     picker_data.quality = quality_info
                     picker_data.stock_key = stock_key
 
-                    # Attach to current instance for immediate dialog response
+                    # Cache row info for immediate dialog response
+                    # Assumes dialog.purchase_by_object_ids is set to True.
                     self.current_price_data[temp_obj.id] = price
                     self.current_item_data[temp_obj.id] = picker_data
 
