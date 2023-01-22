@@ -25,6 +25,9 @@ class WalkstyleTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
         subject = next(iter(subjects))
         if subject is not None and subject.is_sim:
             sim = subject.get_sim_instance()
+            if sim is None or sim.routing_component is None:
+                return TestResult(False, "Sim unavailable, or does not support routing.")
+
             current_path = sim.routing_component.current_path
             if current_path is not None:
                 for node in current_path.nodes:

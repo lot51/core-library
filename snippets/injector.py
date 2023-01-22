@@ -13,6 +13,7 @@ from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
 from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
+from lot51_core.tunables.region_injection import TunableRegionInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
@@ -114,6 +115,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         ),
         "inject_to_holiday_traditions": TunableList(
             tunable=TunableHolidayTraditionInjection.TunableFactory(),
+        ),
+        "inject_to_regions": TunableList(
+            tunable=TunableRegionInjection.TunableFactory(),
         ),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),

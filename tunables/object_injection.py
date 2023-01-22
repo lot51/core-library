@@ -4,8 +4,7 @@ from event_testing.tests import TunableTestSet
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
 from objects.components.idle_component import IdleComponent
-from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, \
-    TestedStateValueReference, TunableStateComponent, ObjectStateMetaclass
+from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, TestedStateValueReference, TunableStateComponent, ObjectStateMetaclass
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT
 from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
@@ -62,6 +61,10 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
 
     @classproperty
     def requires_zone(cls):
+        """
+        If true, this injector will run on every zone load instead
+        of a single injection when the instance managers are loaded
+        """
         return False
 
     def get_objects_gen(self):
@@ -231,9 +234,8 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
             if idle_component is None and should_create_component:
                 obj.add_component(self.IDLE_COMPONENT(obj, idle_animation_map=self.idle_animation_map))
             else:
-                idle_animation_map = dict(idle_component.idle_animation_map)
                 for key, idle in self.idle_animation_map.items():
-                    idle_animation_map[key] = idle
+                    idle_component.idle_animation_map[key] = idle
 
     def _inject_routing_component(self, obj, should_create_component=True):
         if self.routing_component is not None:

@@ -2,7 +2,6 @@ from event_testing.resolver import DoubleObjectResolver
 from interactions import ParticipantTypeSingle
 from interactions.utils.loot import LootActionVariant
 from interactions.utils.loot_basic_op import BaseLootOperation
-from lot51_core import logger
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from sims4.tuning.tunable import TunableList, TunableEnumEntry
 

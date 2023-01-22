@@ -51,7 +51,7 @@ class TunableBuffInjection(HasTunableSingletonFactory, AutoFactoryInit):
             else:
                 self.buff.provided_mixers[super_affordance] = tuple(mixers)
 
-        self.buff.super_affordances += tuple(self.super_affordances)
+        self.buff.super_affordances = set(self.buff.super_affordances) | set(self.super_affordances)
 
         if self.target_super_affordances is not None:
             self.buff.target_super_affordances += tuple(self.target_super_affordances)

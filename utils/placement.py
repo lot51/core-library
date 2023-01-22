@@ -1,6 +1,8 @@
+import services
 import sims4
 import random
 from placement import ScoringFunctionRadial, create_starting_location, create_fgl_context_for_object, find_good_location
+from routing import SurfaceType, SurfaceIdentifier
 
 
 def _get_position_with_offset(starting_transform, starting_orientation, x_range=None, z_range=None):
@@ -22,6 +24,8 @@ def get_random_orientation():
 def get_location_near_location(obj, target_location, optimal_distance=0.5, radius_width=4, max_distance=8, random_orientation=False, x_range=None, z_range=None):
     _orientation = get_random_orientation()
     _routing_surface = target_location.routing_surface
+    if _routing_surface is None:
+        _routing_surface = SurfaceIdentifier(services.current_zone_id(), 0, SurfaceType.SURFACETYPE_WORLD)
     start_position, start_orientation = _get_position_with_offset(target_location.transform, _orientation, x_range=x_range, z_range=z_range)
     scoring_function = ScoringFunctionRadial(target_location.transform.translation, optimal_distance, radius_width, max_distance, _routing_surface)
     # location=target_location

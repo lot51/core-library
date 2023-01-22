@@ -88,7 +88,7 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
     @classmethod
     def _build_version_tns(cls, script_ver, package_ver):
         title = cls.version_mismatch_notification.title(cls.mod_name)
-        text = cls.version_mismatch_notification.text(script_ver, package_ver)
+        text = cls.version_mismatch_notification.text(str(script_ver), str(package_ver))
 
         ui_responses = list()
         if cls.version_mismatch_notification.http is not None:

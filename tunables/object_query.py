@@ -186,7 +186,7 @@ class GetObjectsOnActiveLot(_GetObjectsBase):
 
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().valid_objects():
-            if obj.is_on_active_lot() and obj.is_sim == self.allow_sims:
+            if obj.is_on_active_lot() and (not obj.is_sim or obj.is_sim and self.allow_sims):
                 if self.run_additional_tests(resolver, obj):
                     yield obj
 
@@ -290,11 +290,37 @@ class GetObjectsBySimInfo(_GetObjectsBase):
                 continue
             allow_hidden_flags = ALL_HIDDEN_REASONS if self.allow_hidden else None
             sim = services.object_manager().get(sim_info.id) if sim_info.is_baby else sim_info.get_sim_instance(allow_hidden_flags=allow_hidden_flags)
-            if sim is not None:
+            if sim is not None and self.run_additional_tests(resolver, sim):
                 yield sim
+
+
+class GetObjectsByActiveHousehold(GetObjectsBySimInfo):
+
+    def _get_objects_gen(self, resolver=None):
+        for sim_info in services.active_household():
+            if sim_info.is_baby and not self.allow_babies:
+                continue
+            allow_hidden_flags = ALL_HIDDEN_REASONS if self.allow_hidden else None
+            sim = services.object_manager().get(sim_info.id) if sim_info.is_baby else sim_info.get_sim_instance(allow_hidden_flags=allow_hidden_flags)
+            if sim is not None and self.run_additional_tests(resolver, sim):
+                yield sim
+
+
+class GetActualLotObject(_GetObjectsBase):
+    def _get_objects_gen(self, resolver=None):
+        active_lot = services.active_lot()
+        if active_lot is not None:
+            yield active_lot
+
+
+class GetActualLotLevelObjects(_GetObjectsBase):
+    def _get_objects_gen(self, resolver=None):
+        active_lot = services.active_lot()
+        if active_lot is not None:
+            yield from active_lot.lot_levels.values()
 
 
 class ObjectSearchMethodVariant(TunableVariant):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, active_lot=GetObjectsOnActiveLot.TunableFactory(), affordance=GetObjectsByAffordance.TunableFactory(), all=GetAllObjects.TunableFactory(), definition=GetObjectsByDefinition.TunableFactory(), inventory=GetObjectsFromInventory.TunableFactory(), participant=GetObjectsByParticipant.TunableFactory(), tags=GetObjectsByTags.TunableFactory(), tuning=GetObjectsByTuning.TunableFactory(), sim_info=GetObjectsBySimInfo.TunableFactory(), situation_target=GetSituationTargetObject.TunableFactory(), default='participant', **kwargs)
+        super().__init__(*args, active_household=GetObjectsByActiveHousehold.TunableFactory(), active_lot=GetObjectsOnActiveLot.TunableFactory(), actual_lot=GetActualLotObject.TunableFactory(), actual_lot_levels=GetActualLotLevelObjects.TunableFactory(), affordance=GetObjectsByAffordance.TunableFactory(), all=GetAllObjects.TunableFactory(), definition=GetObjectsByDefinition.TunableFactory(), inventory=GetObjectsFromInventory.TunableFactory(), participant=GetObjectsByParticipant.TunableFactory(), tags=GetObjectsByTags.TunableFactory(), tuning=GetObjectsByTuning.TunableFactory(), sim_info=GetObjectsBySimInfo.TunableFactory(), situation_target=GetSituationTargetObject.TunableFactory(), default='participant', **kwargs)

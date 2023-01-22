@@ -3,7 +3,7 @@ from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant
 from sims.household_utilities.utility_types import Utilities
-from sims.outfits.outfit_change import TunableOutfitChange
+from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, OptionalTunable, TunableEnumEntry
@@ -33,9 +33,22 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                 tests=TunableGlobalTestSet(description=' Tests to run when deciding which clothing change entry to use. All of the tests must pass in order for the item to pass.')
             )
         ),
+        'outfit_change': OptionalTunable(
+            tunable=TunableTuple(
+                description='A structure of outfit change tunables.',
+                on_route_change=InteractionOnRouteOutfitChange(description='An outfit change to execute on the first mobile node of the transition to this interaction.'),
+                posture_outfit_change_overrides=OptionalTunable(
+                    tunable=TunableMapping(
+                        description='A mapping of postures to outfit change entry and exit reason overrides.',
+                        key_type=TunableReference(description="If the Sim encounters this posture during this interaction's transition sequence, the posture's outfit change reasons will be the ones specified here.", manager=services.get_instance_manager(Types.POSTURE)),
+                        value_type=TunableOutfitChange(description='Define what outfits the Sim is supposed to wear when entering or exiting this posture.')
+                    )
+                ),
+            )
+        )
     }
 
-    __slots__ = ('basic_extras', 'display_name_overrides', 'tests', 'outfit_change_on_exit',)
+    __slots__ = ('basic_extras', 'display_name_overrides', 'tests', 'outfit_change', 'outfit_change_on_exit',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -54,6 +67,9 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                     if affordance.outfit_change.posture_outfit_change_overrides is not None:
                         on_exit = affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit
                         affordance.outfit_change.posture_outfit_change_overrides[posture].on_exit = on_exit + (outfit_change,)
+
+            if self.outfit_change is not None:
+                affordance.outfit_change = self.outfit_change
 
             if self.basic_extras is not None:
                 affordance.basic_extras += self.basic_extras
