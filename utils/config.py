@@ -6,7 +6,7 @@ from lot51_core.utils.collections import AttributeDict
 class Config:
     def __init__(self, root_path, config_filename, logger, default_data: dict = dict()):
         self._config = dict()
-        self._default_data = default_data
+        self._default_data = dict(default_data)
         self._root_path = root_path
         self.logger = logger
         self._config_filename = config_filename
@@ -40,14 +40,10 @@ class Config:
         return default
 
     def set(self, key, value):
-        if not self._config:
-            return False
         self._config[key] = value
         return True
 
     def set_hard(self, key, value):
-        if not self._config:
-            return False
         self._config[key] = value
         return self.save()
 

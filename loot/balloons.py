@@ -3,6 +3,7 @@ from balloon.balloon_request import BalloonRequest
 from balloon.balloon_variant import BalloonVariant
 from interactions import ParticipantType
 from interactions.utils.loot_basic_op import BaseLootOperation
+from lot51_core import logger
 from sims.sim_info import SimInfo
 from sims4.tuning.geometric import TunableVector3
 from sims4.tuning.tunable import TunableList, TunableEnumEntry, Tunable, OptionalTunable
@@ -40,17 +41,21 @@ class BalloonLoot(BaseLootOperation):
 
     def send_balloon(self, balloon, target, resolver):
         icon_info = balloon.icon(resolver, balloon_target_override=None)
-        if icon_info[0] is None or icon_info[1] is None:
-            return
 
         category_icon = None
         if balloon.category_icon is not None:
             category_icon = balloon.category_icon(resolver, balloon_target_override=None)
+            if icon_info[0] is None or icon_info[1] is None:
+                logger.debug("Icon info is none: {}".format(icon_info))
+                # return
 
         balloon_type, priority = BALLOON_TYPE_LOOKUP[balloon.balloon_type]
         balloon_overlay = balloon.overlay
         request = BalloonRequest(target, icon_info[0], icon_info[1], balloon_overlay, balloon_type, priority, self._duration, self._delay, self._delay_random_offset, category_icon, self._offset)
         request.distribute()
+        logger.debug("Sent balloon {} to target: {}".format(balloon, target))
+        return True
+
 
     def _apply_to_subject_and_target(self, subject, target, resolver):
         balloon_targets = resolver.get_participants(self._balloon_subject)
@@ -62,4 +67,5 @@ class BalloonLoot(BaseLootOperation):
                 if obj is None:
                     continue
             chosen_balloon = weighted_random_item(possible_balloons)
+            logger.debug("Applying balloon {} to target: {} and resolver: {}".format(chosen_balloon, obj, resolver))
             self.send_balloon(chosen_balloon, obj, resolver)

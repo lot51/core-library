@@ -13,13 +13,16 @@ from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
 from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
+from lot51_core.tunables.preference_item_injection import TunableCharacteristicPreferenceItemInjection
 from lot51_core.tunables.region_injection import TunableRegionInjection
+from lot51_core.tunables.route_event_injection import TunableRouteEventInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
 from lot51_core.tunables.trait_injection import TunableTraitInjection
+from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
 from lot51_core.utils.semver import Version
 from services import get_instance_manager
 from sims4.localization import LocalizationHelperTuning
@@ -107,6 +110,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_buffs": TunableList(
             tunable=TunableBuffInjection.TunableFactory(),
         ),
+        "inject_to_characteristic_preferences": TunableList(
+            description="A mapping of the desired traits associated with this PreferenceItem, and the corresponding scores.",
+            tunable=TunableCharacteristicPreferenceItemInjection.TunableFactory()
+        ),
         "inject_to_traits": TunableList(
             tunable=TunableTraitInjection.TunableFactory(),
         ),
@@ -118,6 +125,12 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         ),
         "inject_to_regions": TunableList(
             tunable=TunableRegionInjection.TunableFactory(),
+        ),
+        "inject_to_route_events": TunableList(
+            tunable=TunableRouteEventInjection.TunableFactory(),
+        ),
+        "inject_to_whim_sets": TunableList(
+            tunable=TunableWhimSetInjection.TunableFactory(),
         ),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),

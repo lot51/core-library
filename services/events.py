@@ -34,7 +34,8 @@ class EventService(EventEmitter):
             if listener_name != event_name:
                 continue
             try:
-                # logger.debug("[callback] {} {}".format(event_name, callback))
+                # if event_name != CoreEvent.GAME_TICK:
+                #     logger.debug("[callback] {} {}".format(event_name, callback))
                 callback(self, *args, **kwargs)
             except:
                 logger.exception("[EventService] failed processing event: {}".format(event_name))
@@ -53,4 +54,4 @@ def event_handler(event_name: str):
 @sims4.commands.Command('lot51_lib.list_event_listeners', command_type=sims4.commands.CommandType.Live)
 def list_event_listeners(_connection=None):
     for (listener_name, callback) in event_service._listeners:
-        logger.debug("listener: {} {}".format(listener_name, callback))
+        logger.info("listener: {} {}".format(listener_name, callback))

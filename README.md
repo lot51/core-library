@@ -253,7 +253,9 @@ some_custom_service = SomeCustomService()
 
 @event_handler(CoreEvent.GAME_TICK)
 def _my_custom_service_update_handler(*args, context=None):
-    some_custom_service.update(context)
+    # check if the zone is available
+    if context.zone is not None:
+        some_custom_service.update(context)
 ```
 
 Exceptions in the handler will automatically be caught and logged to `lot51_core.log` as a safeguard to a simulation crash. This usually presents itself as Sims replaying the same animation constantly, walk to their destination and then standing forever, and pie menus not opening. It can sometimes recover by waiting, or opening/closing the ESC menu. Otherwise players will need to force quit the game. 

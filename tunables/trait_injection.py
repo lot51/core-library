@@ -9,6 +9,7 @@ from lot51_core.utils.injection import add_affordances
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
     TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry
+from whims.whim_set import ObjectivelessWhimSet
 
 
 class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
@@ -32,10 +33,13 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
             tunable=TunableEnumEntry(tunable_type=FoodRestrictionUtils.FoodRestrictionEnum, default=FoodRestrictionUtils.FoodRestrictionEnum.INVALID, invalid_enums=(FoodRestrictionUtils.FoodRestrictionEnum.INVALID,))
         ),
         'super_affordances': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
-        'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False})
+        'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False}),
+        'whim_set': OptionalTunable(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.ASPIRATION), class_restrictions=(ObjectivelessWhimSet,))
+        )
     }
 
-    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances',)
+    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set',)
 
     def inject(self):
         if self.trait is not None:
@@ -77,3 +81,6 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
                     self.trait.loot_on_trait_add = tuple(self.loot_on_trait_add)
                 else:
                     self.trait.loot_on_trait_add += tuple(self.loot_on_trait_add)
+
+            if self.whim_set is not None:
+                self.trait.whim_set = self.whim_set

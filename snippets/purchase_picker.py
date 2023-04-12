@@ -97,11 +97,52 @@ class InventoryDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
     def __call__(self, resolver, obj):
         # attempt to find a valid inventory
         for inventory_owner in self.inventory_source.get_objects_gen(resolver=resolver):
-            if inventory_owner.is_sim:
-                inventory_owner = inventory_owner.get_sim_instance()
             if inventory_owner.inventory_component is not None:
                 if inventory_owner.inventory_component.player_try_add_object(obj):
                     return True
+        # otherwise attempt to use fallback inventory
+        if self.attempt_fallback_delivery(resolver, obj):
+            return True
+        # delivery failed
+        return False
+
+
+class MultipleInventoriesDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
+
+    class InventoryDeliveryFallback(enum.Int):
+        NONE = 0
+        ACTIVE_HOUSEHOLD = 1
+        ZONE_HOUSEHOLD = 2
+
+    FACTORY_TUNABLES = {
+        'inventory_sources': TunableList(tunable=ObjectSearchMethodVariant()),
+        'fallback_inventory': TunableEnumEntry(tunable_type=InventoryDeliveryFallback, default=InventoryDeliveryFallback.NONE),
+    }
+
+    __slots__ = ('inventory_sources', 'fallback_inventory',)
+
+    def attempt_fallback_delivery(self, resolver, obj):
+        if self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ACTIVE_HOUSEHOLD:
+            active_household_id = services.active_household_id()
+            if build_buy.is_household_inventory_available(active_household_id):
+                if build_buy.move_object_to_household_inventory(obj):
+                    return True
+        elif self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ZONE_HOUSEHOLD:
+            current_zone = services.current_zone()
+            zone_household = current_zone.get_active_lot_owner_household()
+            if zone_household and build_buy.is_household_inventory_available(zone_household.id):
+                if build_buy.move_object_to_household_inventory(obj):
+                    return True
+        return False
+
+    def __call__(self, resolver, obj):
+        # attempt to find a valid inventory
+        for inventory_source in self.inventory_sources:
+            for inventory_owner in inventory_source.get_objects_gen(resolver=resolver):
+                if inventory_owner.inventory_component is not None:
+                    if inventory_owner.inventory_component.player_try_add_object(obj):
+                        return True
+        # attempt to find a valid alternate inventory
         # otherwise attempt to use fallback inventory
         if self.attempt_fallback_delivery(resolver, obj):
             return True
@@ -215,6 +256,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             description="Where to spawn objects on successful purchase.",
             participant_fgl=FglDeliveryMethod.TunableFactory(),
             inventory=InventoryDeliveryMethod.TunableFactory(),
+            multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
             default='participant_fgl'
         ),
         'loot_on_success': TunableList(
@@ -688,7 +730,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             logger.exception("Delivery failed reason: {}".format(stock_key))
                             # Aggregate failure count and stop looping if flagged to stop
                             if self.stop_on_first_failure:
-                                failed_count += amount_to_purchase
+                                failed_count = amount_to_purchase
                                 break
                             # Increment failed count when an individual purchase fails
                             else:

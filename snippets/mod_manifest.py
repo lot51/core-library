@@ -61,7 +61,7 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
                 if mod is not None:
                     return mod
         except:
-            logger.warn("Could not import module: {} for manifest: {}".format(cls.module_path, cls.__name__))
+            logger.debug("Could not import module: {} for manifest: {}".format(cls.module_path, cls.__name__))
             return None
 
     @classmethod

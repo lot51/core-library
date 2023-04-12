@@ -1,5 +1,5 @@
 import services
-from interactions.social.social_mixer_interaction import SocialMixerInteraction
+from interactions.base.mixer_interaction import MixerInteraction
 from lot51_core import logger
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
@@ -23,7 +23,7 @@ class TunableMixerListInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 # Check if subclass instead of using strict class_restrictions in TunableReference
                 # to allow modded subclasses
                 if mixer is not None:
-                    if not issubclass(mixer, SocialMixerInteraction):
+                    if not issubclass(mixer, MixerInteraction):
                         logger.error("Class does not extend SocialMixerInteraction: {}, skipping in mixer list injection to {}".format(mixer, self.mixer_list))
                         continue
                     mixers_to_add.append(mixer)

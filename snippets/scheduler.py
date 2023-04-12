@@ -1,11 +1,15 @@
 import services
-from event_testing.resolver import SingleObjectResolver, GlobalResolver
+from event_testing.resolver import SingleObjectResolver, GlobalResolver, SingleSimResolver
 from event_testing.tests import TunableTestSet
+from interactions import ParticipantType
 from interactions.utils.loot import LootActionVariant
+from interactions.utils.success_chance import SuccessChance
 from lot51_core import logger
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.tunables.scheduling import TunableAlarmVariant
+from lot51_core.utils.math import chance_succeeded
+from sims.sim_info import SimInfo
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
 from sims4.tuning.tunable import Tunable, TunableList, TunableTuple, OptionalTunable, HasTunableReference, TunableReference
@@ -20,9 +24,11 @@ class TunableSchedulerSnippet(HasTunableReference, metaclass=HashedTunedInstance
             tunable=TunableTuple(
                 loot_actions=TunableList(tunable=LootActionVariant()),
                 object_source=ObjectSearchMethodVariant(description="Objects to apply loot actions to"),
+                chance=SuccessChance.TunableFactory(description="Chance this specific action occurs on alarm"),
                 tests=TunableTestSet(description="Tests to run before running this row of loot_actions"),
             ),
         ),
+        'global_chance': SuccessChance.TunableFactory(description="Global chance to run actions on alarm, will reschedule otherwise if repeating is enabled."),
         'repeating': OptionalTunable(
             description="Enable to repeat the alarm by the schedule_type interval tuned below.",
             tunable=TunableTuple(
@@ -73,30 +79,50 @@ class TunableSchedulerSnippet(HasTunableReference, metaclass=HashedTunedInstance
         self.schedule_type.stop()
         logger.debug("[{}] Stopped scheduler".format(self))
 
-    def run_tests(self, resolver=None):
+    def get_resolver(self, resolver=None):
         if resolver is None:
             resolver = GlobalResolver()
+        return resolver
+
+    def test_chance(self, chance, resolver):
+        value = chance.get_chance(resolver)
+        logger.debug("Chance Value: {}".format(value))
+        return chance_succeeded(value)
+
+    def run_tests(self, resolver=None):
+        resolver = self.get_resolver(resolver)
         return self.tests.run_tests(resolver)
 
     def run_zone_tests(self, resolver=None):
-        if resolver is None:
-            resolver = GlobalResolver()
+        resolver = self.get_resolver(resolver)
         return self.zone_tests.run_tests(resolver)
 
     def run_actions(self):
         for action_type in self.actions:
             for obj in action_type.object_source.get_objects_gen(resolver=None):
-                resolver = SingleObjectResolver(obj)
+                if isinstance(obj, SimInfo) or obj.is_sim:
+                    resolver = SingleSimResolver(obj)
+                else:
+                    resolver = SingleObjectResolver(obj)
+
                 if action_type.tests.run_tests(resolver):
-                    for action in action_type.loot_actions:
-                        action.apply_to_resolver(resolver)
+                    if self.test_chance(action_type.chance, resolver):
+                        for action in action_type.loot_actions:
+                            action.apply_to_resolver(resolver)
+                    else:
+                        logger.debug("Action chance failed")
+                else:
+                    logger.debug("Action tests failed")
 
     def _scheduler_callback(self):
         try:
             logger.debug("[{}] Running callback".format(self))
             test_result = self.run_tests()
             if test_result:
+                logger.debug("[{}] run_tests passed".format(self))
                 self.run_actions()
+            else:
+                logger.debug("[{}] run_tests failed".format(self))
 
             if self.repeating is not None:
                 if (test_result or (not test_result and not self.repeating.cancel_on_test_failure)):

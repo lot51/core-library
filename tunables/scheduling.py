@@ -1,10 +1,12 @@
+import random
 import alarms
 import clock
 import services
 from date_and_time import create_time_span, DateAndTime, TimeSpan, create_date_and_time
 from lot51_core import logger
 from lot51_core.constants import DayOfWeek
-from sims4.tuning.tunable import TunableVariant, TunableRange, HasTunableFactory, AutoFactoryInit, TunableTuple, OptionalTunable, TunableEnumSet
+from sims4.tuning.tunable import TunableVariant, TunableRange, HasTunableFactory, AutoFactoryInit, TunableTuple, \
+    OptionalTunable, TunableEnumSet, Tunable, TunableInterval
 
 
 class BaseTunableAlarm(HasTunableFactory, AutoFactoryInit):
@@ -80,6 +82,13 @@ class TunableIntervalAlarm(BaseTunableAlarm):
                 minutes=TunableRange(tunable_type=int, minimum=0, maximum=59, default=0),
             )
         ),
+        'random_offset': OptionalTunable(
+            tunable=TunableInterval(
+                default_lower=0,
+                default_upper=1440,
+                tunable_type=int,
+            ),
+        ),
         'days': TunableRange(tunable_type=int, minimum=0, default=0),
         'hours': TunableRange(tunable_type=int, minimum=0, default=0),
         'minutes': TunableRange(tunable_type=int, minimum=0, default=0),
@@ -92,10 +101,16 @@ class TunableIntervalAlarm(BaseTunableAlarm):
 
     def get_time_span(self, on_reschedule=False):
         now = services.time_service().sim_now
-        if self.start_time is not None and not on_reschedule:
-            time_span = clock.time_until_hour_of_day(now, self.start_time.hour) + create_time_span(minutes=self.start_time.minutes)
+
+        if self.random_offset is not None:
+            random_offset = create_time_span(minutes=random.randint(self.random_offset.lower_bound, self.random_offset.upper_bound))
         else:
-            time_span = create_time_span(days=self.days, hours=self.hours, minutes=self.minutes)
+            random_offset = TimeSpan(0)
+
+        if self.start_time is not None and not on_reschedule:
+            time_span = clock.time_until_hour_of_day(now, self.start_time.hour) + create_time_span(minutes=self.start_time.minutes) + random_offset
+        else:
+            time_span = create_time_span(days=self.days, hours=self.hours, minutes=self.minutes) + random_offset
 
         schedule_time = now + time_span
 

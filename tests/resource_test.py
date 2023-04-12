@@ -3,7 +3,7 @@ from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
 from caches import cached_test
 from sims4.resources import Types, get_resource_key
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableEnumEntry, TunableVariant
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableEnumEntry, TunableVariant, TunableCasPart
 
 
 class GetDefinitionResource(HasTunableSingletonFactory, AutoFactoryInit):
@@ -36,7 +36,7 @@ class GetTuningResource(HasTunableSingletonFactory, AutoFactoryInit):
         return "<TuningResource> type: {} id: {}".format(self.instance_type, self.instance_id)
 
     def get_resource(self):
-        manager = getattr(services.tuning_managers, self.instance_type, None)
+        manager = services.get_instance_manager(self.instance_type)
         if manager is not None:
             return manager.types.get(get_resource_key(self.instance_id, self.instance_type))
 

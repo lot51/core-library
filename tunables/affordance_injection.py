@@ -6,12 +6,15 @@ from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, OptionalTunable, TunableEnumEntry
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
+    TunableMapping, TunableTuple, TunableVariant, OptionalTunable, TunableEnumEntry, Tunable
 from snippets import TunableAffordanceListReference
 
 
 class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
+        'allow_user_directed_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
+        'allow_autonomous_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
         'basic_extras': TunableBasicExtras(),
         'display_name_overrides': TunableDisplayNameVariant(description='Set name modifiers or random names.'),
         'tests': TunableList(
@@ -48,7 +51,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         )
     }
 
-    __slots__ = ('basic_extras', 'display_name_overrides', 'tests', 'outfit_change', 'outfit_change_on_exit',)
+    __slots__ = ('basic_extras', 'allow_user_directed_override', 'allow_autonomous_override', 'display_name_overrides', 'tests', 'outfit_change', 'outfit_change_on_exit',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -57,6 +60,12 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         for affordance in self.get_affordances_gen():
             if affordance is None:
                 continue
+
+            if self.allow_autonomous_override is not None:
+                affordance.allow_autonomous = self.allow_autonomous_override
+
+            if self.allow_user_directed_override is not None:
+                affordance.allow_user_directed = self.allow_user_directed_override
 
             for test in self.tests:
                 if test is not None:

@@ -57,7 +57,8 @@ class SpecificInteractionContinuationMixin:
         for aop in self.affordance_continuation.potential_interactions(obj, ctx):
             aop_result = aop.test_and_execute(ctx)
             if aop_result:
-                break
+                return aop_result
+        return False
 
 
 class ParameterizedSpecificSuperInteraction(SuperInteraction, SpecificInteractionContinuationMixin):
@@ -83,13 +84,10 @@ class ParameterizedSpecificSuperInteraction(SuperInteraction, SpecificInteractio
 
     def _run_interaction_gen(self, timeline):
         try:
-            relative_position = self.context.pick.location if self.context.pick is not None else self.sim.position
-            relative_level = self.context.pick.level if self.context.pick is not None else self.sim.level
-            chosen_obj = self.object_source.get_closest_object(relative_position, relative_level, resolver=self.get_resolver())
-            if chosen_obj is not None:
-                self._run_paramaterized_request(chosen_obj)
-            else:
-                logger.debug("obj not found")
+            resolver = self.get_resolver()
+            for chosen_obj in self.object_source.get_objects_gen(resolver=resolver):
+                if self._run_paramaterized_request(chosen_obj):
+                    break
         except:
             logger.exception("param request failed")
         super()._run_interaction_gen(timeline)
@@ -118,11 +116,10 @@ class ParameterizedSuperInteraction(SuperInteraction, ParameterizedRequestContin
 
     def _run_interaction_gen(self, timeline):
         try:
-            relative_position = self.context.pick.location if self.context.pick is not None else self.sim.position
-            relative_level = self.context.pick.level if self.context.pick is not None else self.sim.level
-            chosen_obj = self.object_source.get_closest_object(relative_position, relative_level)
-            if chosen_obj is not None:
-                self._run_paramaterized_request(chosen_obj)
+            resolver = self.get_resolver()
+            for chosen_obj in self.object_source.get_objects_gen(resolver=resolver):
+                if self._run_paramaterized_request(chosen_obj):
+                    break
         except:
             logger.exception("param request failed")
         super()._run_interaction_gen(timeline)

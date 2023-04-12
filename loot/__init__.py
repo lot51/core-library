@@ -7,7 +7,9 @@ from lot51_core.loot.camera import CameraFocusLoot
 from lot51_core.loot.game_clock import GameClockSpeedLoot
 from lot51_core.loot.notification import SingleNotification
 from lot51_core.loot.purchase_picker import OpenPurchasePickerLoot
+from lot51_core.loot.schedule_situation import ScheduleSituationVariant
 from lot51_core.loot.spawn_object import CreateObjectRingLoot, SpawnObjectLoot
+from lot51_core.loot.stolen_object import ReturnStolenObjectLoot
 from lot51_core.loot.transform_object import TransformObjectLoot
 from lot51_core.utils.math import chance_succeeded
 from interactions.utils.loot_ops import DoNothingLootOp
@@ -25,6 +27,8 @@ class LotFiftyOneCoreLootActionVariant(LootActionVariant):
         'clock_speed': GameClockSpeedLoot.TunableFactory(),
         'create_object_ring': CreateObjectRingLoot.TunableFactory(),
         'open_purchase_picker': OpenPurchasePickerLoot.TunableFactory(),
+        'return_stolen_object': ReturnStolenObjectLoot.TunableFactory(),
+        'schedule_situation': ScheduleSituationVariant(),
         'single_notification': SingleNotification.TunableFactory(),
         'spawn_object': SpawnObjectLoot.TunableFactory(),
         'transform_object': TransformObjectLoot.TunableFactory(),

@@ -31,7 +31,7 @@ def get_location_near_location(obj, target_location, optimal_distance=0.5, radiu
     # location=target_location
     starting_location = create_starting_location(position=start_position, orientation=start_orientation, routing_surface=_routing_surface)
     fgl_context = create_fgl_context_for_object(starting_location, obj, max_distance=max_distance, scoring_functions=(scoring_function,))
-    translation, orientation = find_good_location(fgl_context)
+    translation, orientation, _ = fgl_context.find_good_location()
     return translation, _orientation, _routing_surface
 
 
@@ -46,6 +46,6 @@ def get_location_near_object(obj, target_obj, optimal_distance=0.5, radius_width
     # position=target_obj.position
     starting_location = create_starting_location(position=start_position, orientation=start_orientation, routing_surface=_routing_surface)
     fgl_context = create_fgl_context_for_object(starting_location, obj, max_distance=max_distance, scoring_functions=(scoring_function,))
-    translation, orientation = find_good_location(fgl_context)
+    translation, orientation, _ = fgl_context.find_good_location()
 
     return translation, _orientation, _routing_surface

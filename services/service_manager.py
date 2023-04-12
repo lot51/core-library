@@ -1,6 +1,6 @@
 from game_services import GameServiceManager
 from lot51_core import logger
-from lot51_core.services.events import event_service
+from lot51_core.services.events import event_service, CoreEvent
 from lot51_core.utils.injection import inject_to
 from sims4.service_manager import Service
 
@@ -64,7 +64,7 @@ def _start_game_services(original, self, *args, **kwargs):
             except:
                 logger.exception("[_start_game_services] failed registering service: {}".format(key))
 
-        event_service.process_event("game_services.started")
+        event_service.process_event(CoreEvent.GAME_SERVICES_STARTED)
     except:
         logger.exception("[_start_game_services] total failure")
 

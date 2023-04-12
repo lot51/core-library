@@ -1,6 +1,8 @@
 import services
 import sims4.random
 from event_testing.tests import TunableTestSet
+from interactions import ParticipantType
+from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
 from objects.components.idle_component import IdleComponent
@@ -55,9 +57,14 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=ObjectRoutingBehavior.TunableReference(), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
             )
         ),
+        'carryable_component': OptionalTunable(
+            tunable=TunableTuple(
+                provided_affordances=TunableProvidedAffordances(class_restrictions=('SuperInteraction',), locked_args={'allow_self': False, 'target': ParticipantType.Object, 'carry_target': ParticipantType.CarriedObject})
+            )
+        )
     }
 
-    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component',)
+    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component', 'carryable_component')
 
     @classproperty
     def requires_zone(cls):
@@ -137,12 +144,20 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 proximity_buffs = tuple(proximity_component._tuned_values.buffs) + self.proximity_buffs
                 proximity_component._tuned_values = proximity_component._tuned_values.clone_with_overrides(buffs=proximity_buffs)
 
+    def _inject_carryable_component(self, obj):
+        if self.carryable_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'carryable_component'):
+            carryable_component = obj._components.carryable_component
+            if carryable_component is not None:
+                provided_affordances = tuple(carryable_component._tuned_values.buffs) + self.carryable_component.provided_affordances
+                carryable_component._tuned_values = carryable_component._tuned_values.clone_with_overrides(provided_affordances=provided_affordances)
+
     def _inject(self, obj):
         self._add_affordances(obj)
         self._inject_idle_component(obj)
         self._inject_routing_component(obj)
         self._inject_state_component(obj)
         self._inject_proximity_component(obj)
+        self._inject_carryable_component(obj)
 
     def inject(self):
         for obj in self.get_objects_gen():

@@ -32,7 +32,7 @@ class TunableBuffInjection(HasTunableSingletonFactory, AutoFactoryInit):
 
     __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'provided_mixers', 'super_affordances', 'target_super_affordances',)
 
-    _create_interaction_items = make_immutable_slots_class({'interaction_items'})
+    _create_interaction_items = make_immutable_slots_class({'interaction_items', 'scored_commodity', 'weight'})
 
     def inject(self):
         self.buff._loot_on_addition += tuple(self.loot_on_addition)
@@ -61,4 +61,4 @@ class TunableBuffInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 interaction_items = self.buff.interactions.interaction_items + self.interaction_items
                 self.buff.interactions = self.buff.interactions.clone_with_overrides(interaction_items=interaction_items)
             else:
-                self.buff.interactions = self._create_interaction_items({'interaction_items': self.actor_mixers})
+                self.buff.interactions = self._create_interaction_items({'interaction_items': self.actor_mixers, 'scored_commodity': None, 'weight': 1, })
