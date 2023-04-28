@@ -13,7 +13,7 @@ class TunableRegionInjection(HasTunableSingletonFactory, AutoFactoryInit):
         'is_persistable': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
     }
 
-    __slots__ = ('regions', 'is_persistable',)
+    __slots__ = ('region_source', 'is_persistable',)
 
     def inject(self):
         for region in self.region_source.get_regions_gen():

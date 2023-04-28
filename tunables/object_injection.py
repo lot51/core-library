@@ -3,6 +3,7 @@ import sims4.random
 from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core.tunables.definition_query import TaggedDefinitionsSource
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
 from objects.components.idle_component import IdleComponent
@@ -10,11 +11,13 @@ from objects.components.state import StateTrigger, TunableStateValueReference, S
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT
 from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
-from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableSimMinute
+from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, \
+    OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableSimMinute, TunableEnumSet
 from sims4.resources import Types, get_resource_key
 from sims4.utils import classproperty
 from singletons import UNSET
 from lot51_core import logger
+from tag import Tag
 
 
 class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
@@ -178,6 +181,26 @@ class TunableObjectInjectionByTuningId(BaseTunableObjectInjection):
     def get_objects_gen(self):
         if self.query is not None:
             yield services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(self.query, Types.OBJECT))
+
+
+class TunableObjectInjectionByTags(BaseTunableObjectInjection):
+    FACTORY_TUNABLES = {
+        'tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
+    }
+
+    __slots__ = ('tags',)
+
+    def _get_definitions_gen(self):
+        for definition in services.definition_manager().get_definitions_for_tags_gen(self.tags):
+            yield definition
+
+    def get_objects_gen(self):
+        _yield_cache = set()
+        for definition in self._get_definitions_gen():
+            tuning = services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(definition.tuning_file_id, Types.OBJECT))
+            if tuning is not None and tuning not in _yield_cache:
+                _yield_cache.add(tuning)
+                yield tuning
 
 
 class TunableObjectInjectionByManyTuningId(BaseTunableObjectInjection):

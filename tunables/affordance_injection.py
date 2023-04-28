@@ -2,6 +2,7 @@ import services
 from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant
+from interactions.utils.tunable import TunableStatisticAdvertisements
 from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
@@ -15,6 +16,22 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
     FACTORY_TUNABLES = {
         'allow_user_directed_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
         'allow_autonomous_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
+        'category_override': OptionalTunable(
+            tunable=TunableTuple(
+                category=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY))
+            ),
+        ),
+        'false_advertisements': OptionalTunable(
+            tunable=TunableStatisticAdvertisements()
+        ),
+        'static_commodities': OptionalTunable(
+            tunable=TunableList(
+                tunable=TunableTuple(
+                    static_commodity=TunableReference(manager=services.get_instance_manager(Types.STATIC_COMMODITY), pack_safe=True, reload_dependent=True),
+                    desire=Tunable(tunable_type=float, default=1)
+                ),
+            )
+        ),
         'basic_extras': TunableBasicExtras(),
         'display_name_overrides': TunableDisplayNameVariant(description='Set name modifiers or random names.'),
         'tests': TunableList(
@@ -51,7 +68,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         )
     }
 
-    __slots__ = ('basic_extras', 'allow_user_directed_override', 'allow_autonomous_override', 'display_name_overrides', 'tests', 'outfit_change', 'outfit_change_on_exit',)
+    __slots__ = ('basic_extras', 'allow_user_directed_override', 'category_override', 'allow_autonomous_override', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -66,6 +83,15 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
 
             if self.allow_user_directed_override is not None:
                 affordance.allow_user_directed = self.allow_user_directed_override
+
+            if self.false_advertisements is not None:
+                affordance._false_advertisements += self.false_advertisements
+
+            if self.static_commodities is not None:
+                affordance._static_commodities += self.static_commodities
+
+            if self.category_override is not None:
+                affordance.category = self.category_override.category
 
             for test in self.tests:
                 if test is not None:

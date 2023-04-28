@@ -2,7 +2,8 @@ import pickle
 import services
 from sims.sim_info_lod import SimInfoLODLevel
 from sims.sim_spawner import SimSpawner, SimCreator
-
+from sims4 import hash_util
+from sims4.callback_utils import CallableList
 
 
 class SaveBasedConfig:
@@ -11,7 +12,12 @@ class SaveBasedConfig:
         self._config = dict()
         self._config_name = config_name
         self._default_data = dict(default_data)
+        self._config_load_callbacks = CallableList()
         self.logger = logger
+
+    @property
+    def household_name(self):
+        return str(hash_util.hash32(self._config_name))
 
     def load(self):
         data = self._load()
@@ -19,6 +25,13 @@ class SaveBasedConfig:
             self._config = data
         else:
             self._config = dict(self._default_data)
+        self._config_load_callbacks()
+
+    def add_listener(self, listener):
+        self._config_load_callbacks.register(listener)
+
+    def remove_listener(self, listener):
+        self._config_load_callbacks.unregister(listener)
 
     def save(self):
         self._save(self._config)
@@ -41,15 +54,14 @@ class SaveBasedConfig:
 
     def _find_household(self):
         for household in services.household_manager().values():
-            if household.name == self._config_name:
+            if household.name == self.household_name:
                 return household
 
     def _create_household(self):
-        sim_creators = (SimCreator(),)
-        (sim_info_list, new_household) = SimSpawner.create_sim_infos(sim_creators, zone_id=0)
+        (sim_info_list, new_household) = SimSpawner.create_sim_infos((SimCreator(),), zone_id=0)
         sim_info_list[0].request_lod(SimInfoLODLevel.MINIMUM)
         new_household.set_to_hidden()
-        new_household.name = self._config_name
+        new_household.name = self.household_name
         new_household.description = ''
         return new_household
 
@@ -66,12 +78,16 @@ class SaveBasedConfig:
 
     def _load(self):
         household = self.find_or_create_household()
+        # self.logger.debug("household description is: {}".format(household.description))
         serialized = bytes(household.description, encoding='latin1')
-        self.logger.debug("loaded save based config data: {}".format(serialized))
-        return pickle.loads(serialized)
+        # self.logger.debug("loaded save based config data: {}".format(serialized))
+        try:
+            return pickle.loads(serialized)
+        except EOFError:
+            return None
 
     def _save(self, data):
         household = self.find_or_create_household()
         serialized = str(pickle.dumps(data), encoding='latin1')
         household.description = serialized
-        self.logger.debug("set save based config data: {} -> {}".format(data, serialized))
+        # self.logger.debug("set save based config data: {} -> {}".format(data, serialized))

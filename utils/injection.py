@@ -55,6 +55,7 @@ def is_flexmethod(target_function):
         return len(spec.args) >= 2 and spec.args[0] == 'cls' and spec.args[1] == 'inst'
     return False
 
+
 # Injection decorator based on TURBODRIVER's injector
 # https://turbodriver-sims.medium.com/basic-python-injecting-into-the-sims-4-cdc85a741b10
 def inject_to(target_object, target_function_name, force_flex=False):
@@ -91,8 +92,7 @@ def inject_to(target_object, target_function_name, force_flex=False):
     return _inject
 
 
-# Tuning manager decorator to run code
-# when the manager has loaded all tuning.
+# Tuning manager decorator to run code when the manager has loaded all tuning.
 # Created by Frank: https://frankkmods.com
 def on_load_complete(manager_type):
     def wrapper(function):

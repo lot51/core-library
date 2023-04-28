@@ -10,7 +10,8 @@ from lot51_core.tunables.death_injection import TunableCustomDeath
 from lot51_core.tunables.drama_scheduler_injection import TunableDramaSchedulerInjection
 from lot51_core.tunables.loot_injection import TunableLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
-from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource
+from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, \
+    TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
 from lot51_core.tunables.preference_item_injection import TunableCharacteristicPreferenceItemInjection
@@ -50,6 +51,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_by_object_tuning": TunableList(
             description="Inject to object tuning",
             tunable=TunableObjectInjectionByTuningId.TunableFactory(),
+        ),
+        "inject_by_object_tags": TunableList(
+            description="Inject to object tuning by tags",
+            tunable=TunableObjectInjectionByTags.TunableFactory(),
         ),
         "inject_by_object_source": TunableList(
             description="Inject to objects on zone load",
@@ -140,7 +145,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "social_bunny": TunableSocialBunnyInjection.TunableFactory(),
     }
 
-    __injectors__ = ('inject_by_affordance', 'inject_by_object_tuning', 'inject_by_object_source', 'inject_by_definitions', 'inject_to_affordances', 'inject_to_affordances_by_list', 'inject_to_affordances_by_utility_info', 'inject_by_utility_info', 'inject_to_service_picker', 'inject_to_service_picker_hireable', 'inject_to_club_interaction_group', 'inject_to_affordance_list', 'inject_to_mixer_list', 'inject_to_object_states', 'inject_to_object_state_values', 'inject_to_loot', 'inject_to_test_sets', 'inject_to_buffs', 'inject_to_traits', 'inject_to_postures', 'inject_to_holiday_traditions', 'custom_death_types', 'drama_scheduler', 'satisfaction_store', 'social_bunny',)
+    __injectors__ = tuple(INSTANCE_TUNABLES.keys())
 
     @classmethod
     def _tuning_loaded_callback(cls):
