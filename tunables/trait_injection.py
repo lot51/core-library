@@ -8,7 +8,9 @@ from interactions.utils.tunable_provided_affordances import TunableProvidedAffor
 from lot51_core.utils.injection import add_affordances
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
-    TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry
+    TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple
+from sims4.localization import TunableLocalizedString
+from traits.traits import TraitBuffReplacementPriority
 from whims.whim_set import ObjectivelessWhimSet
 
 
@@ -22,6 +24,25 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
         ),
         'buffs': TunableList(tunable=TunableBuffReference(pack_safe=True)),
         'buffs_proximity': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF))),
+        'buff_replacements': TunableMapping(
+            key_type=TunableReference(
+                manager=services.get_instance_manager(Types.BUFF),
+                reload_dependent=True,
+                pack_safe=True
+            ),
+            value_type=TunableTuple(
+                buff_type=TunableReference(
+                    manager=services.get_instance_manager(Types.BUFF),
+                    reload_dependent=True,
+                    pack_safe=True
+                ),
+                buff_reason=OptionalTunable(tunable=TunableLocalizedString()),
+                buff_replacement_priority=TunableEnumEntry(
+                    tunable_type=TraitBuffReplacementPriority,
+                    default=TraitBuffReplacementPriority.NORMAL
+                )
+            )
+        ),
         'interactions': OptionalTunable(tunable=ContentSet.TunableFactory(locked_args={'phase_affordances': frozendict(), 'phase_tuning': None})),
         'loot_on_trait_add': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
         'provided_mixers': TunableMapping(
@@ -39,7 +60,7 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
         )
     }
 
-    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set',)
+    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set',)
 
     def inject(self):
         if self.trait is not None:
@@ -49,6 +70,11 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
                     self.trait.actor_mixers[super_affordance] += tuple(mixers)
                 else:
                     self.trait.actor_mixers[super_affordance] = tuple(mixers)
+
+            for (buff, replacement_buff) in self.buff_replacements.items():
+                if buff.trait_replacement_buffs is None:
+                    buff.trait_replacement_buffs = {}
+                buff.trait_replacement_buffs[self.trait] = replacement_buff
 
             self.trait.buffs += tuple(self.buffs)
 
