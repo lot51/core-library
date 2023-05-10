@@ -9,7 +9,8 @@ from objects import ALL_HIDDEN_REASONS
 from objects.components.types import INVENTORY_COMPONENT
 from sims.sim_info import SimInfo
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, TunableEnumSet, TunableEnumEntry, TunableReference
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, \
+    TunableEnumSet, TunableEnumEntry, TunableReference, OptionalTunable, TunableList
 from tag import Tag
 
 
@@ -381,6 +382,25 @@ class GetObjectsBySimInfo(_GetObjectsBase):
                 yield sim
 
 
+class GetSimsInSituation(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'situation': TunableReference(manager=services.get_instance_manager(Types.SITUATION)),
+        'required_jobs': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.SITUATION_JOB))),
+    }
+
+    __slots__ = ('situation', 'required_jobs',)
+
+    def _get_objects_gen(self, resolver=None):
+        situation_manager = services.get_zone_situation_manager()
+        for situation in situation_manager.get_situations_by_type(self.situation):
+            for sim in situation.all_sims_in_situation_gen():
+                if self.required_jobs is not None:
+                    job = situation.get_current_job_for_sim(sim)
+                    if job not in self.required_jobs:
+                        continue
+                yield sim
+
+
 class GetObjectsByActiveHousehold(GetObjectsBySimInfo):
 
     def _get_objects_gen(self, resolver=None):
@@ -407,6 +427,18 @@ class GetActualLotLevelObjects(_GetObjectsBase):
             yield from active_lot.lot_levels.values()
 
 
+class GetObjectsByObjectQueryReference(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'reference': TunableReference(manager=services.get_instance_manager(Types.SNIPPET))
+    }
+
+    __slots__ = ('reference',)
+
+    def _get_objects_gen(self, resolver=None):
+        if self.reference is not None:
+            yield from self.reference.object_source.get_objects_gen(resolver=resolver)
+
+
 class ObjectSearchMethodVariant(TunableVariant):
 
     def __init__(self, *args, **kwargs):
@@ -420,7 +452,9 @@ class ObjectSearchMethodVariant(TunableVariant):
                          definition=GetObjectsByDefinition.TunableFactory(),
                          inventory=GetObjectsFromInventory.TunableFactory(),
                          participant=GetObjectsByParticipant.TunableFactory(),
+                         reference=GetObjectsByObjectQueryReference.TunableFactory(),
                          sim_info=GetObjectsBySimInfo.TunableFactory(),
+                         sims_in_situation=GetSimsInSituation.TunableFactory(),
                          situation_target=GetSituationTargetObject.TunableFactory(),
                          tags=GetObjectsByTags.TunableFactory(),
                          tuning=GetObjectsByTuning.TunableFactory(),

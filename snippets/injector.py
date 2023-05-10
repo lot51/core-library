@@ -4,6 +4,7 @@ from lot51_core import logger, __version__
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
+from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
 from lot51_core.tunables.club_injection import TunableClubInteractionGroupInjection
 from lot51_core.tunables.death_injection import TunableCustomDeath
@@ -137,6 +138,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_whim_sets": TunableList(
             tunable=TunableWhimSetInjection.TunableFactory(),
         ),
+        "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
