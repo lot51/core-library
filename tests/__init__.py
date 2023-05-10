@@ -1,6 +1,7 @@
 # Learn how to create your own tests following Frankk's guide
 # at https://frankkmods.medium.com/custom-tuning-tests-sims-4-script-modding-3837e214fb68
 from lot51_core.tests.daytime import DaytimeTest
+from lot51_core.tests.food_restriction import CustomFoodRestrictionTest
 from lot51_core.tests.identity_comparison import IdentityComparisonTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
 from lot51_core.tests.lot import LotSizeTest
@@ -20,6 +21,7 @@ from event_testing.tests import TestSetInstance, TunableTestVariant, _TunableTes
 class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
     MY_TEST_VARIANTS = {
         'affordance_lock_out': AffordanceLockOutTest,
+        'custom_food_restriction_test': CustomFoodRestrictionTest,
         'daytime': DaytimeTest,
         'has_pack': PackTest,
         'identity_comparison': IdentityComparisonTest,

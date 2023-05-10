@@ -222,6 +222,7 @@ class TunableObjectInjectionByManyTuningId(BaseTunableObjectInjection):
             if tuning is not None:
                 yield tuning
 
+
 class TunableObjectInjectionByDefinitions(BaseTunableObjectInjection):
     FACTORY_TUNABLES = {
         'definitions': TunableList(tunable=TunableReference(manager=services.definition_manager())),

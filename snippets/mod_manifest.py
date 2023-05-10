@@ -25,8 +25,8 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
         ),
         'version_mismatch_notification': OptionalTunable(
             tunable=TunableTuple(
-                title=TunableLocalizedStringFactory(description="The title displayed in the notification. Use {0.String} to include the mod name."),
-                text=TunableLocalizedStringFactory(description="The text displayed in the notification. Use {0.String} to include the script version, and {1.String} for the package version."),
+                title=TunableLocalizedStringFactory(description="The title displayed in the notification. Use {0.String} to include the mod name, {1.String} for the creator name."),
+                text=TunableLocalizedStringFactory(description="The text displayed in the notification. Use {0.String} to include the script version, {1.String} for the package version, {2.String} for the mod name, {3.String} for the creator name."),
                 http=OptionalTunable(
                     description="Enable to display a button that links to your website with optional query params appended.",
                     tunable=TunableTuple(
@@ -87,8 +87,8 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
 
     @classmethod
     def _build_version_tns(cls, script_ver, package_ver):
-        title = cls.version_mismatch_notification.title(cls.mod_name)
-        text = cls.version_mismatch_notification.text(str(script_ver), str(package_ver))
+        title = cls.version_mismatch_notification.title(cls.mod_name, cls.creator_name)
+        text = cls.version_mismatch_notification.text(str(script_ver), str(package_ver), cls.mod_name, cls.creator_name)
 
         ui_responses = list()
         if cls.version_mismatch_notification.http is not None:
