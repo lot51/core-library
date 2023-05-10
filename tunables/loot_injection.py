@@ -18,4 +18,4 @@ class TunableLootInjection(HasTunableSingletonFactory, AutoFactoryInit):
             logger.error("Failed to inject ops, loot not found")
             return
 
-        self.loot.loot_actions = self.ops
+        self.loot.loot_actions += self.ops
