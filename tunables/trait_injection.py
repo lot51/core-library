@@ -68,7 +68,7 @@ class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
         )
     }
 
-    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set', 'custom_food_restrictions',)
+    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set', 'custom_food_restrictions',)
 
     def inject(self):
         if self.trait is not None:
