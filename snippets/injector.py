@@ -4,6 +4,7 @@ from lot51_core import logger, __version__
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
+from lot51_core.tunables.part_injection import TunableObjectPartInjection
 from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
 from lot51_core.tunables.club_injection import TunableClubInteractionGroupInjection
@@ -11,8 +12,7 @@ from lot51_core.tunables.death_injection import TunableCustomDeath
 from lot51_core.tunables.drama_scheduler_injection import TunableDramaSchedulerInjection
 from lot51_core.tunables.loot_injection import TunableLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
-from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, \
-    TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
+from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
 from lot51_core.tunables.preference_item_injection import TunableCharacteristicPreferenceItemInjection
@@ -139,6 +139,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             tunable=TunableWhimSetInjection.TunableFactory(),
         ),
         "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
+        # "inject_to_object_parts": TunableObjectPartInjection.TunableFactory(),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
@@ -214,14 +215,13 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 @event_handler(CoreEvent.TUNING_LOADED)
 def _do_injections(*args, **kwargs):
     global SHOW_VERSION_NOTIFICATION
-    core_version = TuningInjector.get_core_version()
 
     for snippet in TuningInjector.all_snippets_gen():
         try:
-            minimum_version = TuningInjector.get_minimum_version()
-            if core_version >= minimum_version:
+            if snippet.is_valid_version():
                 snippet.perform_injections()
             else:
+                minimum_version = snippet.get_minimum_version()
                 SHOW_VERSION_NOTIFICATION = minimum_version
                 logger.warn("Snippet {} version is incompatible with the current Core Library version. {} < {}".format(snippet.__name__, snippet.minimum_core_version, __version__))
         except:

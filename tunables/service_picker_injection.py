@@ -3,8 +3,9 @@ from event_testing.tests import TunableGlobalTestSet
 from interactions.utils.tunable_icon import TunableIconAllPacks
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableVariant, TunableList
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableVariant, TunableList, TunableEnumEntry
 from situations.service_npcs.service_npc_tuning import ServiceNpcHireable
+from tag import Tag
 
 
 class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit):
@@ -24,6 +25,7 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
             manager=services.get_instance_manager(Types.INTERACTION),
             pack_safe=True
         ),
+        'tag_list': TunableList(description='Tags to be filtered by.', tunable=TunableEnumEntry(tunable_type=Tag, default=Tag.INVALID), unique_entries=True),
         'tests': TunableGlobalTestSet(description='A set of global tests that are always run before other tests. All tests must pass in order for the interaction to run.'),
         'free_service_traits': TunableList(
             description='If any Sim in the household has one of these traits, the non service npc will be free.',
@@ -32,7 +34,7 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
         )
     }
 
-    __slots__ = ('description', 'icon', 'name', 'cost_string', 'hire_interaction', 'tests', 'free_service_traits',)
+    __slots__ = ('description', 'icon', 'name', 'cost_string', 'hire_interaction', 'tag_list', 'tests', 'free_service_traits',)
 
     @classmethod
     def get_picker_tuning(cls):
@@ -48,9 +50,12 @@ class TunableHireableServicePickerInjection(HasTunableSingletonFactory, AutoFact
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
         'service_npc': TunableReference(manager=services.get_instance_manager(Types.SERVICE_NPC), class_restrictions=(ServiceNpcHireable,), pack_safe=True),
+        'tag_list': TunableList(description='Tags to be filtered by.', tunable=TunableEnumEntry(tunable_type=Tag, default=Tag.INVALID), unique_entries=True),
         'already_hired_tooltip': TunableLocalizedStringFactory(description='Tooltip that displays if the service has already been hired.'),
         'tests': TunableGlobalTestSet(),
     }
+
+    __slots__ = ('service_npc', 'tag_list', 'already_hired_tooltip', 'tests',)
 
     @classmethod
     def get_picker_tuning(cls):

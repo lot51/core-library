@@ -1,8 +1,9 @@
 import services
-from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
+from event_testing.tests import TunableTestVariant, TunableGlobalTestSet, TunableTestSet, TestList
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant
 from interactions.utils.tunable import TunableStatisticAdvertisements
+from lot51_core import logger
 from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
@@ -37,6 +38,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         'tests': TunableList(
             tunable=TunableTestVariant(description="Test to inject into the list of affordances"),
         ),
+        'autonomous_tests': TunableTestSet(description="Lists of tests to append to the affordance test_autonomous list"),
         'outfit_change_on_exit': TunableMapping(
             description="Append an outfit change to an existing posture",
             key_type=TunableReference(manager=services.get_instance_manager(Types.POSTURE)),
@@ -68,7 +70,7 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
         )
     }
 
-    __slots__ = ('basic_extras', 'allow_user_directed_override', 'category_override', 'allow_autonomous_override', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit',)
+    __slots__ = ('basic_extras', 'allow_user_directed_override', 'category_override', 'allow_autonomous_override', 'autonomous_tests', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -96,6 +98,12 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
             for test in self.tests:
                 if test is not None:
                     affordance.add_additional_test(test)
+
+            if len(self.autonomous_tests):
+                tests = TestList(affordance.test_autonomous)
+                tests.extend(self.autonomous_tests)
+                affordance.test_autonomous = tests
+                logger.debug("adding autonomous tests: {}, final result: {}".format(self.autonomous_tests, affordance.test_autonomous))
 
             for (posture, outfit_change) in self.outfit_change_on_exit.items():
                 if affordance.outfit_change is not None:

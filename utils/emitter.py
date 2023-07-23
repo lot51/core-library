@@ -11,7 +11,6 @@ class EventEmitter:
         for (listener_name, callback) in self._listeners:
             if listener_name != event_name:
                 continue
-
             try:
                 callback(*args, **kwargs)
             except:

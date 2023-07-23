@@ -115,14 +115,16 @@ class BaseObjectSort(HasTunableSingletonFactory, AutoFactoryInit):
             relative_position = self.get_participant_position(actor)
             relative_level = self.get_participant_level(actor)
             obj_distance_pairs = list()
-            for obj in obj_list:
-                delta = obj.position - relative_position
-                base_weight = delta.magnitude()
-                # score objects on different levels as further away
-                if obj.level != relative_level:
-                    base_weight *= 2
+            if relative_position is not None:
+                for obj in obj_list:
+                    if obj and obj.position is not None:
+                        delta = obj.position - relative_position
+                        base_weight = delta.magnitude()
+                        # score objects on different levels as further away
+                        if obj.level != relative_level:
+                            base_weight *= 2
 
-                obj_distance_pairs.append((base_weight, obj))
+                        obj_distance_pairs.append((base_weight, obj))
 
             obj_distance_pairs.sort(key=lambda k: k[0], reverse=reverse)
             yield from [k[1] for k in obj_distance_pairs]
@@ -429,7 +431,7 @@ class GetActualLotLevelObjects(_GetObjectsBase):
 
 class GetObjectsByObjectQueryReference(_GetObjectsBase):
     FACTORY_TUNABLES = {
-        'reference': TunableReference(manager=services.get_instance_manager(Types.SNIPPET))
+        'reference': TunableReference(manager=services.get_instance_manager(Types.SNIPPET), class_restrictions=('ObjectQuerySnippet',))
     }
 
     __slots__ = ('reference',)

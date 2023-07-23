@@ -7,6 +7,10 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class TunablePostureInjection(HasTunableSingletonFactory, AutoFactoryInit):
+    """
+    This is mainly used for a fix to prevent Sims from dancing near Stereos/TVs
+    when they should be using a different posture.
+    """
     FACTORY_TUNABLES = {
         'postures': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.POSTURE), pack_safe=True)),
         'cost': OptionalTunable(tunable=Tunable(tunable_type=int, default=0))

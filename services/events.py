@@ -1,5 +1,5 @@
 from lot51_core.utils.emitter import EventEmitter
-from lot51_core import logger
+from lot51_core import logger as lot51_core_logger
 import sims4
 
 
@@ -26,19 +26,24 @@ class CoreEvent:
 
 class EventService(EventEmitter):
 
-    def __init__(self):
+    def __init__(self, logger=lot51_core_logger):
         super().__init__()
+        self.logger = logger
+
+    def handler(self, event_name: str):
+        def wrapper(func):
+            self.add_listener(event_name, func)
+            return func
+        return wrapper
 
     def process_event(self, event_name: str, *args, **kwargs):
         for (listener_name, callback) in self._listeners:
             if listener_name != event_name:
                 continue
             try:
-                # if event_name != CoreEvent.GAME_TICK:
-                #     logger.debug("[callback] {} {}".format(event_name, callback))
                 callback(self, *args, **kwargs)
             except:
-                logger.exception("[EventService] failed processing event: {}".format(event_name))
+                self.logger.exception("[EventService] failed processing event: {}".format(event_name))
 
 
 event_service = EventService()
@@ -54,4 +59,4 @@ def event_handler(event_name: str):
 @sims4.commands.Command('lot51_lib.list_event_listeners', command_type=sims4.commands.CommandType.Live)
 def list_event_listeners(_connection=None):
     for (listener_name, callback) in event_service._listeners:
-        logger.info("listener: {} {}".format(listener_name, callback))
+        lot51_core_logger.info("listener: {} {}".format(listener_name, callback))

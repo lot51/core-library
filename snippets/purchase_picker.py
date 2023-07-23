@@ -9,145 +9,26 @@ from crafting.crafting_interactions import create_craftable
 from date_and_time import create_time_span, TimeSpan
 from distributor.shared_messages import IconInfoData
 from event_testing.resolver import SingleObjectResolver
-from event_testing.tests import TunableTestSet
 from interactions.payment.payment_source import get_tunable_payment_source_variant
 from interactions.picker.object_marketplace_picker_interaction import ObjectMarketplacePickerInteraction
-from interactions.utils.success_chance import SuccessChance
 from interactions.utils.tunable_icon import TunableIcon
 from lot51_core import logger
 from interactions import ParticipantType
-from lot51_core.loot import LotFiftyOneCoreLootActionVariant
-from lot51_core.tunables.definition_query import DefinitionSearchMethodVariant
-from lot51_core.tunables.object_query import ObjectSearchMethodVariant
+from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, InventoryDeliveryMethod
+from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from lot51_core.utils.math import chance_succeeded
-from lot51_core.utils.placement import get_location_near_location, get_location_near_object
 from objects.components.name_component import NameComponent
-from objects.components.state import ObjectStateValue
 from objects.components.types import NAME_COMPONENT
 from objects.system import create_object
-from objects.terrain import TerrainPoint
-from sims.sim_info import SimInfo
 from sims4.localization import TunableLocalizedStringFactory, _create_localized_string, LocalizationHelperTuning
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry, TunableVariant, TunableTuple, TunableList, TunableReference, Tunable, OptionalTunable, TunableInterval, TunableEnumSet, TunableSimMinute, HasTunableReference
-from tag import Tag
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableList, TunableReference, Tunable, OptionalTunable, TunableSimMinute, HasTunableReference
 from tunable_multiplier import TunableMultiplier
 from ui.ui_dialog_notification import UiDialogNotification
 from ui.ui_dialog_picker import PurchasePickerRow, UiPurchasePicker
 
 
-class FglDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
-    FACTORY_TUNABLES = {
-        'participant_type': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Object),
-        'optimal_distance': Tunable(tunable_type=float, default=0),
-        'radius_width': Tunable(tunable_type=float, default=8),
-        'max_distance': Tunable(tunable_type=float, default=8),
-        'x_random_offset': OptionalTunable(tunable=TunableInterval(tunable_type=float, default_lower=0, default_upper=0)),
-        'z_random_offset': OptionalTunable(tunable=TunableInterval(tunable_type=float, default_lower=0, default_upper=0)),
-    }
-
-    __slots__ = ('participant_type', 'optimal_distance', 'radius_width', 'max_distance', 'x_random_offset', 'z_random_offset')
-
-    def __call__(self, resolver, obj):
-        participant = resolver.get_participant(self.participant_type)
-        if isinstance(participant, TerrainPoint):
-            translation, orientation, routing_surface = get_location_near_location(obj, participant.location, optimal_distance=self.optimal_distance, radius_width=self.radius_width, max_distance=self.max_distance, x_range=self.x_random_offset, z_range=self.z_random_offset)
-        elif isinstance(participant, SimInfo):
-            sim = participant.get_sim_instance()
-            translation, orientation, routing_surface = get_location_near_object(obj, sim, optimal_distance=self.optimal_distance, radius_width=self.radius_width, max_distance=self.max_distance, x_range=self.x_random_offset, z_range=self.z_random_offset)
-        else:
-            translation, orientation, routing_surface = get_location_near_object(obj, participant, optimal_distance=self.optimal_distance, radius_width=self.radius_width, max_distance=self.max_distance, x_range=self.x_random_offset, z_range=self.z_random_offset)
-
-        obj.opacity = 0
-        obj.move_to(translation=translation, orientation=orientation, routing_surface=routing_surface)
-        obj.fade_in()
-        logger.debug("delivering obj to participant {} {}".format(obj, participant))
-        return True
-
-
-class InventoryDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
-
-    class InventoryDeliveryFallback(enum.Int):
-        NONE = 0
-        ACTIVE_HOUSEHOLD = 1
-        ZONE_HOUSEHOLD = 2
-
-    FACTORY_TUNABLES = {
-        'inventory_source': ObjectSearchMethodVariant(),
-        'fallback_inventory': TunableEnumEntry(tunable_type=InventoryDeliveryFallback, default=InventoryDeliveryFallback.NONE),
-    }
-
-    __slots__ = ('inventory_source', 'fallback_inventory',)
-
-    def attempt_fallback_delivery(self, resolver, obj):
-        if self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ACTIVE_HOUSEHOLD:
-            active_household_id = services.active_household_id()
-            if build_buy.is_household_inventory_available(active_household_id):
-                if build_buy.move_object_to_household_inventory(obj):
-                    return True
-        elif self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ZONE_HOUSEHOLD:
-            current_zone = services.current_zone()
-            zone_household = current_zone.get_active_lot_owner_household()
-            if zone_household and build_buy.is_household_inventory_available(zone_household.id):
-                if build_buy.move_object_to_household_inventory(obj):
-                    return True
-        return False
-
-    def __call__(self, resolver, obj):
-        # attempt to find a valid inventory
-        for inventory_owner in self.inventory_source.get_objects_gen(resolver=resolver):
-            if inventory_owner.inventory_component is not None:
-                if inventory_owner.inventory_component.player_try_add_object(obj):
-                    return True
-        # otherwise attempt to use fallback inventory
-        if self.attempt_fallback_delivery(resolver, obj):
-            return True
-        # delivery failed
-        return False
-
-
-class MultipleInventoriesDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
-
-    class InventoryDeliveryFallback(enum.Int):
-        NONE = 0
-        ACTIVE_HOUSEHOLD = 1
-        ZONE_HOUSEHOLD = 2
-
-    FACTORY_TUNABLES = {
-        'inventory_sources': TunableList(tunable=ObjectSearchMethodVariant()),
-        'fallback_inventory': TunableEnumEntry(tunable_type=InventoryDeliveryFallback, default=InventoryDeliveryFallback.NONE),
-    }
-
-    __slots__ = ('inventory_sources', 'fallback_inventory',)
-
-    def attempt_fallback_delivery(self, resolver, obj):
-        if self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ACTIVE_HOUSEHOLD:
-            active_household_id = services.active_household_id()
-            if build_buy.is_household_inventory_available(active_household_id):
-                if build_buy.move_object_to_household_inventory(obj):
-                    return True
-        elif self.fallback_inventory == InventoryDeliveryMethod.InventoryDeliveryFallback.ZONE_HOUSEHOLD:
-            current_zone = services.current_zone()
-            zone_household = current_zone.get_active_lot_owner_household()
-            if zone_household and build_buy.is_household_inventory_available(zone_household.id):
-                if build_buy.move_object_to_household_inventory(obj):
-                    return True
-        return False
-
-    def __call__(self, resolver, obj):
-        # attempt to find a valid inventory
-        for inventory_source in self.inventory_sources:
-            for inventory_owner in inventory_source.get_objects_gen(resolver=resolver):
-                if inventory_owner.inventory_component is not None:
-                    if inventory_owner.inventory_component.player_try_add_object(obj):
-                        return True
-        # attempt to find a valid alternate inventory
-        # otherwise attempt to use fallback inventory
-        if self.attempt_fallback_delivery(resolver, obj):
-            return True
-        # delivery failed
-        return False
 
 
 class PurchaseException(BaseException):
@@ -162,6 +43,7 @@ class PurchaseRowData:
         self.discount_data = (False, None)
         self.base_cost = 0
         self.purchase_item = None
+        self.purchase_item_source = None
         self.quality = None
         self.stock_key = None
 
@@ -271,48 +153,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         'picker_dialog': UiPurchasePicker.TunableFactory(),
         'price_multiplier': TunableMultiplier.TunableFactory(description="A multiplier applied to all purchase items"),
         'purchase_items': TunableList(
-            tunable=TunableTuple(
-                stock_id=Tunable(description="Unique Stock ID override, by default will set a UUID", tunable_type=str, default=None, allow_empty=True),
-                actions_on_creation=TunableList(
-                    tunable=LotFiftyOneCoreLootActionVariant(),
-                ),
-                category_tags=TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
-                chance=SuccessChance.TunableFactory(description="Chance for each item source selection to be included"),
-                custom_price=OptionalTunable(description="Overrides the default catalog price", tunable=Tunable(tunable_type=int, default=0)),
-                custom_names=OptionalTunable(
-                    description="A random name will be selected and set as the custom name of the object, use the `set_custom_name_on_object` tunable below to toggle whether it is actually set in the name component.",
-                    tunable=TunableList(
-                        tunable=Tunable(tunable_type=str, default=None, allow_empty=True),
-                    )
-                ),
-                delivery_override=TunableVariant(
-                    description="Where to spawn objects on successful purchase.",
-                    participant_fgl=FglDeliveryMethod.TunableFactory(),
-                    inventory=InventoryDeliveryMethod.TunableFactory(),
-                ),
-                description_override=OptionalTunable(description="Override the object catalog description", tunable=TunableLocalizedStringFactory()),
-                disabled_description=OptionalTunable(description="Description to display if row is disabled", tunable=TunableLocalizedStringFactory()),
-                enable_tests=TunableTestSet(description="Tests to decide if row is not greyed out (not cached)"),
-                exclude_from_stock_management=Tunable(tunable_type=bool, default=False),
-                hide_if_sold_out=Tunable(description="Hides from picker if stock level is 0 instead of showing sold out text/icon", tunable_type=bool, default=False),
-                include_build_buy_tags=Tunable(description="Toggle the objects catalog tags to be included in the category tags", tunable_type=bool, default=False),
-                include_recipe_tags=Tunable(description="Toggle the recipe tags to be included in the category tags", tunable_type=bool, default=False),
-                item_sources=TunableList(description="Definitions and Recipes to include in picker. Each source generates an additional row in the picker.", tunable=DefinitionSearchMethodVariant()),
-                limited_stock=OptionalTunable(tunable=TunableInterval(tunable_type=int, default_lower=1, default_upper=1, minimum=0)),
-                price_multiplier=TunableMultiplier.TunableFactory(description="A multiplier only applied to this purchase item's price  (not cached)"),
-                quality_states=TunableList(
-                    description="An item from this list will be randomly selected to add additional value/quality to an object",
-                    tunable=TunableTuple(
-                        states=TunableList(tunable=ObjectStateValue.TunableReference()),
-                        static_price_multiplier=Tunable(tunable_type=int, default=1),
-                        weight=TunableMultiplier.TunableFactory(),
-                    )
-                ),
-                set_custom_name_on_object=Tunable(description="If custom_names is enabled, the chosen name will be set in the NAME_COMPONENT and provided as the 0 index token in description. Set to false to only use the custom name for the description.", tunable_type=bool, default=True),
-                set_sim_as_owner=Tunable(tunable_type=bool, default=False),
-                show_discount=Tunable(tunable_type=bool, default=False),
-                visibility_tests=TunableTestSet(description="Tests to decide if row is visible (not cached)"),
-            )
+            tunable=TunablePurchaseItem.TunableFactory(),
         ),
         'purchase_success_notification': OptionalTunable(tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase was successful")),
         'purchase_failed_notification': OptionalTunable(tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase failed")),
@@ -326,11 +167,9 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
     @classmethod
     def _tuning_loaded_callback(cls):
-        purchase_items = list(cls.purchase_items)
-        for ix, row in enumerate(purchase_items):
+        for row in cls.purchase_items:
             if row.stock_id is None:
-                purchase_items[ix] = row.clone_with_overrides(stock_id=str(uuid.uuid4()))
-        cls.purchase_items = tuple(purchase_items)
+                row.stock_id = str(uuid.uuid4())
 
     def __init__(self, resolver, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -444,7 +283,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 # Get icon override
                 icon_override = None
                 # Override the icon with sold out icon
-                if self.stock_management.sold_out_icon is not None and current_stock == 0:
+                if self.stock_management and self.stock_management.sold_out_icon is not None and current_stock == 0:
                     icon_override = IconInfoData(icon_resource=self.stock_management.sold_out_icon)
 
                 # Get row name override
@@ -576,7 +415,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     # Get icon override
                     icon_override = None
                     # Override the icon with sold out icon
-                    if self.stock_management.sold_out_icon is not None and current_stock == StockManager.STOCK_LEVEL_ZERO:
+                    if self.stock_management and self.stock_management.sold_out_icon is not None and current_stock == StockManager.STOCK_LEVEL_ZERO:
                         icon_override = IconInfoData(icon_resource=self.stock_management.sold_out_icon)
 
                     # Get Custom Name
@@ -614,6 +453,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     picker_data.definition = definition
                     picker_data.definition_data = definition_data
                     picker_data.purchase_item = item
+                    picker_data.purchase_item_source = item_source
                     picker_data.quality = quality_info
                     picker_data.stock_key = stock_key
 

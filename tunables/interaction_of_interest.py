@@ -8,6 +8,10 @@ from tag import Tag
 
 
 class InteractionOfInterest(AutoFactoryInit):
+    """
+    This InteractionOfInterest class is identical to EA's except
+    it allows a list of affordance_lists
+    """
     FACTORY_TUNABLES = {
         'affordances': TunableList(
             tunable=TunableAffordanceListReference(pack_safe=True),

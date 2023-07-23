@@ -1,4 +1,5 @@
 import services
+from _sims4_collections import frozendict
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableMapping, TunableRange
 
@@ -15,5 +16,9 @@ class TunableCharacteristicPreferenceItemInjection(HasTunableSingletonFactory, A
     __slots__ = ('preference_item', 'trait_map',)
 
     def inject(self):
-        for trait, weight in self.trait_map.items():
-            self.preference_item.trait_map[trait] = weight
+        if self.preference_item is not None:
+            trait_map = dict(self.preference_item.trait_map)
+            for trait, weight in self.trait_map.items():
+                trait_map[trait] = weight
+
+            self.preference_item.trait_map = frozendict(trait_map)
