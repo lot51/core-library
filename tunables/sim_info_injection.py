@@ -1,12 +1,13 @@
 import services
 from away_actions.away_actions import AwayAction
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims.sim_info import SimInfo
 from sims4.resources import Types
-from sims4.tuning.tunable import TunableList, HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableMapping
+from sims4.tuning.tunable import TunableList, TunableReference, TunableMapping
 from statistics.commodity import Commodity
 
 
-class TunableSimInfoInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableSimInfoInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'away_actions': TunableMapping(
             description='A mapping between affordances and lists of away actions.  The affordances are used to generate AoPs with each of the away actions.',

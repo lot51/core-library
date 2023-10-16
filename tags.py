@@ -10,6 +10,7 @@ MOD_TAGS = {
     'Lot51_Func_Burglary_CrimeWatchSign': 2846423631,
     'Lot51_Func_Burglary_PoliceReport': 1819324675,
     'Lot51_Func_Burglary_PoliceReport_Pending': 1317527383,
+    'Func_L51_FXSpawner': 995923778
 }
 
 add_tags(MOD_TAGS)

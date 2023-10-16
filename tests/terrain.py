@@ -9,6 +9,9 @@ from world.terrain_enums import TerrainTag
 
 
 class TerrainTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests against terrain features/tags at the location of the subject
+    """
     test_events = ()
 
     FACTORY_TUNABLES = {

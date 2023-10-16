@@ -7,6 +7,10 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class ObjectStolenTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if the subject has a stolen component
+    """
+
     FACTORY_TUNABLES = {
         'is_stolen': Tunable(tunable_type=bool, default=True),
         'subject': TunableEnumEntry(tunable_type=ParticipantTypeSingle, default=ParticipantTypeSingle.Object),

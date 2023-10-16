@@ -1,13 +1,14 @@
 import services
 from holidays.holiday_globals import TraditionPreference
 from holidays.holiday_tradition import TunablePreferenceTestList, ModifyAllItems, StartSituation, TraditionActions
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.localization import TunableLocalizedString
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableTuple, TunableEnumEntry, OptionalTunable, TunableVariant
+from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple, TunableEnumEntry, OptionalTunable, TunableVariant
 from tunable_time import TunableTimeOfDay
 
 
-class TunableHolidayTraditionInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableHolidayTraditionInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'tradition': TunableReference(manager=services.get_instance_manager(Types.HOLIDAY_TRADITION)),
         'drama_nodes_to_run': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.DRAMA_NODE))),

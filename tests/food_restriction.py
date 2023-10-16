@@ -8,6 +8,10 @@ from sims4.tuning.tunable import TunableVariant, HasTunableSingletonFactory, Tun
 
 
 class CustomFoodRestrictionTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    An alternative ot the EA food restriction test that lets you test against any custom food restrictions provided by traits.
+    """
+
     NO_RESTRICTIONS = 1
     HAS_RESTRICTIONS = 2
     FACTORY_TUNABLES = {

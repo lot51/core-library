@@ -10,6 +10,9 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class HomeOwnerWithRequirementsOnLot(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if a lot owner (of the current lot) is instanced and passes the sim info test.
+    """
     test_events = (TestEvent.InteractionStart,)
     FACTORY_TUNABLES = {
         'subject': TunableEnumEntry(
@@ -33,12 +36,11 @@ class HomeOwnerWithRequirementsOnLot(HasTunableSingletonFactory, AutoFactoryInit
     @cached_test
     def __call__(self, **kwargs):
         if self.sim_info is not None:
-            tests = TestList((self.sim_info,))
             household = services.active_household()
             for sim in household.instanced_sims_gen():
                 resolver = sim.get_resolver()
                 # check sim info test
-                if tests.run_tests(resolver):
+                if resolver(self.sim_info):
                     if self.invert:
                         return TestResult(False, "Home owner on lot with requirements and is not the desired result")
                     return TestResult.TRUE

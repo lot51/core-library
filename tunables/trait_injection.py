@@ -5,15 +5,16 @@ from buffs.tunable import TunableBuffReference
 from crafting.food_restrictions_utils import FoodRestrictionUtils
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import add_affordances, inject_to_enum
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple, Tunable
+from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple, Tunable
 from sims4.localization import TunableLocalizedString
 from traits.traits import TraitBuffReplacementPriority
 from whims.whim_set import ObjectivelessWhimSet
 
 
-class TunableTraitInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableTraitInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'trait': TunableReference(manager=services.get_instance_manager(Types.TRAIT)),
         'actor_mixers': TunableMapping(

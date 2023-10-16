@@ -1,12 +1,13 @@
 import services
 from interactions.base.super_interaction import SuperInteraction
 from lot51_core import logger
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
+from sims4.tuning.tunable import TunableReference, TunableList
 from snippets import TunableAffordanceListReference
 
 
-class TunableAffordanceListInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableAffordanceListInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'affordance_list': TunableAffordanceListReference(),
         'affordances': TunableList(

@@ -259,8 +259,11 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 if quality_info:
                     def _post_add(obj):
                         for state_value in quality_info.states:
-                            if state_value is not None:
-                                obj.set_state(state_value.state, state_value, force_update=True)
+                            try:
+                                if state_value is not None:
+                                    obj.set_state(state_value.state, state_value, force_update=True)
+                            except:
+                                logger.exception("Failed setting state on cached temp purchase picker object")
 
                 if definition_data.recipe is not None:
                     temp_obj = create_craftable(definition_data.recipe, None, post_add=_post_add)
@@ -283,7 +286,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 # Get icon override
                 icon_override = None
                 # Override the icon with sold out icon
-                if self.stock_management and self.stock_management.sold_out_icon is not None and current_stock == 0:
+                if self.stock_management and self.stock_management.sold_out_icon is not None and current_stock == StockManager.STOCK_LEVEL_ZERO:
                     icon_override = IconInfoData(icon_resource=self.stock_management.sold_out_icon)
 
                 # Get row name override
@@ -297,7 +300,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 if not is_enabled and item.disabled_description is not None:
                     row_description = item.disabled_description(row_name, default_description)
                 # Otherwise show out of stock description if stock is managed
-                elif self.stock_management and self.stock_management.sold_out_description and current_stock == 0:
+                elif self.stock_management and self.stock_management.sold_out_description and current_stock == StockManager.STOCK_LEVEL_ZERO:
                     row_description = self.stock_management.sold_out_description(row_name, default_description)
                 # Get row description override
                 elif item.description_override is not None:
@@ -374,8 +377,11 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
                         def _post_add(obj):
                             for state_value in quality_info.states:
-                                if state_value is not None:
-                                    obj.set_state(state_value.state, state_value, force_update=True)
+                                try:
+                                    if state_value is not None:
+                                        obj.set_state(state_value.state, state_value, force_update=True)
+                                except:
+                                    logger.exception("Failed setting state on temp purchase picker object")
 
                     if definition_data.recipe is not None:
                         temp_obj = create_craftable(definition_data.recipe, None, post_add=_post_add)
@@ -525,8 +531,11 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             # Apply quality states
                             if purchase_data.quality is not None:
                                 for state_value in purchase_data.quality.states:
-                                    if state_value is not None:
-                                        obj.set_state(state_value.state, state_value)
+                                    try:
+                                        if state_value is not None:
+                                            obj.set_state(state_value.state, state_value)
+                                    except:
+                                        logger.exception("Failed setting state on final purchase picker object")
 
                             # Apply individual loot actions on object creation
                             obj_resolver = SingleObjectResolver(obj)

@@ -11,6 +11,9 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class ObjectInRoomTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if the subject is in the same room as any of the objects returned from the object_source query.
+    """
     test_events = ()
 
     FACTORY_TUNABLES = {

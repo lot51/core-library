@@ -1,12 +1,14 @@
 import services
 from _sims4_collections import frozendict
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from seasons.season import DayOfSeason
 from seasons.seasons_enums import SeasonLength
+from sims4.common import Pack
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableTuple, TunableList, TunableEnumEntry
+from sims4.tuning.tunable import TunableReference, TunableTuple, TunableList, TunableEnumEntry
 
 
-class TunableSeasonInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableSeasonInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'season':TunableReference(manager=services.get_instance_manager(Types.SEASON)),
         'holidays': TunableList(
@@ -23,6 +25,10 @@ class TunableSeasonInjection(HasTunableSingletonFactory, AutoFactoryInit):
     }
 
     __slots__ = ('season', 'holidays',)
+
+    @property
+    def required_packs(self):
+        return (Pack.EP05,)
 
     def inject(self):
         if self.season is not None:

@@ -1,16 +1,17 @@
 import services
 from lot51_core import logger
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from postures.posture import TunablePostureTypeListSnippet
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableList, OptionalTunable
+from sims4.tuning.tunable import TunableReference, TunableList, OptionalTunable
 from snippets import TunableAffordanceFilterSnippet
 
 
-class TunableObjectPartInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableObjectPartInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'object_parts': TunableList(
             description="A list of object parts this filter should be injected to",
-            tunable=TunableReference(manager=services.get_instance_manager(Types.OBJECT_PART))
+            tunable=TunableReference(manager=services.get_instance_manager(Types.OBJECT_PART), pack_safe=True),
         ),
         'compatibility': OptionalTunable(
             tunable=TunableAffordanceFilterSnippet(
@@ -29,11 +30,8 @@ class TunableObjectPartInjection(HasTunableSingletonFactory, AutoFactoryInit):
     def inject(self):
         for part in self.object_parts:
             # skip obj parts that failed to load
-            if part is None or not hasattr(part, 'supported_affordance_data'):
-                continue
-
             try:
-                if self.compatibility is not None:
+                if self.compatibility is not None and hasattr(part, 'supported_affordance_data'):
                     # merge the current row's compatibility filter into each object part
                     compat = part.supported_affordance_data.compatibility
                     new_included_list = self.compatibility._tuned_values.default_inclusion.include_affordances + compat._tuned_values.default_inclusion.include_affordances
@@ -45,7 +43,7 @@ class TunableObjectPartInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 logger.exception("failed compatibility injection to object part: {}".format(part))
 
             try:
-                if self.supported_posture_types is not None:
+                if self.supported_posture_types is not None and hasattr(part, 'supported_posture_types'):
                     part.supported_posture_types += self.supported_posture_types
             except:
                 logger.exception("failed supported posture types injection to object part: {}".format(part))

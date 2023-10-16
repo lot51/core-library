@@ -1,14 +1,17 @@
 # Learn how to create your own tests following Frankk's guide
 # at https://frankkmods.medium.com/custom-tuning-tests-sims-4-script-modding-3837e214fb68
 from lot51_core.tests.daytime import DaytimeTest
+from lot51_core.tests.distance_2d import Distance2dTest
 from lot51_core.tests.food_restriction import CustomFoodRestrictionTest
 from lot51_core.tests.identity_comparison import IdentityComparisonTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
 from lot51_core.tests.lot import LotSizeTest
 from lot51_core.tests.mood import MoodIntensityTest, MoodWeightTest
 from lot51_core.tests.object_query import ObjectQueryTest
+from lot51_core.tests.object_tuning import ObjectTuningTest
 from lot51_core.tests.packs import PackTest
 from lot51_core.tests.room import ObjectInRoomTest
+from lot51_core.tests.situation_state import CustomStateSituationTest
 from lot51_core.tests.slots import ObjectSlotInUseTest
 from lot51_core.tests.statistics import StatisticLockedTest
 from lot51_core.tests.stolen import ObjectStolenTest
@@ -22,7 +25,9 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
     MY_TEST_VARIANTS = {
         'affordance_lock_out': AffordanceLockOutTest,
         'custom_food_restriction_test': CustomFoodRestrictionTest,
+        'custom_state_situation_test': CustomStateSituationTest,
         'daytime': DaytimeTest,
+        'distance_2d': Distance2dTest,
         'has_pack': PackTest,
         'identity_comparison': IdentityComparisonTest,
         'lot_size': LotSizeTest,
@@ -30,6 +35,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'mood_weight': MoodWeightTest,
         'object_in_room': ObjectInRoomTest,
         'object_query_test': ObjectQueryTest,
+        'object_tuning_test': ObjectTuningTest,
         'object_slots_in_use': ObjectSlotInUseTest,
         'object_stolen': ObjectStolenTest,
         'resource_existence': ResourceExistenceTest,

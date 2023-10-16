@@ -5,6 +5,10 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class ObjectSlotInUseTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if the subject has any object slotted into it
+    """
+
     FACTORY_TUNABLES = {
         'subject': TunableEnumEntry(tunable_type=ParticipantTypeSingle, default=ParticipantTypeSingle.Object),
     }

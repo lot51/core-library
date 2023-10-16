@@ -3,28 +3,26 @@ from interactions import ParticipantType
 from interactions.base.mixer_interaction import MixerInteraction
 from interactions.utils.tunable import TunableAffordanceLinkList
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, TunableMapping, TunableSet
+from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet
 from sims4.collections import  make_immutable_slots_class
 
 
-class TunableBuffInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableBuffInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'buff': TunableReference(manager=services.get_instance_manager(Types.BUFF)),
-
         'loot_on_addition': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
         'loot_on_instance': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
         'loot_on_removal': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
         'actor_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
-            value_type=TunableSet(
-                tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
+            value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
         'interaction_items': TunableAffordanceLinkList(class_restrictions=(MixerInteraction,)),
         'provided_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
-            value_type=TunableSet(
-                tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
+            value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
         'super_affordances': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
         'target_super_affordances': TunableProvidedAffordances( locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False})

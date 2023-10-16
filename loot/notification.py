@@ -15,6 +15,7 @@ class SingleNotification(BaseLootOperation):
 
     def _apply_to_subject_and_target(self, subject, target, resolver):
         try:
+            logger.debug("showing single notification")
             owner = services.get_active_sim()
             # owner_resolver = owner.get_resolver()
             dialog = self._notification(owner, resolver)

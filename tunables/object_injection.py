@@ -3,27 +3,30 @@ import sims4.random
 from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
 from objects.components.idle_component import IdleComponent
+from objects.components.inventory_enums import InventoryType
 from objects.components.locking_components import ObjectLockingComponent
+from objects.components.name_component import NameComponent
 from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, TestedStateValueReference, TunableStateComponent, ObjectStateMetaclass
 from objects.components.tooltip_component import TooltipComponent
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT
 from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
-from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableSimMinute, TunableEnumSet
+from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, TunableSimMinute, TunableEnumSet
 from sims4.resources import Types, get_resource_key
-from sims4.utils import classproperty
 from singletons import UNSET
 from tag import Tag
 
 
-class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class BaseTunableObjectInjection(BaseTunableInjection):
     IDLE_COMPONENT = IdleComponent.TunableFactory()
     ROUTING_COMPONENT = ObjectRoutingComponent.TunableFactory()
     STATE_COMPONENT = TunableStateComponent()
     OBJECT_LOCKING_COMPONENT = ObjectLockingComponent.TunableFactory()
+    NAME_COMPONENT = NameComponent.TunableFactory()
 
     FACTORY_TUNABLES = {
         'affordances': TunableList(
@@ -55,19 +58,40 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
         'states': TunableList(tunable=TunableTuple(default_value=TunableVariant(reference=TunableStateValueReference(pack_safe=True), random=TunableList(tunable=TunableTuple(state=TunableStateValueReference(pack_safe=True), weight=Tunable(tunable_type=float, default=1.0))), default='reference'), client_states=TunableMapping(key_type=TunableStateValueReference(description='\n                            A state value\n                            ', pack_safe=True), value_type=StateChangeOperation.TunableFactory()), reset_to_default=Tunable(tunable_type=bool, default=False), reset_on_load_if_time_passes=Tunable(tunable_type=bool, default=False), tested_states_on_add=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_post_load=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_location_changed=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_reset=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})), tested_states_on_save=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})))),
         'timed_state_triggers': OptionalTunable(tunable=TunableMapping(key_type=TunableStateValueReference(pack_safe=True), value_type=TunableTuple(trigger_on_load=Tunable(tunable_type=bool, default=False), ops=TunableList(tunable=TunableTuple(trigger_time=TunableSimMinute(default=10, minimum=0), trigger_time_random_offset=TunableSimMinute(default=0, minimum=0), states_to_trigger=TunableList(tunable=TunableStateValueReference(pack_safe=True)),random_states_to_trigger=TunableList(    tunable=TunableTuple(weight=Tunable(tunable_type=int, default=1),                         tests=TunableTestSet(),                         state_value=TunableStateValueReference())),loot_list=TunableList(    tunable=TunableReference(        manager=services.get_instance_manager(Types.ACTION),        class_restrictions=('LootActions',), pack_safe=True)),trigger_tests=TunableTuple(tests=TunableTestSet(), reschedule_on_failure=Tunable(tunable_type=bool, default=False))))))),
         'idle_animation_map': OptionalTunable(tunable=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=TunableReference(manager=services.get_instance_manager(Types.ANIMATION), class_restrictions='ObjectAnimationElement'))),
-        'routing_component': OptionalTunable(
-            tunable=TunableTuple(
-                routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=ObjectRoutingBehavior.TunableReference(), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
-            )
-        ),
         'carryable_component': OptionalTunable(
             tunable=TunableTuple(
                 provided_affordances=TunableProvidedAffordances(class_restrictions=('SuperInteraction',), locked_args={'allow_self': False, 'target': ParticipantType.Object, 'carry_target': ParticipantType.CarriedObject})
             )
         ),
+        'inventory_item_component': OptionalTunable(
+            tunable=TunableTuple(
+                valid_inventory_types=TunableEnumSet(enum_type=InventoryType, enum_default=InventoryType.UNDEFINED, invalid_enums=(InventoryType.UNDEFINED)),
+            ),
+        ),
+        'name_component_override': OptionalTunable(
+            tunable=NameComponent.TunableFactory(),
+        ),
         'object_locking_component': OptionalTunable(
             tunable=TunableTuple(
                 super_affordances=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
+            )
+        ),
+        'portal_component': OptionalTunable(
+            tunable=TunableTuple(
+                _portal_data=TunableList(
+                    tunable=TunableReference(manager=services.get_instance_manager(Types.SNIPPET))
+                ),
+                _replace_existing_portal_data=Tunable(tunable_type=bool, default=False),
+                state_values_which_disable_portals=TunableMapping(
+                    description='A mapping between object state values and portals which should be disabled when those state values are active. Disabling a portal requires a full refresh of the owning objects portals.',
+                    key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), pack_safe=True),
+                    value_type=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.SNIPPET), pack_safe=True))
+                ),
+            )
+        ),
+        'routing_component': OptionalTunable(
+            tunable=TunableTuple(
+                routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=ObjectRoutingBehavior.TunableReference(), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
             )
         ),
         'tooltip_component_override': OptionalTunable(
@@ -75,15 +99,7 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
         ),
     }
 
-    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map', 'routing_component', 'carryable_component', 'object_locking_component', 'tooltip_component_override',)
-
-    @classproperty
-    def requires_zone(cls):
-        """
-        If true, this injector will run on every zone load instead
-        of a single injection when the instance managers are loaded
-        """
-        return False
+    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'tooltip_component_override',)
 
     def get_objects_gen(self):
         raise NotImplementedError
@@ -156,11 +172,38 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
                 proximity_component._tuned_values = proximity_component._tuned_values.clone_with_overrides(buffs=proximity_buffs)
 
     def _inject_carryable_component(self, obj):
-        if self.carryable_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'carryable_component'):
-            carryable_component = obj._components.carryable_component
+        if self.carryable_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'carryable'):
+            carryable_component = obj._components.carryable
             if carryable_component is not None:
                 provided_affordances = tuple(carryable_component._tuned_values.provided_affordances) + self.carryable_component.provided_affordances
                 carryable_component._tuned_values = carryable_component._tuned_values.clone_with_overrides(provided_affordances=provided_affordances)
+
+    def _inject_portal_component(self, obj):
+        if self.portal_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'portal'):
+            portal_component = obj._components.portal
+            if portal_component is not None:
+                # Portal Data
+                if self.portal_component._replace_existing_portal_data:
+                    portal_data = tuple(self.portal_component._portal_data)
+                else:
+                    portal_data = tuple(portal_component._tuned_values._portal_data) + self.portal_component._portal_data
+
+                # State Values
+                state_values_which_disable_portals = dict(portal_component._tuned_values.state_values_which_disable_portals)
+                for state_value, portal_datas in self.portal_component.state_values_which_disable_portals.items():
+                    if state_value in state_values_which_disable_portals:
+                        state_values_which_disable_portals[state_value] += portal_datas
+                    else:
+                        state_values_which_disable_portals[state_value] = portal_datas
+
+                portal_component._tuned_values = portal_component._tuned_values.clone_with_overrides(_portal_data=portal_data, state_values_which_disable_portals=state_values_which_disable_portals)
+
+    def _inject_inventory_item_component(self, obj):
+        if self.inventory_item_component is not None:
+            inventory_item_component = obj._component.inventoryitem_component
+            if inventory_item_component is not None:
+                inventory_types = inventory_item_component.valid_inventory_types + tuple(self.inventory_item_component.valid_inventory_types)
+                inventory_item_component._tuned_values = inventory_item_component._tuned_values.clone_with_overrides(valid_inventory_types=inventory_types)
 
     def _inject_object_locking_component(self, obj, should_create_component=True):
         if self.object_locking_component is not None:
@@ -177,15 +220,22 @@ class BaseTunableObjectInjection(HasTunableSingletonFactory, AutoFactoryInit):
         if self.tooltip_component_override is not None:
             obj._components = obj._components.clone_with_overrides(tooltip_component=self.tooltip_component_override)
 
+    def _inject_name_component(self, obj):
+        if self.name_component_override is not None:
+            obj._components = obj._components.clone_with_overrides(name_component=self.name_component_override)
+
     def _inject(self, obj):
         self._add_affordances(obj)
         self._inject_idle_component(obj)
         self._inject_routing_component(obj)
         self._inject_state_component(obj)
+        self._inject_portal_component(obj)
         self._inject_proximity_component(obj)
         self._inject_carryable_component(obj)
-        # self._inject_object_locking_component(obj)
-        # self._inject_tooltip_component(obj)
+        self._inject_inventory_item_component(obj)
+        self._inject_object_locking_component(obj)
+        self._inject_tooltip_component(obj)
+        self._inject_name_component(obj)
 
     def inject(self):
         for obj in self.get_objects_gen():
@@ -212,13 +262,15 @@ class TunableObjectInjectionByTuningId(BaseTunableObjectInjection):
 class TunableObjectInjectionByTags(BaseTunableObjectInjection):
     FACTORY_TUNABLES = {
         'tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
+        'exclude_tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
     }
 
-    __slots__ = ('tags',)
+    __slots__ = ('tags', 'exclude_tags',)
 
     def _get_definitions_gen(self):
         for definition in services.definition_manager().get_definitions_for_tags_gen(self.tags):
-            yield definition
+            if self.exclude_tags is None or not definition.has_build_buy_tag(self.exclude_tags):
+                yield definition
 
     def get_objects_gen(self):
         _yield_cache = set()
@@ -287,9 +339,9 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
 
     __slots__ = ('object_source',)
 
-    @classproperty
-    def requires_zone(cls):
-        return True
+    @property
+    def injection_timing(self):
+        return InjectionTiming.ZONE_LOAD
 
     def get_objects_gen(self):
         yield from self.object_source.get_objects_gen(resolver=None)

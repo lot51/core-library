@@ -1,9 +1,12 @@
+import inspect
+
 from interactions.utils.loot import LootActions, LootActionVariant, RandomWeightedLoot
 from interactions.utils.success_chance import SuccessChance
 from lot51_core import logger
 from lot51_core.loot.actions_by_object_source import DoActionsByObjectSource
 from lot51_core.loot.balloons import BalloonLoot
 from lot51_core.loot.camera import CameraFocusLoot
+from lot51_core.loot.end_vacation import EndVacationLoot
 from lot51_core.loot.game_clock import GameClockSpeedLoot
 from lot51_core.loot.notification import SingleNotification
 from lot51_core.loot.purchase_picker import OpenPurchasePickerLoot
@@ -27,6 +30,7 @@ class LotFiftyOneCoreLootActionVariant(LootActionVariant):
         'camera_focus': CameraFocusLoot.TunableFactory(),
         'clock_speed': GameClockSpeedLoot.TunableFactory(),
         'create_object_ring': CreateObjectRingLoot.TunableFactory(),
+        'end_vacation': EndVacationLoot.TunableFactory(),
         'open_purchase_picker': OpenPurchasePickerLoot.TunableFactory(),
         'reapply_job_uniform': ReapplyJobUniformLoot.TunableFactory(),
         'return_stolen_object': ReturnStolenObjectLoot.TunableFactory(),

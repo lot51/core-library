@@ -1,10 +1,11 @@
 import services
 from _sims4_collections import frozendict
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableMapping, TunableRange
+from sims4.tuning.tunable import TunableReference, TunableMapping, TunableRange
 
 
-class TunableCharacteristicPreferenceItemInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableCharacteristicPreferenceItemInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'preference_item': TunableReference(manager=services.get_instance_manager(Types.CAS_PREFERENCE_ITEM)),
         'trait_map': TunableMapping(

@@ -46,8 +46,12 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
     __slots__ = ('creator_name', 'mod_name', 'version', 'version_mismatch_notification', 'module_path',)
 
     @classmethod
+    def to_str(cls):
+        return '<ModManifest {} by {} ({}); version {}>'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.version)
+
+    @classmethod
     def _tuning_loaded_callback(cls):
-        logger.info('[ModManifest] loaded {} by {} ({}); version: {};'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.version))
+        logger.info('[tuning_loaded_callback] {}'.format(cls.to_str()))
 
     @classmethod
     def all_snippets_gen(cls):

@@ -11,6 +11,9 @@ from statistics.commodity import Commodity
 
 
 class StatisticLockedTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if the subject has the provided commodity and is in the locked state preventing decay.
+    """
     test_events = (TestEvent.ObjectStateChange,)
 
     FACTORY_TUNABLES = {

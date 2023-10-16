@@ -1,44 +1,37 @@
 import services
-from event_testing.tests import TunableTestVariant, TunableGlobalTestSet, TunableTestSet, TestList
+from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant
 from interactions.utils.tunable import TunableStatisticAdvertisements
-from lot51_core import logger
+from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.tunables.crafting_interaction_injection import TunableCraftingInteractionInjection
+from lot51_core.tunables.purchase_interaction_injection import TunablePurchaseInteractionInjection
+from lot51_core.tunables.test_injection import TestInjectionVariant
 from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
-    TunableMapping, TunableTuple, TunableVariant, OptionalTunable, TunableEnumEntry, Tunable
+from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, \
+    OptionalTunable, TunableEnumEntry, Tunable, TunableSet
 from snippets import TunableAffordanceListReference
 
 
-class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class BaseTunableAffordanceInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'allow_user_directed_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
         'allow_autonomous_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
+        'basic_extras': TunableBasicExtras(),
+        'cheat_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
+        'debug_override': OptionalTunable(tunable=Tunable(tunable_type=bool, default=True)),
         'category_override': OptionalTunable(
             tunable=TunableTuple(
-                category=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY))
+                pie_menu_category=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY))
             ),
         ),
+        'display_name_overrides': TunableDisplayNameVariant(description='Set name modifiers or random names.'),
         'false_advertisements': OptionalTunable(
             tunable=TunableStatisticAdvertisements()
         ),
-        'static_commodities': OptionalTunable(
-            tunable=TunableList(
-                tunable=TunableTuple(
-                    static_commodity=TunableReference(manager=services.get_instance_manager(Types.STATIC_COMMODITY), pack_safe=True, reload_dependent=True),
-                    desire=Tunable(tunable_type=float, default=1)
-                ),
-            )
-        ),
-        'basic_extras': TunableBasicExtras(),
-        'display_name_overrides': TunableDisplayNameVariant(description='Set name modifiers or random names.'),
-        'tests': TunableList(
-            tunable=TunableTestVariant(description="Test to inject into the list of affordances"),
-        ),
-        'autonomous_tests': TunableTestSet(description="Lists of tests to append to the affordance test_autonomous list"),
         'outfit_change_on_exit': TunableMapping(
             description="Append an outfit change to an existing posture",
             key_type=TunableReference(manager=services.get_instance_manager(Types.POSTURE)),
@@ -67,10 +60,27 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                     )
                 ),
             )
-        )
+        ),
+        'modify_autonomous_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_autonomous` compound list."),
+        'modify_global_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_globals` list", global_tests=True),
+        'modify_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `tests` compound list."),
+        'inject_to_purchase_interaction': OptionalTunable(tunable=TunablePurchaseInteractionInjection.TunableFactory()),
+        'inject_to_crafting_interaction': OptionalTunable(tunable=TunableCraftingInteractionInjection.TunableFactory()),
+        'static_commodities': OptionalTunable(
+            tunable=TunableList(
+                tunable=TunableTuple(
+                    static_commodity=TunableReference(manager=services.get_instance_manager(Types.STATIC_COMMODITY), pack_safe=True, reload_dependent=True),
+                    desire=Tunable(tunable_type=float, default=1)
+                ),
+            )
+        ),
+        'tests': TunableList(
+            description="These are 'additional tests' added to the affordance (not an injection). They must all pass separately from test_autonomous, test_globals, tests",
+            tunable=TunableTestVariant(),
+        ),
     }
 
-    __slots__ = ('basic_extras', 'allow_user_directed_override', 'category_override', 'allow_autonomous_override', 'autonomous_tests', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit',)
+    __slots__ = ('basic_extras', 'allow_user_directed_override', 'cheat_override', 'debug_override', 'category_override', 'allow_autonomous_override', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -86,6 +96,12 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
             if self.allow_user_directed_override is not None:
                 affordance.allow_user_directed = self.allow_user_directed_override
 
+            if self.cheat_override is not None:
+                affordance.cheat = self.cheat_override
+
+            if self.debug_override is not None:
+                affordance.debug = self.debug_override
+
             if self.false_advertisements is not None:
                 affordance._false_advertisements += self.false_advertisements
 
@@ -93,17 +109,20 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
                 affordance._static_commodities += self.static_commodities
 
             if self.category_override is not None:
-                affordance.category = self.category_override.category
+                affordance.category = self.category_override.pie_menu_category
 
             for test in self.tests:
                 if test is not None:
                     affordance.add_additional_test(test)
 
-            if len(self.autonomous_tests):
-                tests = TestList(affordance.test_autonomous)
-                tests.extend(self.autonomous_tests)
-                affordance.test_autonomous = tests
-                logger.debug("adding autonomous tests: {}, final result: {}".format(self.autonomous_tests, affordance.test_autonomous))
+            if self.modify_autonomous_tests is not None:
+                self.modify_autonomous_tests.inject(affordance, 'test_autonomous')
+
+            if self.modify_global_tests is not None:
+                self.modify_global_tests.inject(affordance, 'test_globals')
+
+            if self.modify_tests is not None:
+                self.modify_tests.inject(affordance, 'tests')
 
             for (posture, outfit_change) in self.outfit_change_on_exit.items():
                 if affordance.outfit_change is not None:
@@ -116,6 +135,12 @@ class BaseTunableAffordanceInjection(HasTunableSingletonFactory, AutoFactoryInit
 
             if self.basic_extras is not None:
                 affordance.basic_extras += self.basic_extras
+
+            if self.inject_to_purchase_interaction is not None:
+                self.inject_to_purchase_interaction.inject_to_affordance(affordance)
+
+            if self.inject_to_crafting_interaction is not None:
+                self.inject_to_crafting_interaction.inject_to_affordance(affordance)
 
 
 class TunableAffordanceInjectionByAffordances(BaseTunableAffordanceInjection):
@@ -164,3 +189,16 @@ class TunableAffordanceInjectionByUtility(BaseTunableAffordanceInjection):
                 if affordance.utility_info is not None:
                     if self.utility in affordance.utility_info:
                         yield affordance
+
+
+class TunableAffordanceInjectionByCategory(BaseTunableAffordanceInjection):
+    FACTORY_TUNABLES = {
+        'pie_menu_categories': TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY)))
+    }
+
+    __slots__ = ('pie_menu_categories',)
+
+    def get_affordances_gen(self):
+        for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
+            if affordance.category in self.pie_menu_categories:
+                yield affordance

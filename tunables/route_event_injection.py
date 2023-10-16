@@ -1,11 +1,12 @@
 import services
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from routing.route_enums import RouteEventPriority
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, OptionalTunable, TunableTuple
+from sims4.tuning.tunable import Tunable, TunableReference, OptionalTunable, TunableTuple
 from lot51_core.utils.injection import inject_to_enum
 
 
-class TunableRouteEventInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableRouteEventInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'route_event':TunableReference(manager=services.get_instance_manager(Types.SNIPPET)),
         'priority': OptionalTunable(

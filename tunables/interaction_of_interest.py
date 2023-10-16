@@ -14,10 +14,10 @@ class InteractionOfInterest(AutoFactoryInit):
     """
     FACTORY_TUNABLES = {
         'affordances': TunableList(
-            tunable=TunableAffordanceListReference(pack_safe=True),
+            tunable=TunableReference(manager=get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
         'affordance_lists': TunableList(
-            tunable=TunableReference(manager=get_instance_manager(Types.SNIPPET))
+            tunable=TunableReference(manager=get_instance_manager(Types.SNIPPET), pack_safe=True)
         ),
         'tags': TunableSet(
             tunable=TunableEnumEntry(Tag, Tag.INVALID)

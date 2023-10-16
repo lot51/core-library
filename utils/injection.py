@@ -1,12 +1,35 @@
 import functools
 import inspect
 from functools import wraps
+from event_testing.tests import TestList, CompoundTestList
 from services import get_instance_manager
 from lot51_core import logger
 from tag import Tag
 
 DEFAULT_SA_KEY = '_super_affordances'
 DEFAULT_PHONE_SA_KEY = '_phone_affordances'
+
+
+def clone_test_set(original_tests, additional_and=(), additional_or=()):
+    if isinstance(original_tests, TestList):
+        new_tests = TestList(original_tests)
+        for test in additional_and:
+            new_tests.append(test)
+        return new_tests
+    elif isinstance(original_tests, CompoundTestList):
+        new_compound = CompoundTestList()
+        for test_list in original_tests:
+            new_tests = clone_test_set(test_list, additional_and=additional_and)
+            new_compound.append(new_tests)
+        for test_list in additional_or:
+            new_compound.append(test_list)
+        return new_compound
+    else:
+        # This should be the tuple within a CompoundTestList
+        new_tests = list(original_tests)
+        for test in additional_and:
+            new_tests.append(test)
+        return tuple(new_tests)
 
 
 def obj_has_affordance(obj, affordance, key=DEFAULT_SA_KEY):
@@ -17,10 +40,10 @@ def obj_has_affordance(obj, affordance, key=DEFAULT_SA_KEY):
 
 def add_affordance(obj, interaction=None, key=DEFAULT_SA_KEY):
     if interaction and hasattr(obj, key) and not obj_has_affordance(obj, interaction, key):
-        if isinstance(getattr(obj, key), set):
-            setattr(obj, key, set(getattr(obj, key)).union({interaction}))
         if isinstance(getattr(obj, key), frozenset):
             setattr(obj, key, frozenset(set(getattr(obj, key)).union({interaction})))
+        elif isinstance(getattr(obj, key), set):
+            setattr(obj, key, set(getattr(obj, key)).union({interaction}))
         else:
             setattr(obj, key, getattr(obj, key) + (interaction,))
 

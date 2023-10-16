@@ -1,12 +1,12 @@
 from event_testing.tests import TunableTestSet
 from interactions.utils.success_chance import SuccessChance
 from lot51_core.loot import LotFiftyOneCoreLootActionVariant
-from lot51_core.tunables.delivery_method import FglDeliveryMethod, InventoryDeliveryMethod, \
-    MultipleInventoriesDeliveryMethod
+from lot51_core.tunables.delivery_method import FglDeliveryMethod, InventoryDeliveryMethod, MultipleInventoriesDeliveryMethod
 from lot51_core.tunables.definition_query import DefinitionSearchMethodVariant
-from objects.components.state import ObjectStateValue
+from services import get_instance_manager
 from sims4.localization import TunableLocalizedStringFactory
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableTuple, TunableList, Tunable, OptionalTunable, TunableInterval, TunableEnumSet
+from sims4.resources import Types
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableTuple, TunableList, Tunable, OptionalTunable, TunableInterval, TunableEnumSet, TunableReference
 from tag import Tag
 from tunable_multiplier import TunableMultiplier
 
@@ -67,7 +67,7 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
         'quality_states': TunableList(
             description="An item from this list will be randomly selected to add additional value/quality to an object",
             tunable=TunableTuple(
-                states=TunableList(tunable=ObjectStateValue.TunableReference()),
+                states=TunableList(tunable=TunableReference(manager=get_instance_manager(Types.OBJECT_STATE))),
                 static_price_multiplier=Tunable(tunable_type=int, default=1),
                 weight=TunableMultiplier.TunableFactory(),
             )

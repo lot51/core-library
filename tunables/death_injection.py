@@ -1,13 +1,14 @@
 import services
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference
+from sims4.tuning.tunable import Tunable, TunableReference
 from interactions.utils.death import DeathType, DeathTracker
 from sims4.collections import  make_immutable_slots_class
 from _sims4_collections import frozendict
 from lot51_core.utils.injection import inject_to_enum, add_affordance
 
 
-class TunableCustomDeath(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableCustomDeath(BaseTunableInjection):
     DEATH_TYPE_AFFORDANCE_LIST_ID = 16338
     FACTORY_TUNABLES = {
         'death_type_key': Tunable(tunable_type=str, default=''),

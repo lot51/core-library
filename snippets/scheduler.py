@@ -1,7 +1,6 @@
 import services
 from event_testing.resolver import SingleObjectResolver, GlobalResolver, SingleSimResolver
 from event_testing.tests import TunableTestSet
-from interactions import ParticipantType
 from interactions.utils.loot import LootActionVariant
 from interactions.utils.success_chance import SuccessChance
 from lot51_core import logger
@@ -55,10 +54,10 @@ class TunableSchedulerSnippet(HasTunableReference, metaclass=HashedTunedInstance
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.schedule_type = self.schedule_type(self, callback=self._scheduler_callback)
-        logger.debug("[{}] Initialized".format(self))
+        logger.debug("[init] {}".format(self))
 
     def __str__(self):
-        return "<TunableScheduler {}> scheduled: {}".format(type(self).__name__, self.scheduled)
+        return "<TunableScheduler {} scheduled: {}>".format(type(self).__name__, self.scheduled)
 
     @property
     def scheduled(self):

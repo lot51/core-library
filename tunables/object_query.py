@@ -1,17 +1,42 @@
 import services
 import random
-import sims4.random
 from build_buy import get_room_id
 from event_testing.tests import TunableTestSet
 from event_testing.resolver import SingleObjectResolver, DoubleObjectResolver, SingleSimResolver
 from interactions import ParticipantType, ParticipantTypeSingle
+from lot51_core import logger
+from lot51_core.utils.math import weighted_sort, flatten_weighted_list
 from objects import ALL_HIDDEN_REASONS
 from objects.components.types import INVENTORY_COMPONENT
 from sims.sim_info import SimInfo
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, \
-    TunableEnumSet, TunableEnumEntry, TunableReference, OptionalTunable, TunableList
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, TunableEnumSet, TunableEnumEntry, TunableReference, TunableList, OptionalTunable, TunableTuple
 from tag import Tag
+from tunable_multiplier import TunableMultiplier
+
+
+class ObjectSearchMethodVariant(TunableVariant):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args,
+                         active_household=GetObjectsByActiveHousehold.TunableFactory(),
+                         active_lot=GetObjectsOnActiveLot.TunableFactory(),
+                         actual_lot=GetActualLotObject.TunableFactory(),
+                         actual_lot_levels=GetActualLotLevelObjects.TunableFactory(),
+                         affordance=GetObjectsByAffordance.TunableFactory(),
+                         all=GetAllObjects.TunableFactory(),
+                         definition=GetObjectsByDefinition.TunableFactory(),
+                         inventory=GetObjectsFromInventory.TunableFactory(),
+                         participant=GetObjectsByParticipant.TunableFactory(),
+                         reference=GetObjectsByObjectQueryReference.TunableFactory(),
+                         sim_info=GetObjectsBySimInfo.TunableFactory(),
+                         sims_in_situation=GetSimsInSituation.TunableFactory(),
+                         sims_interacting_with_participant=GetSimsInteractingWithParticipant.TunableFactory(),
+                         situation_target=GetSituationTargetObject.TunableFactory(),
+                         tags=GetObjectsByTags.TunableFactory(),
+                         tuning=GetObjectsByTuning.TunableFactory(),
+                         default='participant',
+                         **kwargs)
 
 
 class ObjectFilterRandomSingleChoice(HasTunableSingletonFactory, AutoFactoryInit):
@@ -140,36 +165,64 @@ class ObjectSortFarthest(BaseObjectSort):
         yield from self._sort_objects_gen(obj_list=obj_list, resolver=resolver, reverse=True)
 
 
+class ObjectSortRandom(BaseObjectSort):
+    def sort_objects_gen(self, obj_list=(), resolver=None):
+        shuffled_list = list(obj_list)
+        random.shuffle(shuffled_list)
+        return shuffled_list
+
+
+class ObjectSortWeightedRandom(BaseObjectSort):
+
+    FACTORY_TUNABLES = {
+        'weight': TunableMultiplier.TunableFactory(),
+    }
+
+    def sort_objects_gen(self, obj_list=(), resolver=None):
+        weighted_list = list()
+        for obj in obj_list:
+            resolver = SingleObjectResolver(obj)
+            weight = self.weight.get_multiplier(resolver)
+            weighted_list.append((weight, obj))
+        weighted_list = weighted_sort(weighted_list)
+        return flatten_weighted_list(weighted_list)
+
+
 class ObjectSortVariant(TunableVariant):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, closest=ObjectSortClosest.TunableFactory(), farthest=ObjectSortFarthest.TunableFactory(), **kwargs)
+        super().__init__(*args, closest=ObjectSortClosest.TunableFactory(), farthest=ObjectSortFarthest.TunableFactory(), weighted_random=ObjectSortWeightedRandom.TunableFactory(), random=ObjectSortRandom.TunableFactory(), **kwargs)
 
 
 class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
+        'tests': TunableTestSet(),
         'additional_tests': TunableTestSet(),
         'additional_tests_actor': TunableEnumEntry(tunable_type=ParticipantTypeSingle, default=ParticipantTypeSingle.Object),
         'exclude_tags': TunableEnumSet(Tag, enum_default=Tag.INVALID, invalid_enums=(Tag.INVALID,)),
         'filter': ObjectFilterVariant(),
         'sort': ObjectSortVariant(),
+        'test_in_use': OptionalTunable(tunable=Tunable(tunable_type=bool, default=False)),
     }
 
-    __slots__ = ('additional_tests', 'additional_tests_actor', 'exclude_tags', 'filter', 'sort',)
+    __slots__ = ('additional_tests', 'additional_tests_actor', 'exclude_tags', 'filter', 'sort', 'tests', 'test_in_use',)
 
     def get_test_resolver(self, original_resolver, target):
         if original_resolver is None:
             return SingleObjectResolver(target)
         # get original loot subject as actor
-        if isinstance(original_resolver, SingleSimResolver) and self.additional_tests_actor in (ParticipantTypeSingle.Object, ParticipantTypeSingle.TargetSim):
+        if isinstance(original_resolver, SingleSimResolver) and self.additional_tests_actor in (ParticipantTypeSingle.Object, ParticipantTypeSingle.TargetSim, ParticipantType.Object, ParticipantType.TargetSim,):
             subject = original_resolver.get_participant(ParticipantTypeSingle.Actor)
         else:
             subject = original_resolver.get_participant(self.additional_tests_actor)
 
         return DoubleObjectResolver(subject, target)
 
-    def run_additional_tests(self, original_resolver, target):
+    def run_additional_tests(self, original_resolver, target, log_results=False):
         resolver = self.get_test_resolver(original_resolver, target)
-        return self.additional_tests.run_tests(resolver)
+        result = self.tests.run_tests(resolver) and self.additional_tests.run_tests(resolver)
+        if log_results:
+            logger.debug("test result for resolver {}: {}".format(resolver, result))
+        return result
 
     def _get_filtered_objects_gen(self, obj_list):
         if self.filter is not None:
@@ -186,13 +239,11 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
     def _get_objects_gen(self, resolver=None):
         yield from []
 
-    def _get_tested_objects_gen(self, obj_list, resolver):
-        if resolver is None:
-            yield from obj_list
-        else:
-            for obj in obj_list:
-                if self.run_additional_tests(resolver, obj):
-                    yield obj
+    def _get_tested_objects_gen(self, obj_list, resolver, log_results=False):
+        for obj in obj_list:
+            result = self.run_additional_tests(resolver, obj, log_results=log_results)
+            if result:
+                yield obj
 
     def _filter_exclude_tags_gen(self, obj_list):
         for obj in obj_list:
@@ -200,31 +251,38 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
                 continue
             yield obj
 
-    def get_objects_gen(self, resolver=None):
+    def _filter_reservation_gen(self, obj_list):
+        if self.test_in_use is None:
+            yield from obj_list
+        else:
+            for obj in obj_list:
+                if obj.in_use == self.test_in_use:
+                    yield obj
+
+    # def _get_children_gen(self, obj_list, resolver=None):
+    #     if self.query_children is None:
+    #         yield from obj_list
+    #     else:
+    #         for obj in obj_list:
+    #             for child in obj.children_recursive_gen():
+    #                 resolver = self.get_test_resolver(resolver, child)
+    #                 if self.query_children.tests.run_tests(resolver):
+    #                     yield child
+
+    def get_objects_gen(self, resolver=None, log_results=False):
         all_objects = self._get_objects_gen(resolver)
-        tag_filtered_objects = self._filter_exclude_tags_gen(all_objects)
-        tested_objects = self._get_tested_objects_gen(tag_filtered_objects, resolver)
+        if log_results:
+            all_objects = tuple(all_objects)
+            logger.debug("all objects: {}".format(all_objects))
+        reservation_filtered_objects = self._filter_reservation_gen(all_objects)
+        tag_filtered_objects = self._filter_exclude_tags_gen(reservation_filtered_objects)
+        tested_objects = self._get_tested_objects_gen(tag_filtered_objects, resolver, log_results=log_results)
         sorted_objects = self._get_sorted_objects_gen(tested_objects, resolver=resolver)
         filtered_objects = self._get_filtered_objects_gen(sorted_objects)
+        if log_results:
+            filtered_objects = tuple(filtered_objects)
+            logger.debug("filtered objects: {}".format(filtered_objects))
         yield from filtered_objects
-
-    def get_closest_object(self, relative_position, relative_level, resolver=None):
-        object_list = list(self.get_objects_gen(resolver=resolver))
-        weights = []
-        for obj in object_list:
-            delta = obj.position - relative_position
-            base_weight = delta.magnitude()
-            # score objects on different levels as further away
-            if obj.level != relative_level:
-                base_weight *= 2
-
-            # weight = 10/base_weight
-            # if obj.parts:
-            #     for part in obj.parts:
-            #         weights.append((weight, part))
-            # else:
-            weights.append((base_weight, obj))
-        return sims4.random.weighted_random_item(weights)
 
 
 class GetObjectsFromInventory(_GetObjectsBase):
@@ -238,7 +296,11 @@ class GetObjectsFromInventory(_GetObjectsBase):
     def get_inventory(self, resolver):
         if resolver is not None:
             subject = resolver.get_participant(self.subject)
-            return subject.get_sim_instance().get_component(INVENTORY_COMPONENT)
+            if isinstance(subject, SimInfo):
+                subject = subject.get_sim_instance()
+                if subject is None:
+                    return
+            return subject.get_component(INVENTORY_COMPONENT)
 
     def _get_objects_gen(self, resolver=None):
         inventory = self.get_inventory(resolver)
@@ -257,13 +319,14 @@ class GetSituationTargetObject(_GetObjectsBase):
 
     __slots__ = ('subject', 'situation')
 
-    def get_objects_gen(self, resolver=None):
+    def _get_objects_gen(self, resolver=None):
         situation_manager = services.get_zone_situation_manager()
         if resolver is not None:
-            sim_info = resolver.get_participant(self.subject)
-            if sim_info and sim_info.is_sim:
-                sim = sim_info.get_sim_instance(allow_hidden_flags=ALL_HIDDEN_REASONS)
-                for situation in situation_manager.get_situations_sim_is_in(sim):
+            subject = resolver.get_participant(self.subject)
+            if subject is not None:
+                if isinstance(subject, SimInfo):
+                    subject = subject.get_sim_instance(allow_hidden_flags=ALL_HIDDEN_REASONS)
+                for situation in situation_manager.get_situations_sim_is_in(subject):
                     if situation.guid64 == self.situation.guid64:
                         if hasattr(situation, 'get_target_object'):
                             yield situation.get_target_object()
@@ -302,7 +365,7 @@ class GetObjectsByTags(_GetObjectsBase):
         'tags': TunableEnumSet(Tag, enum_default=Tag.INVALID, invalid_enums=(Tag.INVALID,)),
     }
 
-    __slots__ = ('tags', 'exclude_tags')
+    __slots__ = ('tags',)
 
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().get_objects_with_tags_gen(*self.tags):
@@ -403,6 +466,30 @@ class GetSimsInSituation(_GetObjectsBase):
                 yield sim
 
 
+class GetSimsInteractingWithParticipant(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'participant': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Object),
+        'ignore_actor': Tunable(tunable_type=bool, default=True),
+    }
+
+    __slots__ = ('participant', 'ignore_actor')
+
+    def _get_objects_gen(self, resolver=None):
+        if resolver is not None:
+            target = resolver.get_participant(self.participant)
+            actor = resolver.get_participant(ParticipantType.Actor)
+            if isinstance(actor, SimInfo):
+                actor = actor.get_sim_instance()
+            if target is not None:
+                for sim in services.sim_info_manager().instanced_sims_gen():
+                    if self.ignore_actor and sim == actor:
+                        continue
+                    for si in sim.si_state:
+                        si_target = si.get_participant(ParticipantType.Object)
+                        if si_target == target:
+                            yield sim
+
+
 class GetObjectsByActiveHousehold(GetObjectsBySimInfo):
 
     def _get_objects_gen(self, resolver=None):
@@ -431,34 +518,12 @@ class GetActualLotLevelObjects(_GetObjectsBase):
 
 class GetObjectsByObjectQueryReference(_GetObjectsBase):
     FACTORY_TUNABLES = {
-        'reference': TunableReference(manager=services.get_instance_manager(Types.SNIPPET), class_restrictions=('ObjectQuerySnippet',))
+        'reference': TunableReference(manager=services.get_instance_manager(Types.SNIPPET))
     }
 
     __slots__ = ('reference',)
 
     def _get_objects_gen(self, resolver=None):
+        # logger.debug("getting objects by reference: {}".format(self.reference))
         if self.reference is not None:
             yield from self.reference.object_source.get_objects_gen(resolver=resolver)
-
-
-class ObjectSearchMethodVariant(TunableVariant):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         active_household=GetObjectsByActiveHousehold.TunableFactory(),
-                         active_lot=GetObjectsOnActiveLot.TunableFactory(),
-                         actual_lot=GetActualLotObject.TunableFactory(),
-                         actual_lot_levels=GetActualLotLevelObjects.TunableFactory(),
-                         affordance=GetObjectsByAffordance.TunableFactory(),
-                         all=GetAllObjects.TunableFactory(),
-                         definition=GetObjectsByDefinition.TunableFactory(),
-                         inventory=GetObjectsFromInventory.TunableFactory(),
-                         participant=GetObjectsByParticipant.TunableFactory(),
-                         reference=GetObjectsByObjectQueryReference.TunableFactory(),
-                         sim_info=GetObjectsBySimInfo.TunableFactory(),
-                         sims_in_situation=GetSimsInSituation.TunableFactory(),
-                         situation_target=GetSituationTargetObject.TunableFactory(),
-                         tags=GetObjectsByTags.TunableFactory(),
-                         tuning=GetObjectsByTuning.TunableFactory(),
-                         default='participant',
-                         **kwargs)

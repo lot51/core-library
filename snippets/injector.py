@@ -2,15 +2,20 @@ import services
 import sims4
 from lot51_core import logger, __version__
 from lot51_core.services.events import event_handler, CoreEvent
-from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList
+from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, \
+    TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList, \
+    TunableAffordanceInjectionByCategory
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
+from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
+from lot51_core.tunables.role_state_injection import TunableRoleStateInjection
+from lot51_core.tunables.season_injection import TunableSeasonInjection
 from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
 from lot51_core.tunables.club_injection import TunableClubInteractionGroupInjection
 from lot51_core.tunables.death_injection import TunableCustomDeath
 from lot51_core.tunables.drama_scheduler_injection import TunableDramaSchedulerInjection
-from lot51_core.tunables.loot_injection import TunableLootInjection
+from lot51_core.tunables.loot_injection import TunableLootInjection, TunableRandomWeightedLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
 from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
@@ -24,6 +29,7 @@ from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjecti
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
 from lot51_core.tunables.trait_injection import TunableTraitInjection
+from lot51_core.tunables.university_tuning_injection import TunableUniversityTuningInjection
 from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
 from lot51_core.utils.semver import Version
 from services import get_instance_manager
@@ -77,6 +83,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject to affordances by their required utility",
             tunable=TunableAffordanceInjectionByUtility.TunableFactory()
         ),
+        "inject_to_affordances_by_category": TunableList(
+            description="Inject to affordances by their category, accepts multiple categories",
+            tunable=TunableAffordanceInjectionByCategory.TunableFactory()
+        ),
         "inject_by_utility_info": TunableList(
             description="Inject to affordances by their required utility",
             tunable=TunableAffordanceInjectionByUtility.TunableFactory(),
@@ -101,18 +111,6 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject mixers to affordance list snippet",
             tunable=TunableMixerListInjection.TunableFactory()
         ),
-        "inject_to_object_states": TunableList(
-            tunable=TunableObjectStateInjection.TunableFactory()
-        ),
-        "inject_to_object_state_values": TunableList(
-            tunable=TunableObjectStateValueInjection.TunableFactory(),
-        ),
-        "inject_to_loot": TunableList(
-            tunable=TunableLootInjection.TunableFactory()
-        ),
-        "inject_to_test_sets": TunableList(
-            tunable=TunableTestSetInjection.TunableFactory()
-        ),
         "inject_to_buffs": TunableList(
             tunable=TunableBuffInjection.TunableFactory(),
         ),
@@ -120,39 +118,69 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="A mapping of the desired traits associated with this PreferenceItem, and the corresponding scores.",
             tunable=TunableCharacteristicPreferenceItemInjection.TunableFactory()
         ),
-        "inject_to_traits": TunableList(
-            tunable=TunableTraitInjection.TunableFactory(),
+        "inject_to_holiday_traditions": TunableList(
+            tunable=TunableHolidayTraditionInjection.TunableFactory(),
+        ),
+        "inject_to_loot": TunableList(
+            tunable=TunableLootInjection.TunableFactory()
+        ),
+        "inject_to_object_parts": TunableList(
+            tunable=TunableObjectPartInjection.TunableFactory(),
+        ),
+        "inject_to_object_state_values": TunableList(
+            tunable=TunableObjectStateValueInjection.TunableFactory(),
+        ),
+        "inject_to_object_states": TunableList(
+            tunable=TunableObjectStateInjection.TunableFactory()
         ),
         "inject_to_postures": TunableList(
             tunable=TunablePostureInjection.TunableFactory()
         ),
-        "inject_to_holiday_traditions": TunableList(
-            tunable=TunableHolidayTraditionInjection.TunableFactory(),
+        "inject_to_random_weighted_loot": TunableList(
+            tunable=TunableRandomWeightedLootInjection.TunableFactory()
         ),
         "inject_to_regions": TunableList(
             tunable=TunableRegionInjection.TunableFactory(),
         ),
+        "inject_to_role_states": TunableList(
+            tunable=TunableRoleStateInjection.TunableFactory(),
+        ),
         "inject_to_route_events": TunableList(
             tunable=TunableRouteEventInjection.TunableFactory(),
+        ),
+        # "inject_to_seasons": TunableList(
+        #     tunable=TunableSeasonInjection.TunableFactory(),
+        # ),
+        "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
+        "inject_to_test_sets": TunableList(
+            description="WARNING! DO NOT USE!",
+            deprecated=True,
+            tunable=TunableTestSetInjection.TunableFactory()
+        ),
+        "inject_to_traits": TunableList(
+            tunable=TunableTraitInjection.TunableFactory(),
         ),
         "inject_to_whim_sets": TunableList(
             tunable=TunableWhimSetInjection.TunableFactory(),
         ),
-        "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
-        # "inject_to_object_parts": TunableObjectPartInjection.TunableFactory(),
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
         "drama_scheduler": TunableDramaSchedulerInjection.TunableFactory(),
         "satisfaction_store": TunableSatisfactionStoreInjection.TunableFactory(),
         "social_bunny": TunableSocialBunnyInjection.TunableFactory(),
+        "university": TunableUniversityTuningInjection.TunableFactory(),
     }
 
     __injectors__ = tuple(INSTANCE_TUNABLES.keys())
 
     @classmethod
+    def to_str(cls):
+        return '<TuningInjector {} by {} ({}); minimum core version {}>'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.minimum_core_version)
+
+    @classmethod
     def _tuning_loaded_callback(cls):
-        logger.info('[TuningInjector] loaded {} by {} ({}); minimum core version: {};'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.minimum_core_version))
+        logger.info('[tuning_loaded_callback] {}'.format(cls.to_str()))
 
     @classmethod
     def all_snippets_gen(cls):
@@ -171,71 +199,60 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         return cls.get_core_version() >= cls.get_minimum_version()
 
     @classmethod
-    def perform_injections(cls):
-        logger.info('[TuningInjector] starting snippet injections: {}'.format(cls.__name__))
-
+    def _get_injectors_gen(cls):
         for key in cls.__injectors__:
-            try:
-                injector = getattr(cls, key)
-                if type(injector) == tuple:
-                    for subinjector in injector:
-                        if hasattr(subinjector, 'inject'):
-                            try:
-                                if not hasattr(subinjector, 'requires_zone') or not subinjector.requires_zone:
-                                    subinjector.inject()
-                            except:
-                                logger.exception('[TuningInjector] injector failed: {}'.format(key))
-                elif hasattr(injector, 'inject'):
-                    if not hasattr(injector, 'requires_zone') or not injector.requires_zone:
-                        injector.inject()
-            except:
-                logger.exception('[TuningInjector] injector failed: {}'.format(key))
+            injector = getattr(cls, key)
+            if type(injector) == tuple:
+                for subinjector in injector:
+                    if isinstance(subinjector, BaseTunableInjection) and subinjector.is_available():
+                        yield key, subinjector
+            elif isinstance(injector, BaseTunableInjection) and injector.is_available():
+                yield key, injector
+
     @classmethod
-    def perform_delayed_injections(cls):
-        logger.info('[TuningInjector] starting delayed snippet injections: {}'.format(cls.__name__))
+    def perform_injections(cls, timing: InjectionTiming):
+        logger.info('[TuningInjector] starting injections for timing {}: {}'.format(timing, cls.to_str()))
 
-        for key in cls.__injectors__:
+        total = 0
+        for key, injector in cls._get_injectors_gen():
             try:
-                injector = getattr(cls, key)
-                if type(injector) == tuple:
-                    for subinjector in injector:
-                        if hasattr(subinjector, 'inject'):
-                            try:
-                                if hasattr(subinjector, 'requires_zone') and subinjector.requires_zone:
-                                    subinjector.inject()
-                            except:
-                                logger.exception('[TuningInjector] injector failed: {}'.format(key))
-                elif hasattr(injector, 'inject'):
-                    if hasattr(injector, 'requires_zone') and injector.requires_zone:
-                        injector.inject()
+                if injector.injection_timing == timing:
+                    injector.inject()
+                    total += 1
             except:
                 logger.exception('[TuningInjector] injector failed: {}'.format(key))
+
+        logger.info('[TuningInjector] completed injections; total {}'.format(total))
 
 
 @event_handler(CoreEvent.TUNING_LOADED)
 def _do_injections(*args, **kwargs):
     global SHOW_VERSION_NOTIFICATION
 
+    # Thank you Scumbumbo
+    definition_manager = services.definition_manager()
+    definition_manager.refresh_build_buy_tag_cache(refresh_definition_cache=False)
+
     for snippet in TuningInjector.all_snippets_gen():
         try:
             if snippet.is_valid_version():
-                snippet.perform_injections()
+                snippet.perform_injections(InjectionTiming.TUNING_LOADED)
             else:
                 minimum_version = snippet.get_minimum_version()
                 SHOW_VERSION_NOTIFICATION = minimum_version
                 logger.warn("Snippet {} version is incompatible with the current Core Library version. {} < {}".format(snippet.__name__, snippet.minimum_core_version, __version__))
         except:
-            logger.exception("failed injection for snippet: {}".format(snippet.__name__))
+            logger.exception("Total Injection Failure for Snippet: {}".format(snippet.to_str()))
 
 
 @event_handler(CoreEvent.ZONE_CLEANUP_OBJECTS)
-def _do_delayed_injections(*args, **kwargs):
+def _do_zone_dependent_injections(*args, **kwargs):
     for snippet in TuningInjector.all_snippets_gen():
         try:
             if snippet.is_valid_version():
-                snippet.perform_delayed_injections()
+                snippet.perform_injections(InjectionTiming.ZONE_LOAD)
         except:
-            logger.exception("failed delayed injection for snippet: {}")
+            logger.exception("Total Injection Failure for Snippet: {}".format(snippet.to_str()))
 
 
 @event_handler(CoreEvent.LOADING_SCREEN_LIFTED)

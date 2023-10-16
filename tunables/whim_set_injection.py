@@ -1,10 +1,11 @@
 import services
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference
+from sims4.tuning.tunable import TunableReference
 from whims.whim import TunableWeightedWhimCollection
 
 
-class TunableWhimSetInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableWhimSetInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'whim_set': TunableReference(manager=services.get_instance_manager(Types.ASPIRATION)),
         'whims': TunableWeightedWhimCollection()

@@ -7,6 +7,7 @@ from situations.create_and_use_object_situation import TARGET_OBJECT_TOKEN
 from situations.custom_states.custom_states_situation import CustomStatesSituation
 
 
+
 class DefaultObjectCustomStatesSituation(CustomStatesSituation):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,9 +26,9 @@ class DefaultObjectCustomStatesSituation(CustomStatesSituation):
         return self.target_object
 
     def _save_custom_situation(self, writer):
-        super()._save_custom_situation(writer)
         if self.target_object is not None:
             writer.write_uint64(TARGET_OBJECT_TOKEN, self.target_object.id)
+        super()._save_custom_situation(writer)
 
 
 class AdvancedCustomStatesSituation(DefaultObjectCustomStatesSituation):

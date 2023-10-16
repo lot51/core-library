@@ -1,6 +1,6 @@
 import services
 from sims4.resources import Types
-from sims4.tuning.tunable import TunableFactory, TunableReference, Tunable, TunableEnumEntry, TunableEnumSet
+from sims4.tuning.tunable import TunableFactory, TunableReference, TunableEnumEntry, TunableEnumSet
 from situations.base_situation import _RequestUserData
 from situations.bouncer.bouncer_request import BouncerRequest
 from situations.bouncer.bouncer_types import BouncerRequestPriority, RequestSpawningOption

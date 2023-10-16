@@ -23,7 +23,11 @@ class TunedDoorConstraint(ZoneConstraintMixin):
             routing_surface = front_door.routing_surface
         else:
             return Nowhere('Front Door Constraint: Could not find a door for this constraint.')
-        return Circle(position, self._radius, routing_surface=routing_surface, ideal_radius=self._ideal_radius)
+        los_factory = self._line_of_sight()
+        los_factory.generate(position, routing_surface)
+        los_constraint = los_factory.constraint
+        circle_constraint = Circle(position, self._line_of_sight.max_line_of_sight_radius, routing_surface=routing_surface, ideal_radius=self._ideal_radius)
+        return circle_constraint.intersect(los_constraint)
 
 
 class TunableDoorConstraint(TunableSingletonFactory):

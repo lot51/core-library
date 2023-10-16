@@ -1,11 +1,12 @@
 import services
 from _sims4_collections import frozendict
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableTuple, TunableMapping, Tunable, TunableEnumEntry
+from sims4.tuning.tunable import TunableReference, TunableTuple, TunableMapping, Tunable, TunableEnumEntry
 from satisfaction.satisfaction_tracker import SatisfactionTracker
 
 
-class TunableSatisfactionStoreInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableSatisfactionStoreInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'rewards': TunableMapping(
             description='A list of Sim based Tunable Rewards offered from the Satisfaction Store.',

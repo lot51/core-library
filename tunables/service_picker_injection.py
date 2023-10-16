@@ -1,14 +1,15 @@
 import services
 from event_testing.tests import TunableGlobalTestSet
 from interactions.utils.tunable_icon import TunableIconAllPacks
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableVariant, TunableList, TunableEnumEntry
+from sims4.tuning.tunable import Tunable, TunableReference, TunableVariant, TunableList, TunableEnumEntry
 from situations.service_npcs.service_npc_tuning import ServiceNpcHireable
 from tag import Tag
 
 
-class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableServicePickerInjection(BaseTunableInjection):
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
         'icon': TunableIconAllPacks(description="The icon to be displayed in 'Hire a Service' UI"),
@@ -46,7 +47,7 @@ class TunableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit)
             picker_tuning.non_service_npcs += (self,)
 
 
-class TunableHireableServicePickerInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableHireableServicePickerInjection(BaseTunableInjection):
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
         'service_npc': TunableReference(manager=services.get_instance_manager(Types.SERVICE_NPC), class_restrictions=(ServiceNpcHireable,), pack_safe=True),

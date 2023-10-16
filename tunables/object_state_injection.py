@@ -1,12 +1,13 @@
 import services
 from lot51_core import logger
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import add_affordances
 from objects.components.state import ObjectStateValue
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
 
 
-class TunableObjectStateInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableObjectStateInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'object_state': TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE)),
         'state_values': TunableList(

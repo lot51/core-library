@@ -2,12 +2,13 @@ import placement
 import services
 import sims4.math
 import sims4.random
+from lot51_core.tunables.bitwise_flags import TunableFlags
 from objects.object_enums import ResetReason
-from placement import create_starting_location
+from placement import create_starting_location, FGLSearchFlag
 from routing import get_routing_surface_at_or_below_position, SurfaceType, SurfaceIdentifier
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable
 
-DEFAULT_ON_LOT_SEARCH_FLAGS = placement.FGLSearchFlag.CALCULATE_RESULT_TERRAIN_HEIGHTS | placement.FGLSearchFlag.DONE_ON_MAX_RESULTS | placement.FGLSearchFlag.STAY_OUTSIDE | placement.FGLSearchFlag.STAY_IN_LOT
+DEFAULT_ON_LOT_SEARCH_FLAGS = FGLSearchFlag.CALCULATE_RESULT_TERRAIN_HEIGHTS | FGLSearchFlag.DONE_ON_MAX_RESULTS | FGLSearchFlag.STAY_OUTSIDE | FGLSearchFlag.STAY_IN_LOT
 
 
 class TunableCoordinates(HasTunableSingletonFactory, AutoFactoryInit):
@@ -22,9 +23,10 @@ class TunableCoordinates(HasTunableSingletonFactory, AutoFactoryInit):
             default=None,
             allow_empty=True,
         ),
+        'search_flags': TunableFlags(enum_type=FGLSearchFlag, default_enum_list={FGLSearchFlag.CALCULATE_RESULT_TERRAIN_HEIGHTS,FGLSearchFlag.DONE_ON_MAX_RESULTS,FGLSearchFlag.STAY_OUTSIDE,FGLSearchFlag.STAY_IN_LOT})
     }
 
-    __slots__ = ('x', 'z',)
+    __slots__ = ('x', 'z', 'search_flags',)
 
     @classmethod
     def create_from_target(cls, obj):
@@ -43,8 +45,10 @@ class TunableCoordinates(HasTunableSingletonFactory, AutoFactoryInit):
         sim.reset(ResetReason.RESET_EXPECTED, None, 'Command')
         return True
 
-    def move_object_to(self, obj, facing_coordinates=None, use_fgl=False, search_flags=DEFAULT_ON_LOT_SEARCH_FLAGS):
+    def move_object_to(self, obj, facing_coordinates=None, use_fgl=False, search_flags=None):
         orientation = self._get_orientation(facing_coordinates)
+        if search_flags is None:
+            search_flags = self.search_flags.get()
 
         if use_fgl:
             location = self._get_starting_location()
@@ -64,12 +68,12 @@ class TunableCoordinates(HasTunableSingletonFactory, AutoFactoryInit):
         orientation = self._get_orientation(facing_coordinates)
         use_world_routing_surface = True
         if use_fgl:
-            self.set_object_location(obj, orientation, use_world_routing_surface=use_world_routing_surface)
-            location = self.get_starting_location(use_world_routing_surface=use_world_routing_surface)
+            self._set_object_location(obj, orientation, use_world_routing_surface=use_world_routing_surface)
+            location = self._get_starting_location(use_world_routing_surface=use_world_routing_surface)
             fgl_context = placement.create_fgl_context_for_object_off_lot(location, obj, max_distance=max_distance)
             (position, _, _) = fgl_context.find_good_location()
         else:
-            location = self.get_location(orientation, use_world_routing_surface=use_world_routing_surface)
+            location = self._get_location(orientation, use_world_routing_surface=use_world_routing_surface)
             position = location.transform.translation
 
         if position is None:

@@ -6,6 +6,9 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 
 class WalkstyleTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
+    """
+    Tests if the subject has any of the prohibited walkstyles in their current route node
+    """
     test_events = ()
     FACTORY_TUNABLES = {
         'subject': TunableEnumEntry(

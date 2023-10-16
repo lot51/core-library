@@ -1,12 +1,12 @@
 import services
+from lot51_core.tunables.base_injection import BaseTunableInjection
 from postures.posture import Posture
 from postures.posture_cost import _PostureCostCustom
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tunable, TunableReference, TunableList, OptionalTunable
+from sims4.tuning.tunable import Tunable, TunableReference, TunableList, OptionalTunable
 
 
-
-class TunablePostureInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunablePostureInjection(BaseTunableInjection):
     """
     This is mainly used for a fix to prevent Sims from dancing near Stereos/TVs
     when they should be using a different posture.
