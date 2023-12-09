@@ -25,6 +25,7 @@ class ObjectSearchMethodVariant(TunableVariant):
                          actual_lot_levels=GetActualLotLevelObjects.TunableFactory(),
                          affordance=GetObjectsByAffordance.TunableFactory(),
                          all=GetAllObjects.TunableFactory(),
+                         children=GetObjectsByParent.TunableFactory(),
                          definition=GetObjectsByDefinition.TunableFactory(),
                          inventory=GetObjectsFromInventory.TunableFactory(),
                          participant=GetObjectsByParticipant.TunableFactory(),
@@ -488,6 +489,22 @@ class GetSimsInteractingWithParticipant(_GetObjectsBase):
                         si_target = si.get_participant(ParticipantType.Object)
                         if si_target == target:
                             yield sim
+
+
+class GetObjectsByParent(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'participant': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Object),
+    }
+
+    __slots__ = ('participant',)
+
+    def _get_objects_gen(self, resolver=None):
+        if resolver is not None:
+            target = resolver.get_participant(self.participant)
+            if isinstance(target, SimInfo):
+                target = target.get_sim_instance()
+            if target is not None:
+                yield from target.get_all_children_gen()
 
 
 class GetObjectsByActiveHousehold(GetObjectsBySimInfo):

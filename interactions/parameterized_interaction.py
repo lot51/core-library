@@ -2,7 +2,7 @@ import element_utils
 import sims4.random
 from interactions import ParticipantType, ParticipantTypeSavedActor
 from interactions.aop import AffordanceObjectPair
-from interactions.context import InteractionSource
+from interactions.context import InteractionSource, InteractionContext
 from interactions.interaction_finisher import FinishingType
 from lot51_core import logger
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
@@ -61,6 +61,12 @@ class ParameterizedRequestContinuationMixin:
             ctx = self.context.clone_for_continuation(self, source=parameters.context_source_override if parameters.context_source_override is not None else self.context.source, carry_target=self.carry_target)
             potential_aops = list()
             for aop in obj.potential_interactions(ctx):
+                if ctx.source == InteractionContext.SOURCE_AUTONOMY:
+                    if not aop.affordance.allow_autonomous or not aop.affordance.test_autonomous.run_tests(resolver, skip_safe_tests=False, search_for_tooltip=False):
+                        logger.debug("[{}] affordance NOT allowed autonomously {}".format(self, aop.affordance))
+                        continue
+                    logger.debug("[{}] affordance allowed autonomously {}".format(self, aop.affordance))
+
                 total_desire = 0
                 for sc_data in aop.affordance._static_commodities:
                     if sc_data.static_commodity in static_commodity_list and sc_data.static_commodity not in exclude_static_commodity_list:

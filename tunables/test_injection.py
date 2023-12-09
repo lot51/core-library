@@ -10,7 +10,7 @@ class TunableTestReplaceInjection(HasTunableSingletonFactory, AutoFactoryInit):
     }
 
     def inject(self, target, key):
-        # logger.debug("replacing {} with {}".format(getattr(target, key, None), self.tests))
+        logger.debug("replacing {} with {}".format(getattr(target, key, None), self.tests))
         setattr(target, key, self.tests)
 
 
@@ -20,7 +20,7 @@ class TunableTestReplaceGlobalsInjection(HasTunableSingletonFactory, AutoFactory
     }
 
     def inject(self, target, key):
-        # logger.debug("replacing {} with {}".format(getattr(target, key, None), self.tests))
+        logger.debug("replacing {} with {}".format(getattr(target, key, None), self.tests))
         setattr(target, key, self.tests)
 
 
@@ -33,8 +33,9 @@ class TunableTestMergeInjection(HasTunableSingletonFactory, AutoFactoryInit):
     def inject(self, target, key):
         original_list = getattr(target, key, None)
         new_list = clone_test_set(original_list, additional_and=self.AND, additional_or=self.OR)
-        # logger.debug("merging {}: final {}".format(original_list, new_list))
         setattr(target, key, new_list)
+        # logger.debug("tuned_values {}".format(getattr(target, '_tuned_values', None)))
+        # logger.debug("original {}: final {}".format(original_list, getattr(target, key, None)))
 
 
 class TestInjectionVariant(TunableVariant):

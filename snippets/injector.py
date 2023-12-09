@@ -7,6 +7,7 @@ from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionB
     TunableAffordanceInjectionByCategory
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
+from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
 from lot51_core.tunables.role_state_injection import TunableRoleStateInjection
 from lot51_core.tunables.season_injection import TunableSeasonInjection
@@ -33,9 +34,10 @@ from lot51_core.tunables.university_tuning_injection import TunableUniversityTun
 from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
 from lot51_core.utils.semver import Version
 from services import get_instance_manager
+from sims4.common import Pack
 from sims4.localization import LocalizationHelperTuning
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableReference, TunableList, Tunable
+from sims4.tuning.tunable import HasTunableReference, TunableList, Tunable, TunableEnumSet
 from sims4.resources import Types
 from ui.ui_dialog_notification import UiDialogNotification
 
@@ -48,6 +50,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
     VERSION_DIALOG = UiDialogNotification.TunableFactory()
 
     INSTANCE_TUNABLES = {
+        "_required_packs": TunableEnumSet(enum_type=Pack, default_enum_list=(Pack.BASE_GAME,)),
         "minimum_core_version": Tunable(tunable_type=str, allow_empty=True, default='1.0.0'),
         "creator_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
         "mod_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
@@ -167,6 +170,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             tunable=TunableCustomDeath.TunableFactory(),
         ),
         "drama_scheduler": TunableDramaSchedulerInjection.TunableFactory(),
+        "interaction_cancel_compatibility": TunableList(
+            tunable=InteractionCancelCompatibilityInjection.TunableFactory()
+        ),
         "satisfaction_store": TunableSatisfactionStoreInjection.TunableFactory(),
         "social_bunny": TunableSocialBunnyInjection.TunableFactory(),
         "university": TunableUniversityTuningInjection.TunableFactory(),
@@ -199,6 +205,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         return cls.get_core_version() >= cls.get_minimum_version()
 
     @classmethod
+    def are_packs_available(cls):
+        return sims4.common.are_packs_available(cls._required_packs)
+
+    @classmethod
     def _get_injectors_gen(cls):
         for key in cls.__injectors__:
             injector = getattr(cls, key)
@@ -211,6 +221,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     @classmethod
     def perform_injections(cls, timing: InjectionTiming):
+        if not cls.are_packs_available():
+            logger.warn("[TuningInjector] skipping injector due to missing packs: {}".format(cls.to_str()))
+            return
+
         logger.info('[TuningInjector] starting injections for timing {}: {}'.format(timing, cls.to_str()))
 
         total = 0
@@ -229,6 +243,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 def _do_injections(*args, **kwargs):
     global SHOW_VERSION_NOTIFICATION
 
+    # This allows definitions to be queried by tag
     # Thank you Scumbumbo
     definition_manager = services.definition_manager()
     definition_manager.refresh_build_buy_tag_cache(refresh_definition_cache=False)

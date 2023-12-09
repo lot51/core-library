@@ -15,6 +15,7 @@ from lot51_core.tests.situation_state import CustomStateSituationTest
 from lot51_core.tests.slots import ObjectSlotInUseTest
 from lot51_core.tests.statistics import StatisticLockedTest
 from lot51_core.tests.stolen import ObjectStolenTest
+from lot51_core.tests.stored_sim_component import StoredSimComponentTest
 from lot51_core.tests.terrain import TerrainTest
 from lot51_core.tests.resource_test import ResourceExistenceTest
 from lot51_core.tests.walkstyle import WalkstyleTest
@@ -40,6 +41,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'object_stolen': ObjectStolenTest,
         'resource_existence': ResourceExistenceTest,
         'statistic_locked': StatisticLockedTest,
+        'stored_sim_test': StoredSimComponentTest,
         'terrain_features': TerrainTest,
         'walkstyle': WalkstyleTest,
     }

@@ -2,10 +2,10 @@ from lot51_core.utils.log import Logger
 from lot51_core.utils.paths import get_mod_root
 
 __copyright__ = 'Copyright 2022, Lot 51'
-__version__ = '1.12'
+__version__ = '1.13'
 __author__ = 'Lot 51'
 __email__ = 'hello@lot51.cc'
-__status__ = 'development'
+__status__ = 'production'
 
 
 ROOT_PATH = get_mod_root(__file__)
