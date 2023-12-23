@@ -9,13 +9,12 @@ from lot51_core.tunables.affordance_list_injection import TunableAffordanceListI
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
+from lot51_core.tunables.relationship_bit_injection import TunableRelationshipBitInjection
 from lot51_core.tunables.role_state_injection import TunableRoleStateInjection
-from lot51_core.tunables.season_injection import TunableSeasonInjection
 from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
 from lot51_core.tunables.club_injection import TunableClubInteractionGroupInjection
 from lot51_core.tunables.death_injection import TunableCustomDeath
-from lot51_core.tunables.drama_scheduler_injection import TunableDramaSchedulerInjection
 from lot51_core.tunables.loot_injection import TunableLootInjection, TunableRandomWeightedLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
 from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
@@ -145,6 +144,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_regions": TunableList(
             tunable=TunableRegionInjection.TunableFactory(),
         ),
+        "inject_to_relbits": TunableList(
+            tunable=TunableRelationshipBitInjection.TunableFactory(),
+        ),
         "inject_to_role_states": TunableList(
             tunable=TunableRoleStateInjection.TunableFactory(),
         ),
@@ -169,7 +171,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
-        "drama_scheduler": TunableDramaSchedulerInjection.TunableFactory(),
+        # "drama_scheduler": TunableDramaSchedulerInjection.TunableFactory(),
         "interaction_cancel_compatibility": TunableList(
             tunable=InteractionCancelCompatibilityInjection.TunableFactory()
         ),
