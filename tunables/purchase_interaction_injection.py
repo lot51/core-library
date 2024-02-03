@@ -1,11 +1,12 @@
 import sims4
 from interactions.base.picker_interaction import DefinitionsFromTags, DefinitionsExplicit, InventoryItems, DefinitionsRandom, DefinitionsTested, LimitedItemList
 from lot51_core import logger
+from lot51_core.utils.collections import AttributeDict
 from services import get_instance_manager
 from sims4.localization import TunableLocalizedString
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableList, TunableVariant, \
-    TunableReference, TunableTuple, TunableEnumEntry, TunableResourceKey, OptionalTunable
+    TunableReference, TunableTuple, TunableEnumEntry, TunableResourceKey, OptionalTunable, Tunable
 from tag import Tag
 
 
@@ -69,9 +70,15 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
                 default='all_items'
             ),
         ),
+        'use_dropdown_filter_override': OptionalTunable(
+            tunable=Tunable(
+                tunable_type=bool,
+                default=False
+            )
+        ),
     }
 
-    __slots__ = ('additional_picker_categories', 'purchase_list_option', 'loots_on_purchase')
+    __slots__ = ('additional_picker_categories', 'purchase_list_option', 'loots_on_purchase', 'use_dropdown_filter_override')
 
     def inject_to_affordance(self, affordance):
         if affordance is None:
@@ -85,4 +92,10 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
             affordance.loots_on_purchase += self.loots_on_purchase
 
         if getattr(affordance, 'picker_dialog', None) is not None:
-            affordance.picker_dialog.categories += self.additional_picker_categories
+            overrides = AttributeDict()
+            overrides.categories = affordance.picker_dialog._tuned_values.categories + self.additional_picker_categories
+
+            if self.use_dropdown_filter_override is not None:
+                overrides.use_dropdown_filter = self.use_dropdown_filter_override
+
+            affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)

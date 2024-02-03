@@ -4,6 +4,8 @@ import sims4
 
 
 class CoreEvent:
+    CLIENT_CONNECT = 'client.connect'
+    CLIENT_DISCONNECT = 'client.disconnect'
     BUILD_BUY_ENTER = 'build_buy.enter'
     BUILD_BUY_EXIT = 'build_buy.exit'
     GAME_SETUP = 'game.setup'

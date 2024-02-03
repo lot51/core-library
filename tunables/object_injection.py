@@ -5,6 +5,7 @@ from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
+from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
 from objects.components.idle_component import IdleComponent
 from objects.components.inventory_enums import InventoryType
@@ -33,26 +34,29 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             description='List of affordances to inject',
             tunable=TunableReference(
                 description='Affordance to inject',
-                manager=services.get_instance_manager(Types.INTERACTION)
+                manager=services.get_instance_manager(Types.INTERACTION),
+                pack_safe=True,
             )
         ),
         'phone_affordances': TunableList(
             description='List of affordances to inject to object phone affordance list',
             tunable=TunableReference(
                 description='Affordance to inject',
-                manager=services.get_instance_manager(Types.INTERACTION)
+                manager=services.get_instance_manager(Types.INTERACTION),
+                pack_safe=True,
             )
         ),
         'relation_panel_affordances': TunableList(
             description='List of affordances to inject to Sim relationship panel',
             tunable=TunableReference(
                 description='Affordance to inject',
-                manager=services.get_instance_manager(Types.INTERACTION)
+                manager=services.get_instance_manager(Types.INTERACTION),
+                pack_safe=True,
             )
         ),
         'proximity_buffs': TunableList(
             description="Proximity Buffs to inject to the proximity component",
-            tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF)),
+            tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF), pack_safe=True),
         ),
         'state_triggers': TunableList(StateTrigger.TunableFactory()),
         'states': TunableList(tunable=TunableTuple(default_value=TunableVariant(reference=TunableStateValueReference(pack_safe=True), random=TunableList(tunable=TunableTuple(state=TunableStateValueReference(pack_safe=True), weight=Tunable(tunable_type=float, default=1.0))), default='reference'), client_states=TunableMapping(key_type=TunableStateValueReference(description='\n                            A state value\n                            ', pack_safe=True), value_type=StateChangeOperation.TunableFactory()), reset_to_default=Tunable(tunable_type=bool, default=False), reset_on_load_if_time_passes=Tunable(tunable_type=bool, default=False), tested_states_on_add=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_post_load=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_location_changed=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_reset=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})), tested_states_on_save=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})))),
@@ -73,7 +77,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         ),
         'object_locking_component': OptionalTunable(
             tunable=TunableTuple(
-                super_affordances=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
+                super_affordances=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)),
             )
         ),
         'portal_component': OptionalTunable(

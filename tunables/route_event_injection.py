@@ -20,12 +20,13 @@ class TunableRouteEventInjection(BaseTunableInjection):
     __slots__ = ('route_event', 'priority',)
 
     def inject(self):
-        if self.priority is not None:
-            # inject to RouteEventPriority enum
-            enum_data = {self.priority.key: self.priority.value}
-            inject_to_enum(enum_data, RouteEventPriority)
+        if self.route_event is not None:
+            if self.priority is not None:
+                # inject to RouteEventPriority enum
+                enum_data = {self.priority.key: self.priority.value}
+                inject_to_enum(enum_data, RouteEventPriority)
 
-            # get resolved enum
-            priority = RouteEventPriority[self.priority.key]
-            # set priority
-            self.route_event.priority = priority
+                # get resolved enum
+                priority = RouteEventPriority[self.priority.key]
+                # set priority
+                self.route_event.priority = priority

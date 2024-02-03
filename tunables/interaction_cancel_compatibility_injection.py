@@ -6,6 +6,13 @@ from sims4.tuning.tunable import TunableList, TunableReference, TunableEnumEntry
 
 
 class InteractionCancelCompatibilityInjection(BaseTunableInjection):
+    """
+    Certain services will clear a Sim's queue/control the pie menu based on the cancel compatibility whitelisting.
+
+    For example, when there is a fire on the lot, the pie menus are limited to putting out the fire, calling the
+    fire department, or panicking. Including an affordance with the FIRE cancel reason would allow the interaction to
+    display in the pie menu.
+    """
 
     FACTORY_TUNABLES = {
         'reason': TunableEnumEntry(InteractionCancelReason, default=InteractionCancelReason.FIRE),

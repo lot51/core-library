@@ -10,15 +10,17 @@ class TunableRoleStateInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'role_state':TunableReference(manager=services.get_instance_manager(Types.ROLE_STATE)),
         'buffs': TunableList(tunable=TunableBuffReference(pack_safe=True)),
-        'loot_on_load': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
+        'loot_on_load': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True)
+        ),
         'role_affordances': TunableList(
-            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION)),
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
         'role_target_affordances': TunableList(
-            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION)),
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
         'preroll_affordances': TunableList(
-            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION)),
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
     }
 

@@ -4,7 +4,7 @@ from lot51_core import logger, __version__
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, \
     TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList, \
-    TunableAffordanceInjectionByCategory
+    TunableAffordanceInjectionByCategory, TunableAffordanceInjectionToAllPhoneAffordances
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
@@ -25,10 +25,12 @@ from lot51_core.tunables.region_injection import TunableRegionInjection
 from lot51_core.tunables.route_event_injection import TunableRouteEventInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
+from lot51_core.tunables.situation_job_injection import TunableSituationJobInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
 from lot51_core.tunables.trait_injection import TunableTraitInjection
+from lot51_core.tunables.university_injection import TunableUniversityInjection
 from lot51_core.tunables.university_tuning_injection import TunableUniversityTuningInjection
 from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
 from lot51_core.utils.semver import Version
@@ -42,11 +44,12 @@ from ui.ui_dialog_notification import UiDialogNotification
 
 
 with sims4.reload.protected(globals()):
-    SHOW_VERSION_NOTIFICATION = False
+    SHOWN_VERSION_NOTIFICATION = False
 
 
 class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     VERSION_DIALOG = UiDialogNotification.TunableFactory()
+    INVALID_SNIPPETS = set()
 
     INSTANCE_TUNABLES = {
         "_required_packs": TunableEnumSet(enum_type=Pack, default_enum_list=(Pack.BASE_GAME,)),
@@ -56,6 +59,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_by_affordance": TunableList(
             description="Inject to object tuning based on an existing affordance",
             tunable=TunableObjectInjectionByAffordance.TunableFactory(),
+        ),
+        "inject_by_definitions": TunableList(
+            description="Inject to affordances",
+            tunable=TunableObjectInjectionByDefinitions.TunableFactory()
         ),
         "inject_by_object_tuning": TunableList(
             description="Inject to object tuning",
@@ -68,10 +75,6 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_by_object_source": TunableList(
             description="Inject to objects on zone load",
             tunable=TunableObjectInjectionByObjectSource.TunableFactory(),
-        ),
-        "inject_by_definitions": TunableList(
-            description="Inject to affordances",
-            tunable=TunableObjectInjectionByDefinitions.TunableFactory()
         ),
         "inject_to_affordances": TunableList(
             description="Inject to affordances",
@@ -89,18 +92,14 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject to affordances by their category, accepts multiple categories",
             tunable=TunableAffordanceInjectionByCategory.TunableFactory()
         ),
+        "inject_to_all_phone_affordances": TunableList(
+            description="Inject to all phone affordances",
+            tunable=TunableAffordanceInjectionToAllPhoneAffordances.TunableFactory()
+        ),
         "inject_by_utility_info": TunableList(
             description="Inject to affordances by their required utility",
             tunable=TunableAffordanceInjectionByUtility.TunableFactory(),
             deprecated=True,
-        ),
-        "inject_to_service_picker": TunableList(
-            description="Inject to non_service_npcs in the hire a service picker",
-            tunable=TunableServicePickerInjection.TunableFactory(),
-        ),
-        "inject_to_service_picker_hireable": TunableList(
-            description="Inject to service_npcs in the hire a service picker",
-            tunable=TunableHireableServicePickerInjection.TunableFactory(),
         ),
         "inject_to_club_interaction_group": TunableList(
             tunable=TunableClubInteractionGroupInjection.TunableFactory()
@@ -153,17 +152,26 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_route_events": TunableList(
             tunable=TunableRouteEventInjection.TunableFactory(),
         ),
-        # "inject_to_seasons": TunableList(
-        #     tunable=TunableSeasonInjection.TunableFactory(),
-        # ),
+        "inject_to_service_picker": TunableList(
+            description="Inject to non_service_npcs in the hire a service picker",
+            tunable=TunableServicePickerInjection.TunableFactory(),
+        ),
+        "inject_to_service_picker_hireable": TunableList(
+            description="Inject to service_npcs in the hire a service picker",
+            tunable=TunableHireableServicePickerInjection.TunableFactory(),
+        ),
         "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
+        "inject_to_situation_jobs": TunableList(
+            tunable=TunableSituationJobInjection.TunableFactory(),
+        ),
         "inject_to_test_sets": TunableList(
-            description="WARNING! DO NOT USE!",
-            deprecated=True,
             tunable=TunableTestSetInjection.TunableFactory()
         ),
         "inject_to_traits": TunableList(
             tunable=TunableTraitInjection.TunableFactory(),
+        ),
+        "inject_to_universities": TunableList(
+            tunable=TunableUniversityInjection.TunableFactory(),
         ),
         "inject_to_whim_sets": TunableList(
             tunable=TunableWhimSetInjection.TunableFactory(),
@@ -171,7 +179,6 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
-        # "drama_scheduler": TunableDramaSchedulerInjection.TunableFactory(),
         "interaction_cancel_compatibility": TunableList(
             tunable=InteractionCancelCompatibilityInjection.TunableFactory()
         ),
@@ -181,6 +188,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
     }
 
     __injectors__ = tuple(INSTANCE_TUNABLES.keys())
+
 
     @classmethod
     def to_str(cls):
@@ -240,26 +248,46 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
         logger.info('[TuningInjector] completed injections; total {}'.format(total))
 
+    @classmethod
+    def show_version_dialog(cls):
+        active_sim = services.get_active_sim()
+        dialog = cls.VERSION_DIALOG(active_sim)
+        dialog.title = lambda *_: LocalizationHelperTuning.get_raw_text("Lot 51 Core Library Issue Detected")
+        text = "{} by {} requires a newer version of Core Library.\n\n" \
+               "Current Version: {}\nRequired Version: {}\n\nPlease download the latest version from https://lot51.cc/core to use this mod.\n\n" \
+               "If you still experience issues, join the Lot 51 Discord.".format(cls.mod_name, cls.creator_name, __version__, cls.minimum_core_version)
+        dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(text)
+        dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
+        dialog.show_dialog()
+
 
 @event_handler(CoreEvent.TUNING_LOADED)
 def _do_injections(*args, **kwargs):
-    global SHOW_VERSION_NOTIFICATION
-
     # This allows definitions to be queried by tag
     # Thank you Scumbumbo
     definition_manager = services.definition_manager()
     definition_manager.refresh_build_buy_tag_cache(refresh_definition_cache=False)
 
+    # Perform initial injections when instance managers have loaded,
+    # and track invalid snippets to notify when loading screen is lifted
     for snippet in TuningInjector.all_snippets_gen():
         try:
             if snippet.is_valid_version():
                 snippet.perform_injections(InjectionTiming.TUNING_LOADED)
             else:
-                minimum_version = snippet.get_minimum_version()
-                SHOW_VERSION_NOTIFICATION = minimum_version
+                TuningInjector.INVALID_SNIPPETS.add(snippet)
                 logger.warn("Snippet {} version is incompatible with the current Core Library version. {} < {}".format(snippet.__name__, snippet.minimum_core_version, __version__))
         except:
-            logger.exception("Total Injection Failure for Snippet: {}".format(snippet.to_str()))
+            logger.exception("TUNING_LOADED Injection Failure for Snippet: {}".format(snippet.to_str()))
+
+    # Perform post load injections that are dependent
+    # upon the initial injections.
+    for snippet in TuningInjector.all_snippets_gen():
+        try:
+            if snippet.is_valid_version():
+                snippet.perform_injections(InjectionTiming.POST_TUNING_LOADED)
+        except:
+            logger.exception("POST_TUNING_LOADED Injection Failure for Snippet: {}".format(snippet.to_str()))
 
 
 @event_handler(CoreEvent.ZONE_CLEANUP_OBJECTS)
@@ -269,18 +297,14 @@ def _do_zone_dependent_injections(*args, **kwargs):
             if snippet.is_valid_version():
                 snippet.perform_injections(InjectionTiming.ZONE_LOAD)
         except:
-            logger.exception("Total Injection Failure for Snippet: {}".format(snippet.to_str()))
+            logger.exception("ZONE_LOAD Injection Failure for Snippet: {}".format(snippet.to_str()))
 
 
 @event_handler(CoreEvent.LOADING_SCREEN_LIFTED)
 def _do_version_notifier(*args, **kwargs):
-    global SHOW_VERSION_NOTIFICATION
-    if SHOW_VERSION_NOTIFICATION:
-        active_sim = services.get_active_sim()
-        dialog = TuningInjector.VERSION_DIALOG(active_sim)
-        dialog.title = lambda *_: LocalizationHelperTuning.get_raw_text("Lot 51 Core Library Issue Detected")
-        text = "A mod has been installed that requires a newer version of Core Library.\n\nCurrent Version: {}\nRequired Version: {}\n\nPlease download the latest version from https://lot51.cc/core\n\nIf you still experience issues, join the Lot 51 Discord."
-        dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(text)
-        dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
-        dialog.show_dialog()
-        SHOW_VERSION_NOTIFICATION = False
+    global SHOWN_VERSION_NOTIFICATION
+    if not SHOWN_VERSION_NOTIFICATION:
+        for snippet in TuningInjector.INVALID_SNIPPETS:
+            snippet.show_version_dialog()
+        SHOWN_VERSION_NOTIFICATION = True
+        TuningInjector.INVALID_SNIPPETS.clear()

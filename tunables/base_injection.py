@@ -5,8 +5,9 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit
 
 
 class InjectionTiming(enum.Int):
-    TUNING_LOADED = 0
-    ZONE_LOAD = 1
+    TUNING_LOADED = 1
+    POST_TUNING_LOADED = 32
+    ZONE_LOAD = 64
 
 
 class BaseTunableInjection(HasTunableSingletonFactory, AutoFactoryInit):

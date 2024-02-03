@@ -5,10 +5,11 @@ from lot51_core import logger
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.utils.dialog import DialogHelper
 from lot51_core.utils.semver import Version
+from sims4.common import Pack, are_packs_available
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import Tunable, TunableMapping, OptionalTunable, HasTunableReference, TunableTuple
+from sims4.tuning.tunable import Tunable, TunableMapping, OptionalTunable, HasTunableReference, TunableTuple, TunableEnumSet
 from ui.ui_dialog import CommandArgType
 
 
@@ -23,6 +24,7 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
             description="Module path to lookup script version. __version__ must be defined in __init__.py in the root of the module. Must follow semver pattern.",
             tunable=Tunable(tunable_type=str, default=None, allow_empty=True)
         ),
+        'required_packs': TunableEnumSet(enum_type=Pack, default_enum_list=(Pack.BASE_GAME,)),
         'version_mismatch_notification': OptionalTunable(
             tunable=TunableTuple(
                 title=TunableLocalizedStringFactory(description="The title displayed in the notification. Use {0.String} to include the mod name, {1.String} for the creator name."),
@@ -43,7 +45,7 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
         )
     }
 
-    __slots__ = ('creator_name', 'mod_name', 'version', 'version_mismatch_notification', 'module_path',)
+    __slots__ = ('creator_name', 'mod_name', 'version', 'version_mismatch_notification', 'module_path', 'required_packs',)
 
     @classmethod
     def to_str(cls):
@@ -67,6 +69,10 @@ class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, m
         except:
             logger.debug("Could not import module: {} for manifest: {}".format(cls.module_path, cls.__name__))
             return None
+
+    @classmethod
+    def are_packs_available(cls):
+        return are_packs_available(cls.required_packs)
 
     @classmethod
     def get_package_version(cls):

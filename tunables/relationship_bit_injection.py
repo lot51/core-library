@@ -11,12 +11,16 @@ class TunableRelationshipBitInjection(BaseTunableInjection):
             description="The bits to inject to",
             tunable=TunableReference(manager=services.get_instance_manager(Types.RELATIONSHIP_BIT), pack_safe=True)
         ),
-        'bit_added_loot_list': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True)),
+        'bit_added_loot_list': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True)
+        ),
         'provided_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
             value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
-        'super_affordances': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)),
+        'super_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)
+        ),
     }
 
     __slots__ = ('bits', 'bit_added_loot_list', 'provided_mixers', 'super_affordances',)

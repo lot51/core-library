@@ -1,6 +1,5 @@
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
-from event_testing.tests import TunableTestSet
 from interactions import ParticipantTypeSingle
 from objects.components.types import STORED_SIM_INFO_COMPONENT
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry, Tunable, OptionalTunable

@@ -1,5 +1,9 @@
 import enum
 
+
+SIM_OBJECT_ID = 14965
+
+
 class DayOfWeek(enum.Int):
     SUNDAY = 0
     MONDAY = 1

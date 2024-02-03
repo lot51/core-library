@@ -6,7 +6,7 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 
 class TunableCraftingInteractionInjection(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
-        'recipes': TunableList(tunable=TunableReference(manager=get_instance_manager(Types.RECIPE)))
+        'recipes': TunableList(tunable=TunableReference(manager=get_instance_manager(Types.RECIPE), pack_safe=True)),
     }
 
     __slots__ = ('recipes',)

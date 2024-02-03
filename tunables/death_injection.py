@@ -1,4 +1,5 @@
 import services
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
 from sims4.tuning.tunable import Tunable, TunableReference
@@ -26,6 +27,10 @@ class TunableCustomDeath(BaseTunableInjection):
         return services.get_instance_manager(Types.SNIPPET).get(cls.DEATH_TYPE_AFFORDANCE_LIST_ID)
 
     def inject(self):
+        if self.affordance is None or self.trait is None:
+            logger.warn("Unable to inject death type, missing trait and/or affordance")
+            return
+
         # inject to DeathType enum
         enum_data = {self.death_type_key: self.death_type_id}
         inject_to_enum(enum_data, DeathType)

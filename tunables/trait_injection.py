@@ -22,8 +22,12 @@ class TunableTraitInjection(BaseTunableInjection):
             value_type=TunableSet(
                 tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
-        'buffs': TunableList(tunable=TunableBuffReference(pack_safe=True)),
-        'buffs_proximity': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF))),
+        'buffs': TunableList(
+            tunable=TunableBuffReference(pack_safe=True)
+        ),
+        'buffs_proximity': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF), pack_safe=True)
+        ),
         'buff_replacements': TunableMapping(
             key_type=TunableReference(
                 manager=services.get_instance_manager(Types.BUFF),
@@ -43,8 +47,12 @@ class TunableTraitInjection(BaseTunableInjection):
                 )
             )
         ),
-        'interactions': OptionalTunable(tunable=ContentSet.TunableFactory(locked_args={'phase_affordances': frozendict(), 'phase_tuning': None})),
-        'loot_on_trait_add': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))),
+        'interactions': OptionalTunable(
+            tunable=ContentSet.TunableFactory(locked_args={'phase_affordances': frozendict(), 'phase_tuning': None})
+        ),
+        'loot_on_trait_add': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True),
+        ),
         'provided_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
             value_type=TunableSet(
@@ -53,8 +61,12 @@ class TunableTraitInjection(BaseTunableInjection):
         'restricted_ingredients': TunableList(
             tunable=TunableEnumEntry(tunable_type=FoodRestrictionUtils.FoodRestrictionEnum, default=FoodRestrictionUtils.FoodRestrictionEnum.INVALID, invalid_enums=(FoodRestrictionUtils.FoodRestrictionEnum.INVALID,))
         ),
-        'super_affordances': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
-        'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False}),
+        'super_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
+        ),
+        'target_super_affordances': TunableProvidedAffordances(
+            locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False}
+        ),
         'whim_set': OptionalTunable(
             tunable=TunableReference(manager=services.get_instance_manager(Types.ASPIRATION), class_restrictions=(ObjectivelessWhimSet,))
         ),
@@ -63,7 +75,7 @@ class TunableTraitInjection(BaseTunableInjection):
                 restriction_key=Tunable(tunable_type=str, default=''),
                 restriction_id=Tunable(tunable_type=int, default=0),
                 recipes=TunableList(
-                    tunable=TunableReference(manager=services.get_instance_manager(Types.RECIPE)),
+                    tunable=TunableReference(manager=services.get_instance_manager(Types.RECIPE), pack_safe=True),
                 ),
             )
         )

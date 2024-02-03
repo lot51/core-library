@@ -33,6 +33,12 @@ class GlobalService(Service):
         build_buy.unregister_build_buy_exit_callback(self.on_build_buy_exit)
         event_service.process_event(CoreEvent.GLOBAL_SERVICE_STOP)
 
+    def on_client_connect(self, client):
+        event_service.process_event(CoreEvent.CLIENT_CONNECT, client)
+
+    def on_client_disconnect(self, client):
+        event_service.process_event(CoreEvent.CLIENT_DISCONNECT, client)
+
     def on_zone_load(self, *args, **kwargs):
         context = Context.get_current_context()
         event_service.process_event(CoreEvent.ZONE_LOAD, context=context)

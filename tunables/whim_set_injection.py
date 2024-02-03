@@ -14,4 +14,5 @@ class TunableWhimSetInjection(BaseTunableInjection):
     __slots__ = ('whim_set', 'whims',)
 
     def inject(self):
-        self.whim_set.whims += self.whims
+        if self.whim_set is not None:
+            self.whim_set.whims += self.whims

@@ -25,7 +25,7 @@ class TunableMixerListInjection(BaseTunableInjection):
                 # to allow modded subclasses
                 if mixer is not None:
                     if not issubclass(mixer, MixerInteraction):
-                        logger.error("Class does not extend SocialMixerInteraction: {}, skipping in mixer list injection to {}".format(mixer, self.mixer_list))
+                        logger.warn("Class does not extend SocialMixerInteraction: {}, skipping in mixer list injection to {}".format(mixer, self.mixer_list))
                         continue
                     mixers_to_add.append(mixer)
             self.mixer_list.value += tuple(mixers_to_add)

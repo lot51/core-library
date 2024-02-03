@@ -16,7 +16,7 @@ def Logger(name, root, filename, version='N/A', mode='development'):
     handler.setFormatter(formatter)
 
     logger.info('[Lot 51] {name}; version: {version}; mode: {mode}; library: {lib}'.format(name=name, version=version, mode=mode, lib=lot51_core.__version__))
-    logger.info('If you are experiencing any issues with this mod, please go to https://lot51.cc and report your error with this log. Feel free to upload through the website, or join the Discord help channel.')
+    logger.info('If you are experiencing any issues with this mod, please join my Discord at https://lot51.cc/discord and report your error in #mod-support with this log.')
     return logger
 
 

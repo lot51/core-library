@@ -3,17 +3,20 @@ from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant
 from interactions.utils.tunable import TunableStatisticAdvertisements
-from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.constants import SIM_OBJECT_ID
+from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.crafting_interaction_injection import TunableCraftingInteractionInjection
 from lot51_core.tunables.purchase_interaction_injection import TunablePurchaseInteractionInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
 from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
-from sims4.resources import Types
+from sims4.localization import TunableLocalizedStringFactory
+from sims4.resources import Types, get_resource_key
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, \
     OptionalTunable, TunableEnumEntry, Tunable, TunableSet
 from snippets import TunableAffordanceListReference
+from tag import Tag
 
 
 class BaseTunableAffordanceInjection(BaseTunableInjection):
@@ -31,6 +34,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         'display_name_overrides': TunableDisplayNameVariant(description='Set name modifiers or random names.'),
         'false_advertisements': OptionalTunable(
             tunable=TunableStatisticAdvertisements()
+        ),
+        'interaction_category_tags': TunableSet(
+            description='This attribute is used to tag an interaction to allow for searching, testing, and categorization. An example would be using a tag to selectively test certain interactions. On each of the interactions you want to test together you would add the same tag, then the test routine would only test interactions with that tag. Interactions can have multiple tags. This attribute has no effect on gameplay.',
+            tunable=TunableEnumEntry(description='These tag values are used for searching, testing, and categorizing interactions.', tunable_type=Tag, default=Tag.INVALID, pack_safe=True)
         ),
         'outfit_change_on_exit': TunableMapping(
             description="Append an outfit change to an existing posture",
@@ -61,6 +68,9 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 ),
             )
         ),
+        'pie_menu_priority': OptionalTunable(
+            tunable=Tunable(tunable_type=int, default=0)
+        ),
         'modify_autonomous_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_autonomous` compound list."),
         'modify_global_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_globals` list", global_tests=True),
         'modify_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `tests` compound list."),
@@ -78,23 +88,36 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
             description="These are 'additional tests' added to the affordance (not an injection). They must all pass separately from test_autonomous, test_globals, tests",
             tunable=TunableTestVariant(),
         ),
+        'utility_info': OptionalTunable(
+            tunable=TunableMapping(
+                key_type=Tunable(tunable_type=str, default='POWER'),
+                value_type=TunableTuple(
+                    _remove=Tunable(
+                        description="If True, this utility requirement will be removed. Supports custom Utilities added to the Utilities enum.",
+                        tunable_type=bool,
+                        default=False
+                    ),
+                    shutoff_tooltip_override=TunableLocalizedStringFactory()
+                ),
+            ),
+        )
     }
 
-    __slots__ = ('basic_extras', 'allow_user_directed_override', 'cheat_override', 'debug_override', 'category_override', 'allow_autonomous_override', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction',)
+    __slots__ = ('basic_extras', 'allow_user_directed_override', 'cheat_override', 'debug_override', 'category_override', 'allow_autonomous_override', 'interaction_category_tags', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'display_name_overrides', 'false_advertisements', 'static_commodities', 'tests', 'outfit_change', 'outfit_change_on_exit', 'pie_menu_priority', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction', 'utility_info',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
 
     def inject(self):
         for affordance in self.get_affordances_gen():
-            if affordance is None:
-                continue
-
             if self.allow_autonomous_override is not None:
                 affordance.allow_autonomous = self.allow_autonomous_override
 
             if self.allow_user_directed_override is not None:
                 affordance.allow_user_directed = self.allow_user_directed_override
+
+            if self.basic_extras is not None:
+                affordance.basic_extras += self.basic_extras
 
             if self.cheat_override is not None:
                 affordance.cheat = self.cheat_override
@@ -110,6 +133,15 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
 
             if self.category_override is not None:
                 affordance.category = self.category_override.pie_menu_category
+
+            if self.display_name_overrides is not None:
+                if affordance.display_name_overrides is None:
+                    affordance.display_name_overrides = self.display_name_overrides
+                else:
+                    affordance.display_name_overrides.overrides += self.display_name_overrides.overrides
+
+            if self.interaction_category_tags is not None:
+                affordance.interaction_category_tags = set(affordance.interaction_category_tags) | self.interaction_category_tags
 
             for test in self.tests:
                 if test is not None:
@@ -133,14 +165,25 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
             if self.outfit_change is not None:
                 affordance.outfit_change = self.outfit_change
 
-            if self.basic_extras is not None:
-                affordance.basic_extras += self.basic_extras
+            if self.pie_menu_priority is not None:
+                affordance.pie_menu_priority = self.pie_menu_priority
 
             if self.inject_to_purchase_interaction is not None:
                 self.inject_to_purchase_interaction.inject_to_affordance(affordance)
 
             if self.inject_to_crafting_interaction is not None:
                 self.inject_to_crafting_interaction.inject_to_affordance(affordance)
+
+            if self.utility_info is not None:
+                for utility_key, utility_info in self.utility_info.items():
+                    # Resolve enum to support custom utilities
+                    utility = Utilities[utility_key]
+                    if utility is None:
+                        continue
+                    if utility_info._remove:
+                        del affordance.utility_info[utility]
+                    else:
+                        affordance.utility_info[utility] = utility_info
 
 
 class TunableAffordanceInjectionByAffordances(BaseTunableAffordanceInjection):
@@ -149,8 +192,9 @@ class TunableAffordanceInjectionByAffordances(BaseTunableAffordanceInjection):
             description='List of affordances to inject to',
             tunable=TunableReference(
                 description='Affordance to inject to',
-                manager=services.get_instance_manager(Types.INTERACTION)
-            )
+                manager=services.get_instance_manager(Types.INTERACTION),
+                pack_safe=True,
+            ),
         ),
     }
 
@@ -164,41 +208,79 @@ class TunableAffordanceInjectionByAffordanceList(BaseTunableAffordanceInjection)
     FACTORY_TUNABLES = {
         'affordance_lists': TunableList(
             description='List of affordances to inject to',
-            tunable=TunableAffordanceListReference(),
+            tunable=TunableAffordanceListReference(pack_safe=True),
+        ),
+        'exclude_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
     }
 
-    __slots__ = ('affordance_lists',)
+    __slots__ = ('affordance_lists', 'exclude_affordances',)
 
     def get_affordances_gen(self):
         for affordance_list in self.affordance_lists:
-            if affordance_list is not None:
-                yield from affordance_list.value
+            for affordance in affordance_list.value:
+                if affordance not in self.exclude_affordances:
+                    yield affordance
 
 
 class TunableAffordanceInjectionByUtility(BaseTunableAffordanceInjection):
     FACTORY_TUNABLES = {
+        'exclude_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
+        ),
         'utility': OptionalTunable(tunable=TunableEnumEntry(tunable_type=Utilities, default=None)),
     }
 
-    __slots__ = ('utility',)
+    __slots__ = ('utility', 'exclude_affordances',)
+
+    @property
+    def injection_timing(self):
+        return InjectionTiming.POST_TUNING_LOADED
 
     def get_affordances_gen(self):
         if self.utility is not None:
             for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
                 if affordance.utility_info is not None:
-                    if self.utility in affordance.utility_info:
+                    if self.utility in affordance.utility_info and affordance not in self.exclude_affordances:
                         yield affordance
 
 
 class TunableAffordanceInjectionByCategory(BaseTunableAffordanceInjection):
     FACTORY_TUNABLES = {
-        'pie_menu_categories': TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY)))
+        'exclude_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
+        ),
+        'pie_menu_categories': TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY))),
     }
 
-    __slots__ = ('pie_menu_categories',)
+    __slots__ = ('pie_menu_categories', 'exclude_affordances',)
+
+    @property
+    def injection_timing(self):
+        return InjectionTiming.POST_TUNING_LOADED
 
     def get_affordances_gen(self):
         for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
-            if affordance.category in self.pie_menu_categories:
+            if affordance.category in self.pie_menu_categories and affordance not in self.exclude_affordances:
+                yield affordance
+
+
+class TunableAffordanceInjectionToAllPhoneAffordances(BaseTunableAffordanceInjection):
+    FACTORY_TUNABLES = {
+        'exclude_affordances': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
+        ),
+    }
+
+    __slots__ = ('exclude_affordances',)
+
+    @property
+    def injection_timing(self):
+        return InjectionTiming.POST_TUNING_LOADED
+
+    def get_affordances_gen(self):
+        sim_obj = services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(SIM_OBJECT_ID, Types.OBJECT))
+        for affordance in sim_obj.phone_affordances:
+            if affordance not in self.exclude_affordances:
                 yield affordance

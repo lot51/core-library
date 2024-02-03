@@ -4,7 +4,7 @@ from objects.game_object import GameObject
 
 
 @inject_to(GameObject, 'on_add')
-def _on_update(original, self, *args, **kwargs):
+def _on_game_object_add(original, self, *args, **kwargs):
     original(*args, self, **kwargs)
     try:
         event_service.process_event(CoreEvent.OBJECT_ADDED, self)
@@ -13,7 +13,7 @@ def _on_update(original, self, *args, **kwargs):
 
 
 @inject_to(GameObject, 'on_remove')
-def _on_update(original, self, *args, **kwargs):
+def _on_game_object_remove(original, self, *args, **kwargs):
     try:
         event_service.process_event(CoreEvent.OBJECT_DESTROYED, self)
     except:

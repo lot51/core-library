@@ -11,21 +11,35 @@ DEFAULT_PHONE_SA_KEY = '_phone_affordances'
 
 
 def clone_test_set(original_tests, additional_and=(), additional_or=()):
+    """
+    This function will clone a TunableTestSet/TunableGlobalTestSet and add additional tests,
+    returning an object that can safely replace
+
+    :param original_tests: A TestList, CompoundTestList, or tuple of tests.
+    :param additional_and: A tuple of tests that will be appended to each test list.
+    :param additional_or: A tuple of tests that will be appended to the CompoundTestList.
+    :return: A TestList, CompoundTestList, or tuple of tests matching the `original_tests` param.
+    """
+    # Represents a TestList returned from a TunableGlobalTestSet
     if isinstance(original_tests, TestList):
         new_tests = TestList(original_tests)
         for test in additional_and:
             new_tests.append(test)
         return new_tests
+    # Represents a CompoundTestList returned from a TunableTestSet
     elif isinstance(original_tests, CompoundTestList):
         new_compound = CompoundTestList()
+        # Clone nested test lists with additional AND tests appended
         for test_list in original_tests:
             new_tests = clone_test_set(test_list, additional_and=additional_and)
             new_compound.append(new_tests)
+        # Add additional OR tests
         for test_list in additional_or:
             new_compound.append(test_list)
         return new_compound
+    # Represents a tuple of tests that are within a CompoundTestList
     else:
-        # This should be the tuple within a CompoundTestList
+        # Clone the tuple and append additional AND tests
         new_tests = list(original_tests)
         for test in additional_and:
             new_tests.append(test)
