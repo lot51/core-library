@@ -35,10 +35,15 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         'false_advertisements': OptionalTunable(
             tunable=TunableStatisticAdvertisements()
         ),
+        'inject_to_purchase_interaction': OptionalTunable(tunable=TunablePurchaseInteractionInjection.TunableFactory()),
+        'inject_to_crafting_interaction': OptionalTunable(tunable=TunableCraftingInteractionInjection.TunableFactory()),
         'interaction_category_tags': TunableSet(
             description='This attribute is used to tag an interaction to allow for searching, testing, and categorization. An example would be using a tag to selectively test certain interactions. On each of the interactions you want to test together you would add the same tag, then the test routine would only test interactions with that tag. Interactions can have multiple tags. This attribute has no effect on gameplay.',
             tunable=TunableEnumEntry(description='These tag values are used for searching, testing, and categorizing interactions.', tunable_type=Tag, default=Tag.INVALID, pack_safe=True)
         ),
+        'modify_autonomous_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_autonomous` compound list."),
+        'modify_global_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_globals` list", global_tests=True),
+        'modify_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `tests` compound list."),
         'outfit_change_on_exit': TunableMapping(
             description="Append an outfit change to an existing posture",
             key_type=TunableReference(manager=services.get_instance_manager(Types.POSTURE)),
@@ -71,11 +76,6 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         'pie_menu_priority': OptionalTunable(
             tunable=Tunable(tunable_type=int, default=0)
         ),
-        'modify_autonomous_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_autonomous` compound list."),
-        'modify_global_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `test_globals` list", global_tests=True),
-        'modify_tests': TestInjectionVariant(description="Lists of tests to replace/append to the affordance's `tests` compound list."),
-        'inject_to_purchase_interaction': OptionalTunable(tunable=TunablePurchaseInteractionInjection.TunableFactory()),
-        'inject_to_crafting_interaction': OptionalTunable(tunable=TunableCraftingInteractionInjection.TunableFactory()),
         'static_commodities': OptionalTunable(
             tunable=TunableList(
                 tunable=TunableTuple(

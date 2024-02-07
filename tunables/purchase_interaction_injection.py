@@ -93,9 +93,25 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
 
         if getattr(affordance, 'picker_dialog', None) is not None:
             overrides = AttributeDict()
-            overrides.categories = affordance.picker_dialog._tuned_values.categories + self.additional_picker_categories
+            logger.debug("injecting to {}, picker dialog id is {}".format(affordance, id(affordance.picker_dialog)))
 
             if self.use_dropdown_filter_override is not None:
                 overrides.use_dropdown_filter = self.use_dropdown_filter_override
 
-            affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)
+            # Check if the tag is in the existing picker list
+            def can_add_category(cat):
+                for picker_cat in affordance.picker_dialog._tuned_values.categories:
+                    if cat.tag == picker_cat.tag:
+                        return False
+                return True
+
+            categories_to_add = list()
+            for category in self.additional_picker_categories:
+                if can_add_category(category):
+                    categories_to_add.append(category)
+
+            if len(categories_to_add):
+                overrides.categories = affordance.picker_dialog._tuned_values.categories + tuple(categories_to_add)
+
+            if len(overrides):
+                affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)
