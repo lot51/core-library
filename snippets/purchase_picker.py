@@ -14,6 +14,7 @@ from interactions.picker.object_marketplace_picker_interaction import ObjectMark
 from interactions.utils.tunable_icon import TunableIcon
 from lot51_core import logger
 from interactions import ParticipantType
+from lot51_core.snippets.purchase_picker_modifier import PurchasePickerModifier
 from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, InventoryDeliveryMethod
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from lot51_core.utils.math import chance_succeeded
@@ -27,8 +28,6 @@ from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, Tu
 from tunable_multiplier import TunableMultiplier
 from ui.ui_dialog_notification import UiDialogNotification
 from ui.ui_dialog_picker import PurchasePickerRow, UiPurchasePicker
-
-
 
 
 class PurchaseException(BaseException):
@@ -52,6 +51,7 @@ class StockManager:
     STOCK_LEVEL_ZERO = 0
     STOCK_LEVEL_UNLIMITED = -1
     STOCK_MANAGERS = {}
+    DEFAULT_REFRESH_PERIOD = 1440
 
     @classmethod
     def get_stock_manager(cls, key, refresh_period=None):
@@ -62,7 +62,7 @@ class StockManager:
         cls.STOCK_MANAGERS[key] = stock_manager
         return stock_manager
 
-    def __init__(self, refresh_period=1440):
+    def __init__(self, refresh_period=DEFAULT_REFRESH_PERIOD):
         self._refresh_required = True
         self.refresh_period = refresh_period
         self.stock_map = {}
@@ -126,7 +126,7 @@ class TunableStockManagement(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
         'sold_out_icon': OptionalTunable(tunable=TunableIcon()),
         'sold_out_description': OptionalTunable(tunable=TunableLocalizedStringFactory()),
-        'refresh_period': TunableSimMinute(default=1440),
+        'refresh_period': TunableSimMinute(default=StockManager.DEFAULT_REFRESH_PERIOD),
         'show_refresh_time': Tunable(tunable_type=bool, default=True)
     }
 
@@ -143,11 +143,17 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         ),
         'loot_on_success': TunableList(
             description="Loot applied to the Actor if at least one item was purchased successfully",
-            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))
+            tunable=TunableReference(
+                manager=services.get_instance_manager(Types.ACTION),
+                pack_safe=True,
+            )
         ),
         'loot_on_failure': TunableList(
             description="Loot applied to the Actor if at least one item failed to purchase",
-            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION))
+            tunable=TunableReference(
+                manager=services.get_instance_manager(Types.ACTION),
+                pack_safe=True,
+            )
         ),
         'payment_source': get_tunable_payment_source_variant(description="All purchases will be debited from this source"),
         'picker_dialog': UiPurchasePicker.TunableFactory(),
@@ -155,9 +161,15 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         'purchase_items': TunableList(
             tunable=TunablePurchaseItem.TunableFactory(),
         ),
-        'purchase_success_notification': OptionalTunable(tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase was successful")),
-        'purchase_failed_notification': OptionalTunable(tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase failed")),
-        'stock_management': OptionalTunable(tunable=TunableStockManagement.TunableFactory()),
+        'purchase_success_notification': OptionalTunable(
+            tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase was successful")
+        ),
+        'purchase_failed_notification': OptionalTunable(
+            tunable=UiDialogNotification.TunableFactory(description="Notification to display if at least one purchase failed")
+        ),
+        'stock_management': OptionalTunable(
+            tunable=TunableStockManagement.TunableFactory()
+        ),
         'show_descriptions': Tunable(tunable_type=bool, default=True),
         'show_tooltips': Tunable(tunable_type=bool, default=True),
         'stop_on_first_failure': Tunable(description="Stop all purchases if an individual item failed to deliver, or had insufficient funds. Otherwise each item will attempt delivery and debit from sim.", tunable_type=bool, default=False),
@@ -219,6 +231,13 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
     def get_stock_manager(cls):
         if cls.stock_management is not None:
             return StockManager.get_stock_manager(cls, refresh_period=cls.stock_management.refresh_period)
+
+    def get_purchase_items_gen(self, include_modifiers=True):
+        yield from self.purchase_items
+        if include_modifiers:
+            for snippet in services.get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=(PurchasePickerModifier,)):
+                if snippet.purchase_picker is not None and snippet.purchase_picker.guid64 == self.guid64:
+                    yield from snippet.additional_purchase_items
 
     def _picker_rows_gen(self):
         resolver = self.get_resolver()
@@ -324,7 +343,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             return
 
         # Otherwise generate new rows
-        for item in self.purchase_items:
+        for item in self.get_purchase_items_gen():
             # Check the global visibility test for this row
             if not item.visibility_tests.run_tests(resolver):
                 continue

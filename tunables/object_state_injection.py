@@ -2,9 +2,11 @@ import services
 from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import add_affordances
-from objects.components.state import ObjectStateValue
+from objects.components.state import ObjectStateValue, StateChangeOperation, ObjectState
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
+    OptionalTunable
+from singletons import UNSET
 
 
 class TunableObjectStateInjection(BaseTunableInjection):
@@ -20,15 +22,20 @@ class TunableObjectStateInjection(BaseTunableInjection):
     def inject(self):
         if self.object_state is None:
             return
+        elif not isinstance(self.object_state, ObjectState):
+            logger.warn("Skipping object state injection. Expecting ObjectState but {} is invalid".format(self.object_state))
+            return
 
-        state_values_to_add = list()
+        state_values_to_add = set()
         for obj_state_value in self.state_values:
             if obj_state_value is not None:
-                if not issubclass(obj_state_value, ObjectStateValue):
-                    logger.error("Class does not extend ObjectStateValue: {}, skipping in object state injection to {}".format(obj_state_value, self.object_state))
+                # Note: changed from issubclass as the OBJECT_STATE manager now holds instances instead of templates
+                # as of game version 1.105 and core version 1.16
+                if not isinstance(obj_state_value, ObjectStateValue):
+                    logger.warn("Skipping `state_values` item in object state injection to {}. {} is not an ObjectStateValue.".format(self.object_state, obj_state_value))
                     continue
                 obj_state_value.state = self.object_state
-                state_values_to_add.append(obj_state_value)
+                state_values_to_add.add(obj_state_value)
 
         self.object_state._values = tuple(self.object_state._values) + tuple(state_values_to_add)
 
@@ -37,13 +44,26 @@ class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryIn
     FACTORY_TUNABLES = {
         'object_state_value': TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE)),
         'affordances': TunableList(
+            description="Inject to super_affordances",
             tunable=TunableReference(services.get_instance_manager(Types.INTERACTION))
-        )
+        ),
+        'new_client_state': OptionalTunable(
+            tunable=StateChangeOperation.TunableFactory()
+        ),
     }
 
-    __slots__ = ('object_state_value', 'affordances',)
+    __slots__ = ('object_state_value', 'affordances', 'new_client_state',)
 
     def inject(self):
         if self.object_state_value is None:
             return
+        elif not isinstance(self.object_state_value, ObjectStateValue):
+            logger.warn("Skipping object state value injection. Expecting ObjectStateValue but {} is invalid".format(self.object_state))
+            return
+
         add_affordances(self.object_state_value, self.affordances, key="super_affordances")
+
+        if self.new_client_state is not None:
+            for key, op in self.new_client_state.ops.items():
+                if op is not UNSET:
+                    self.object_state_value.new_client_state.opts[key] = op

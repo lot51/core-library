@@ -4,13 +4,14 @@ from functools import wraps
 from event_testing.tests import TestList, CompoundTestList
 from services import get_instance_manager
 from lot51_core import logger
+from sims4.utils import blueprintmethod, blueprintproperty
 from tag import Tag
 
 DEFAULT_SA_KEY = '_super_affordances'
 DEFAULT_PHONE_SA_KEY = '_phone_affordances'
 
 
-def clone_test_set(original_tests, additional_and=(), additional_or=()):
+def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_and=False):
     """
     This function will clone a TunableTestSet/TunableGlobalTestSet and add additional tests,
     returning an object that can safely replace
@@ -18,13 +19,17 @@ def clone_test_set(original_tests, additional_and=(), additional_or=()):
     :param original_tests: A TestList, CompoundTestList, or tuple of tests.
     :param additional_and: A tuple of tests that will be appended to each test list.
     :param additional_or: A tuple of tests that will be appended to the CompoundTestList.
+    :param prepend_and: If True, the additional_and tests will be prepended instead of appended.
     :return: A TestList, CompoundTestList, or tuple of tests matching the `original_tests` param.
     """
     # Represents a TestList returned from a TunableGlobalTestSet
     if isinstance(original_tests, TestList):
         new_tests = TestList(original_tests)
         for test in additional_and:
-            new_tests.append(test)
+            if prepend_and:
+                new_tests.insert(test, 0)
+            else:
+                new_tests.append(test)
         return new_tests
     # Represents a CompoundTestList returned from a TunableTestSet
     elif isinstance(original_tests, CompoundTestList):
@@ -42,7 +47,10 @@ def clone_test_set(original_tests, additional_and=(), additional_or=()):
         # Clone the tuple and append additional AND tests
         new_tests = list(original_tests)
         for test in additional_and:
-            new_tests.append(test)
+            if prepend_and:
+                new_tests.insert(test, 0)
+            else:
+                new_tests.append(test)
         return tuple(new_tests)
 
 
@@ -87,20 +95,42 @@ def inject_to_enum(kvp, enum_class):
 
 
 def is_flexmethod(target_function):
+    """
+    Tests if a function is decorated with @flexmethod by checking if it was wrapped with functools.partial,
+    and inspects the name of the first 2 arguments to see if they use "cls" and "inst". This is not guaranteed, but
+    is a common pattern EA uses.
+
+    :param target_function: The function to test
+    :return: bool
+    """
     if type(target_function) is functools.partial:
         spec = inspect.getfullargspec(target_function.func)
         return len(spec.args) >= 2 and spec.args[0] == 'cls' and spec.args[1] == 'inst'
     return False
 
 
-# Injection decorator based on TURBODRIVER's injector
-# https://turbodriver-sims.medium.com/basic-python-injecting-into-the-sims-4-cdc85a741b10
-def inject_to(target_object, target_function_name, force_flex=False):
+def inject_to(target_object, target_function_name, force_flex=False, force_untuned_cls=False):
+    """
+    Decorator to inject a function into an existing function. The original function will be provided as the first
+    argument in your decorated function, with the original args/kwargs following. Depending on your goals, you should
+    call the original function and pass the args/kwargs. Return the original result if necessary.
+
+    Based on TURBODRIVER's Injector
+    https://turbodriver-sims.medium.com/basic-python-injecting-into-the-sims-4-cdc85a741b10
+
+    :param target_object: The class or instance to inject to
+    :param target_function_name: The name of the function to replace on the target_object
+    :param force_flex: Set to True if the target function is a flex method but does not use "cls" and "inst" as names of the first 2 arguments.
+    :param force_untuned_cls: Set to True to retrieve the raw untuned class as the "cls" argument in a class method.
+        As of 1.16 class methods will now provide the tuned class as "cls". This property was added to return the original default functionality.
+    """
 
     def _wrap_target(target_function, new_function):
         @wraps(target_function)
         def _wrapped_func(*args, **kwargs):
-            if type(target_function) is property:
+            if type(target_function) is blueprintmethod:
+                return new_function(target_function.func, *args, **kwargs)
+            elif type(target_function) is blueprintproperty or type(target_function) is property:
                 return new_function(target_function.fget, *args, **kwargs)
             elif force_flex or is_flexmethod(target_function):
                 def new_flex_function(original, *nargs, **nkwargs):
@@ -113,8 +143,12 @@ def inject_to(target_object, target_function_name, force_flex=False):
                 return new_flex_function(target_function, *args, **kwargs)
             return new_function(target_function, *args, **kwargs)
 
-        if inspect.ismethod(target_function):
-            if hasattr(target_function, '__self__'):
+        if type(target_function) is blueprintmethod:
+            return blueprintmethod(_wrapped_func)
+        elif type(target_function) is blueprintproperty:
+            return blueprintproperty(_wrapped_func)
+        elif inspect.ismethod(target_function):
+            if hasattr(target_function, '__self__') and force_untuned_cls:
                 return _wrapped_func.__get__(target_function.__self__, target_function.__self__.__class__)
             return classmethod(_wrapped_func)
         elif type(target_function) is property:

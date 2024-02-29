@@ -37,7 +37,10 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
         ),
         'category_tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
         'chance': SuccessChance.TunableFactory(description="Chance for each item source selection to be included"),
-        'custom_price': OptionalTunable(description="Overrides the default catalog price", tunable=Tunable(tunable_type=int, default=0)),
+        'custom_price': OptionalTunable(
+            description="Overrides the default catalog price",
+            tunable=Tunable(tunable_type=int, default=0)
+        ),
         'custom_names': OptionalTunable(
             description="A random name will be selected and set as the custom name of the object, use the `set_custom_name_on_object` tunable below to toggle whether it is actually set in the name component.",
             tunable=TunableList(
@@ -50,8 +53,14 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             inventory=InventoryDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
         ),
-        'description_override': OptionalTunable(description="Override the object catalog description", tunable=TunableLocalizedStringFactory()),
-        'disabled_description': OptionalTunable(description="Description to display if row is disabled", tunable=TunableLocalizedStringFactory()),
+        'description_override': OptionalTunable(
+            description="Override the object catalog description",
+            tunable=TunableLocalizedStringFactory()
+        ),
+        'disabled_description': OptionalTunable(
+            description="Description to display if row is disabled",
+            tunable=TunableLocalizedStringFactory()
+        ),
         'enable_tests': TunableTestSet(description="Tests to decide if row is not greyed out (not cached)"),
         'exclude_from_stock_management': Tunable(tunable_type=bool, default=False),
         'hide_if_sold_out': Tunable(description="Hides from picker if stock level is 0 instead of showing sold out text/icon", tunable_type=bool, default=False),
@@ -62,7 +71,9 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             tunable=DefinitionSearchMethodVariant()
             # tunable=TunablePurchaseItemSource.TunableFactory()
         ),
-        'limited_stock': OptionalTunable(tunable=TunableInterval(tunable_type=int, default_lower=1, default_upper=1, minimum=0)),
+        'limited_stock': OptionalTunable(
+            tunable=TunableInterval(tunable_type=int, default_lower=1, default_upper=1, minimum=0)
+        ),
         'price_multiplier': TunableMultiplier.TunableFactory(description="A multiplier only applied to this purchase item's price  (not cached)"),
         'quality_states': TunableList(
             description="An item from this list will be randomly selected to add additional value/quality to an object",

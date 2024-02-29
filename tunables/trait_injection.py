@@ -7,9 +7,11 @@ from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import add_affordances, inject_to_enum
+from lot51_core.utils.injection_tracker import injection_tracker
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple, Tunable
 from sims4.localization import TunableLocalizedString
+from statistics.commodity import Commodity
 from traits.traits import TraitBuffReplacementPriority
 from whims.whim_set import ObjectivelessWhimSet
 
@@ -20,7 +22,8 @@ class TunableTraitInjection(BaseTunableInjection):
         'actor_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
             value_type=TunableSet(
-                tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
+                tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)
+            )
         ),
         'buffs': TunableList(
             tunable=TunableBuffReference(pack_safe=True)
@@ -47,6 +50,12 @@ class TunableTraitInjection(BaseTunableInjection):
                 )
             )
         ),
+        'initial_commodities': TunableSet(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), pack_safe=True),
+        ),
+        'initial_commodities_blacklist': TunableSet(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), pack_safe=True),
+        ),
         'interactions': OptionalTunable(
             tunable=ContentSet.TunableFactory(locked_args={'phase_affordances': frozendict(), 'phase_tuning': None})
         ),
@@ -67,6 +76,10 @@ class TunableTraitInjection(BaseTunableInjection):
         'target_super_affordances': TunableProvidedAffordances(
             locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False}
         ),
+        'ui_commodity_sort_override': OptionalTunable(
+            description="Warning! this tunable will replace the existing list.",
+            tunable=TunableList(tunable=Commodity.TunableReference(pack_safe=True)),
+        ),
         'whim_set': OptionalTunable(
             tunable=TunableReference(manager=services.get_instance_manager(Types.ASPIRATION), class_restrictions=(ObjectivelessWhimSet,))
         ),
@@ -81,7 +94,7 @@ class TunableTraitInjection(BaseTunableInjection):
         )
     }
 
-    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'whim_set', 'custom_food_restrictions',)
+    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'initial_commodities', 'initial_commodities_blacklist', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'ui_commodity_sort_override', 'whim_set', 'custom_food_restrictions',)
 
     def inject(self):
         if self.trait is not None:
@@ -97,9 +110,17 @@ class TunableTraitInjection(BaseTunableInjection):
                     buff.trait_replacement_buffs = {}
                 buff.trait_replacement_buffs[self.trait] = replacement_buff
 
-            self.trait.buffs += tuple(self.buffs)
+            self.trait.buffs += tuple(self.buffs          )
 
             self.trait.buffs_proximity += tuple(self.buffs_proximity)
+
+            if self.initial_commodities is not None:
+                new_initial_commodities = set(self.trait.initial_commodities) | set(self.initial_commodities)
+                self.trait.initial_commodities = frozenset(new_initial_commodities)
+
+            if self.initial_commodities_blacklist is not None:
+                new_initial_commodities_blacklist = set(self.trait.initial_commodities_blacklist) | set(self.initial_commodities_blacklist)
+                self.trait.initial_commodities_blacklist = frozenset(new_initial_commodities_blacklist)
 
             if self.interactions is not None:
                 if self.trait.interactions is None:
@@ -128,6 +149,10 @@ class TunableTraitInjection(BaseTunableInjection):
                     self.trait.loot_on_trait_add = tuple(self.loot_on_trait_add)
                 else:
                     self.trait.loot_on_trait_add += tuple(self.loot_on_trait_add)
+
+            if self.ui_commodity_sort_override is not None:
+                if injection_tracker.can_inject(self.trait, 'ui_commodity_sort_override'):
+                    self.trait.ui_commodity_sort_override = self.ui_commodity_sort_override
 
             if self.whim_set is not None:
                 self.trait.whim_set = self.whim_set

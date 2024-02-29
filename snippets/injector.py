@@ -4,11 +4,13 @@ from lot51_core import logger, __version__
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, \
     TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList, \
-    TunableAffordanceInjectionByCategory, TunableAffordanceInjectionToAllPhoneAffordances
+    TunableAffordanceInjectionByCategory, TunableAffordanceInjectionToAllPhoneAffordances, \
+    TunableAffordanceInjectionByCategoryTags
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
+from lot51_core.tunables.pregnancy_tracker_injector import TunablePregnancyTrackerInjection
 from lot51_core.tunables.relationship_bit_injection import TunableRelationshipBitInjection
 from lot51_core.tunables.role_state_injection import TunableRoleStateInjection
 from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
@@ -30,9 +32,11 @@ from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjecti
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
 from lot51_core.tunables.trait_injection import TunableTraitInjection
+from lot51_core.tunables.trait_tracker_injector import TunableTraitTrackerInjection
 from lot51_core.tunables.university_injection import TunableUniversityInjection
 from lot51_core.tunables.university_tuning_injection import TunableUniversityTuningInjection
 from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
+from lot51_core.utils.injection_tracker import injection_tracker
 from lot51_core.utils.semver import Version
 from services import get_instance_manager
 from sims4.common import Pack
@@ -91,6 +95,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_affordances_by_category": TunableList(
             description="Inject to affordances by their category, accepts multiple categories",
             tunable=TunableAffordanceInjectionByCategory.TunableFactory()
+        ),
+        "inject_to_affordances_by_category_tags": TunableList(
+            description="Inject to affordances by interaction_category_tags if there is at least one match",
+            tunable=TunableAffordanceInjectionByCategoryTags.TunableFactory()
         ),
         "inject_to_all_phone_affordances": TunableList(
             description="Inject to all phone affordances",
@@ -160,7 +168,6 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject to service_npcs in the hire a service picker",
             tunable=TunableHireableServicePickerInjection.TunableFactory(),
         ),
-        "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
         "inject_to_situation_jobs": TunableList(
             tunable=TunableSituationJobInjection.TunableFactory(),
         ),
@@ -179,11 +186,14 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "custom_death_types": TunableList(
             tunable=TunableCustomDeath.TunableFactory(),
         ),
+        "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
         "interaction_cancel_compatibility": TunableList(
             tunable=InteractionCancelCompatibilityInjection.TunableFactory()
         ),
+        "pregnancy_tracker": TunablePregnancyTrackerInjection.TunableFactory(),
         "satisfaction_store": TunableSatisfactionStoreInjection.TunableFactory(),
         "social_bunny": TunableSocialBunnyInjection.TunableFactory(),
+        "trait_tracker": TunableTraitTrackerInjection.TunableFactory(),
         "university": TunableUniversityTuningInjection.TunableFactory(),
     }
 
@@ -288,6 +298,8 @@ def _do_injections(*args, **kwargs):
                 snippet.perform_injections(InjectionTiming.POST_TUNING_LOADED)
         except:
             logger.exception("POST_TUNING_LOADED Injection Failure for Snippet: {}".format(snippet.to_str()))
+
+    injection_tracker.cleanup()
 
 
 @event_handler(CoreEvent.ZONE_CLEANUP_OBJECTS)

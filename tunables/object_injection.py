@@ -315,7 +315,7 @@ class TunableObjectInjectionByDefinitions(BaseTunableObjectInjection):
     def get_objects_gen(self):
         _yield_cache = set()
         for definition in self.definitions:
-            if definition.tuning_file_id is not None:
+            if definition is not None and definition.tuning_file_id is not None:
                 tuning = services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(definition.tuning_file_id, Types.OBJECT))
                 if tuning is not None and tuning not in _yield_cache:
                     _yield_cache.add(tuning)

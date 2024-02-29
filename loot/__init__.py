@@ -1,5 +1,3 @@
-import inspect
-
 from interactions.utils.loot import LootActions, LootActionVariant, RandomWeightedLoot
 from interactions.utils.success_chance import SuccessChance
 from lot51_core import logger
@@ -18,7 +16,7 @@ from lot51_core.loot.transform_object import TransformObjectLoot
 from lot51_core.utils.math import chance_succeeded
 from interactions.utils.loot_ops import DoNothingLootOp
 from sims4.tuning.tunable import TunableList, OptionalTunable, TunableTuple
-from sims4.utils import flexmethod
+from sims4.utils import blueprintmethod
 from tunable_multiplier import TunableMultiplier
 
 
@@ -70,19 +68,18 @@ class LotFiftyOneCoreLootActions(LootActions):
     FACTORY_TUNABLES = INSTANCE_TUNABLES
 
     def __repr__(self):
-        return f"<LotFiftyOneCoreLootActions:({self.__name__})>"
+        return "<LotFiftyOneCoreLootActions:({})>".format(self.tuning_name)
 
     def __str__(self):
-        return f"{self.__name__}"
+        return "{}".format(self.tuning_name)
 
-    @flexmethod
-    def get_loot_ops_gen(cls, inst, resolver=None, **kwargs):
+    @blueprintmethod
+    def get_loot_ops_gen(self, resolver=None, **kwargs):
         try:
-            inst_or_cls = inst if inst is not None else cls
-            if inst_or_cls.chance is not None:
-                chance = inst_or_cls.chance.get_chance(resolver)
+            if self.chance is not None:
+                chance = self.chance.get_chance(resolver)
                 if not chance_succeeded(chance):
                     return
-        except Exception as e:
-            logger.error(f"Error while running loot: {cls}\n{str(e)}")
+        except Exception:
+            logger.error("Error while running loot: {}".format(self))
         yield from super().get_loot_ops_gen(resolver=resolver, **kwargs)

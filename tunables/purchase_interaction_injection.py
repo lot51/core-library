@@ -1,12 +1,12 @@
 import sims4
-from interactions.base.picker_interaction import DefinitionsFromTags, DefinitionsExplicit, InventoryItems, DefinitionsRandom, DefinitionsTested, LimitedItemList
+from interactions.base.picker_interaction import DefinitionsFromTags, DefinitionsExplicit, InventoryItems, DefinitionsRandom, DefinitionsTested, LimitedItemList, PurchaseToInventory, MailmanDelivery, SlotToParent, DeliveryServiceNPC
 from lot51_core import logger
+from lot51_core.tunables.multiplier_injection import TunableMultiplierInjection
 from lot51_core.utils.collections import AttributeDict
 from services import get_instance_manager
 from sims4.localization import TunableLocalizedString
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableList, TunableVariant, \
-    TunableReference, TunableTuple, TunableEnumEntry, TunableResourceKey, OptionalTunable, Tunable
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableList, TunableVariant, TunableReference, TunableTuple, TunableEnumEntry, TunableResourceKey, OptionalTunable, Tunable
 from tag import Tag
 
 
@@ -37,6 +37,15 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
                 )
             ),
         ),
+        'delivery_method_override': TunableVariant(
+            description='Where the objects purchased will be delivered.',
+            purchase_to_inventory=PurchaseToInventory(description="Purchase the objects directly into a participant's inventory."),
+            mailman_delivery=MailmanDelivery(description='Deliver the objects by the mailman.'),
+            slot_to_parent=SlotToParent(description=' Deliver the objects by slotting them to a parent object.'),
+            delivery_service_npc=DeliveryServiceNPC(description='Purchased objects will be delivered by the delivery service npc.'),
+            locked_args={'none': None},
+            default='none',
+        ),
         'loots_on_purchase': TunableList(
             description='A list of loots to run immediately on each of the items purchased.',
             tunable=TunableReference(
@@ -44,6 +53,9 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
                 manager=get_instance_manager(Types.ACTION),
                 pack_safe=True
             ),
+        ),
+        'price_multiplier': OptionalTunable(
+            tunable=TunableMultiplierInjection.TunableFactory(),
         ),
         'purchase_list_option': TunableList(
             description='A list of methods that will be used to generate the list of objects that are available in the picker.',
@@ -78,40 +90,48 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
         ),
     }
 
-    __slots__ = ('additional_picker_categories', 'purchase_list_option', 'loots_on_purchase', 'use_dropdown_filter_override')
+    __slots__ = ('additional_picker_categories', 'delivery_method_override', 'price_multiplier', 'purchase_list_option', 'loots_on_purchase', 'use_dropdown_filter_override')
+
+    def _handle_dialog_overrides(self, affordance):
+        overrides = AttributeDict()
+
+        if self.use_dropdown_filter_override is not None:
+            overrides.use_dropdown_filter = self.use_dropdown_filter_override
+
+        # Check if the tag is in the existing picker list
+        def can_add_category(cat):
+            for picker_cat in affordance.picker_dialog._tuned_values.categories:
+                if cat.tag == picker_cat.tag:
+                    return False
+            return True
+
+        categories_to_add = list()
+        for category in self.additional_picker_categories:
+            if can_add_category(category):
+                categories_to_add.append(category)
+
+        if len(categories_to_add):
+            overrides.categories = affordance.picker_dialog._tuned_values.categories + tuple(categories_to_add)
+
+        if len(overrides):
+            affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)
 
     def inject_to_affordance(self, affordance):
         if affordance is None:
             logger.error("Failed to inject to purchase picker interaction, affordance not found")
             return
 
-        if getattr(affordance, 'purchase_list_option', None) is not None:
-            affordance.purchase_list_option += self.purchase_list_option
+        if hasattr(affordance, 'delivery_method') and self.delivery_method_override is not None:
+            affordance.delivery_method_override = self.delivery_method_override
 
-        if getattr(affordance, 'loots_on_purchase', None) is not None:
+        if hasattr(affordance, 'loots_on_purchase'):
             affordance.loots_on_purchase += self.loots_on_purchase
 
-        if getattr(affordance, 'picker_dialog', None) is not None:
-            overrides = AttributeDict()
-            logger.debug("injecting to {}, picker dialog id is {}".format(affordance, id(affordance.picker_dialog)))
+        if hasattr(affordance, 'purchase_list_option'):
+            affordance.purchase_list_option += self.purchase_list_option
 
-            if self.use_dropdown_filter_override is not None:
-                overrides.use_dropdown_filter = self.use_dropdown_filter_override
+        if hasattr(affordance, 'price_multiplier') and self.price_multiplier is not None:
+            self.price_multiplier.inject(affordance, 'price_multiplier')
 
-            # Check if the tag is in the existing picker list
-            def can_add_category(cat):
-                for picker_cat in affordance.picker_dialog._tuned_values.categories:
-                    if cat.tag == picker_cat.tag:
-                        return False
-                return True
-
-            categories_to_add = list()
-            for category in self.additional_picker_categories:
-                if can_add_category(category):
-                    categories_to_add.append(category)
-
-            if len(categories_to_add):
-                overrides.categories = affordance.picker_dialog._tuned_values.categories + tuple(categories_to_add)
-
-            if len(overrides):
-                affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)
+        if hasattr(affordance, 'picker_dialog'):
+            self._handle_dialog_overrides(affordance)

@@ -1,5 +1,6 @@
 import services
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.tunables.test_injection import TestInjectionVariant
 from routing.route_enums import RouteEventPriority
 from sims4.resources import Types
 from sims4.tuning.tunable import Tunable, TunableReference, OptionalTunable, TunableTuple
@@ -15,9 +16,10 @@ class TunableRouteEventInjection(BaseTunableInjection):
                 value=Tunable(tunable_type=int, default=0),
             ),
         ),
+        'modify_tests': TestInjectionVariant(),
     }
 
-    __slots__ = ('route_event', 'priority',)
+    __slots__ = ('route_event', 'priority', 'modify_tests',)
 
     def inject(self):
         if self.route_event is not None:
@@ -30,3 +32,6 @@ class TunableRouteEventInjection(BaseTunableInjection):
                 priority = RouteEventPriority[self.priority.key]
                 # set priority
                 self.route_event.priority = priority
+
+            if self.modify_tests is not None:
+                self.modify_tests.inject(self.route_event, 'tests')

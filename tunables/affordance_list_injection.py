@@ -16,7 +16,7 @@ class TunableAffordanceListInjection(BaseTunableInjection):
             tunable=TunableAffordanceListReference(pack_safe=True)
         ),
         'affordances': TunableList(
-            description="The affordances to inject to the list",
+            description="The affordances to inject to the lists",
             tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         )
     }
@@ -29,14 +29,14 @@ class TunableAffordanceListInjection(BaseTunableInjection):
         yield from self.affordance_lists
 
     def inject(self):
-        affordances_to_add = list()
+        affordances_to_add = set()
         for affordance in self.affordances:
             # Check if subclass instead of using strict class_restrictions in TunableReference
             # to allow modded subclasses
             if not issubclass(affordance, SuperInteraction):
-                logger.warn("Class does not extend SuperInteraction: {}, skipping in affordance list injection".format(affordance))
+                logger.warn("Class does not extend SuperInteraction: {}, skipping in affordance list injection. If this interaction is a MixerInteraction did you mean to use `inject_to_mixer_list`?".format(affordance))
                 continue
-            affordances_to_add.append(affordance)
+            affordances_to_add.add(affordance)
 
         for affordance_list in self._get_affordance_lists_gen():
             add_affordances(affordance_list, affordances_to_add, key='value')

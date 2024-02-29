@@ -5,7 +5,7 @@ from objects.game_object import GameObject
 
 @inject_to(GameObject, 'on_add')
 def _on_game_object_add(original, self, *args, **kwargs):
-    original(*args, self, **kwargs)
+    original(self, *args, **kwargs)
     try:
         event_service.process_event(CoreEvent.OBJECT_ADDED, self)
     except:
