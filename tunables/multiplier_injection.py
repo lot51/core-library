@@ -1,5 +1,5 @@
-from lot51_core import logger
 from _sims4_collections import frozendict
+from lot51_core.utils.injection import merge_list
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.tuning.tunable import Tunable, OptionalTunable, HasTunableSingletonFactory, AutoFactoryInit, TunableFactory
 from tunable_multiplier import _get_tunable_multiplier_list_entry, TunableMultiplier
@@ -31,7 +31,7 @@ class TunableMultiplierInjection(HasTunableSingletonFactory, AutoFactoryInit):
         tunable = getattr(target, key, None)
         if tunable is not None:
             base_value = tunable.base_value if self.base_value_override is None else self.base_value_override
-            multipliers = tuple(tunable.multipliers) + self.additional_multipliers
+            multipliers = merge_list(tunable.multipliers, self.additional_multipliers)
             new_tunable = TunableMultiplier(base_value=base_value, multipliers=multipliers)
             # logger.debug("replacing multiplier {} with {}".format(getattr(target, key, None), new_tunable))
             setattr(target, key, new_tunable)

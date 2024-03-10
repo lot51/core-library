@@ -4,9 +4,10 @@ from interactions.base.mixer_interaction import MixerInteraction
 from interactions.utils.tunable import TunableAffordanceLinkList
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_mapping_lists, inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, Tunable
-from sims4.collections import  make_immutable_slots_class
+from sims4.collections import make_immutable_slots_class
 
 
 class TunableBuffInjection(BaseTunableInjection):
@@ -43,29 +44,21 @@ class TunableBuffInjection(BaseTunableInjection):
     _create_interaction_items = make_immutable_slots_class({'interaction_items', 'scored_commodity', 'weight'})
 
     def inject(self):
-        self.buff._loot_on_addition += tuple(self.loot_on_addition)
-        self.buff._loot_on_instance += tuple(self.loot_on_instance)
-        self.buff._loot_on_removal += tuple(self.loot_on_removal)
 
-        for super_affordance, mixers in self.actor_mixers.items():
-            if super_affordance in self.buff.actor_mixers:
-                self.buff.actor_mixers[super_affordance] += tuple(mixers)
-            else:
-                self.buff.actor_mixers[super_affordance] = tuple(mixers)
+        inject_list(self.buff, '_loot_on_addition', self.loot_on_addition)
+        inject_list(self.buff, '_loot_on_instance', self.loot_on_instance)
+        inject_list(self.buff, '_loot_on_removal', self.loot_on_removal)
 
-        for super_affordance, mixers in self.provided_mixers.items():
-            if super_affordance in self.buff.provided_mixers:
-                self.buff.provided_mixers[super_affordance] += tuple(mixers)
-            else:
-                self.buff.provided_mixers[super_affordance] = tuple(mixers)
+        inject_mapping_lists(self.buff, 'actor_mixers', self.actor_mixers)
+        inject_mapping_lists(self.buff, 'provided_mixers', self.provided_mixers)
 
         if self.refresh_lock is not None:
             self.buff.refresh_lock = self.refresh_lock
 
-        self.buff.super_affordances = set(self.buff.super_affordances) | set(self.super_affordances)
+        inject_list(self.buff, 'super_affordances', self.super_affordances)
 
         if self.target_super_affordances is not None:
-            self.buff.target_super_affordances += tuple(self.target_super_affordances)
+            inject_list(self.buff, 'target_super_affordances', self.target_super_affordances)
 
         if self.interaction_items is not None:
             if self.buff.interactions is not None:

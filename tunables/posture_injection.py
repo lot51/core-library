@@ -1,6 +1,7 @@
 import services
 from event_testing.tests import TunableGlobalTestSet
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from postures.posture import Posture
 from postures.posture_cost import _PostureCostCustom
 from sims.outfits.outfit_change import TunableOutfitChange
@@ -35,4 +36,4 @@ class TunablePostureInjection(BaseTunableInjection):
                     Posture._posture_transitions[(source, dest)] = transition_data._replace(transition_cost=_PostureCostCustom(cost=self.cost))
 
         for posture in self.postures:
-            posture.override_outfit_changes = self.prepend_override_outfit_changes + posture.override_outfit_changes
+            inject_list(posture, 'override_outfit_changes', self.prepend_override_outfit_changes, prepend=True)

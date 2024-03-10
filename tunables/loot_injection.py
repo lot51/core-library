@@ -3,6 +3,7 @@ from lot51_core import logger
 from lot51_core.loot import LotFiftyOneCoreLootActionVariant
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from interactions.utils.loot_ops import DoNothingLootOp
 from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple
@@ -23,7 +24,7 @@ class TunableLootInjection(BaseTunableInjection):
             logger.warn("Failed to inject ops, loot not found")
             return
 
-        self.loot.loot_actions += self.ops
+        inject_list(self.loot, 'loot_actions', self.ops)
 
         if self.modify_tests is not None:
             self.modify_tests.inject(self.loot.tests)
@@ -47,4 +48,4 @@ class TunableRandomWeightedLootInjection(BaseTunableInjection):
             logger.warn("Failed to inject loot actions, random weighted loot not found")
             return
 
-        self.loot.random_loot_actions += self.random_loot_actions
+        inject_list(self.loot, 'random_loot_actions', self.random_loot_actions)

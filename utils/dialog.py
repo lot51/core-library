@@ -30,9 +30,14 @@ def create_input(title="", input_text="", restricted_characters=None, max_length
     return text_input
 
 
-def create_translated_input(title=0x0, input_text=0x0, restricted_characters=None, max_length=255):
-    localized_title = lambda **_: _create_localized_string(title)
-    localized_text_placeholder = lambda **_: _create_localized_string(input_text)
+def create_translated_input(title=None, input_text=None, restricted_characters=None, max_length=255):
+    if title is None:
+        title = _create_localized_string(0x0)
+    if input_text is None:
+        input_text = _create_localized_string(0x0)
+
+    localized_title = lambda **_: title
+    localized_text_placeholder = lambda **_: input_text
     text_input = UiTextInput(sort_order=0, restricted_characters=restricted_characters, height=0)
     text_input.default_text = localized_text_placeholder
     text_input.title = localized_title
@@ -92,7 +97,7 @@ class DialogHelper:
         return dialog
 
     @staticmethod
-    def create_text_dialog(title="", description="", input_title="", input_text="", button_text="Okay", callback=None):
+    def create_text_dialog(title="", description="", input_title=None, input_text=None, button_text="Okay", callback=None):
         client = services.client_manager().get_first_client()
         localized_title = lambda **_: LocalizationHelperTuning.get_raw_text(title)
         localized_text = lambda **_: LocalizationHelperTuning.get_raw_text(description)
@@ -108,6 +113,7 @@ class DialogHelper:
             text_ok=lambda **_: LocalizationHelperTuning.get_raw_text(button_text),
             is_special_dialog=False
         )
+
         if callback:
             dialog.add_listener(callback)
 

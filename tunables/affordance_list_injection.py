@@ -2,7 +2,7 @@ import services
 from interactions.base.super_interaction import SuperInteraction
 from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList
 from snippets import TunableAffordanceListReference
@@ -39,4 +39,4 @@ class TunableAffordanceListInjection(BaseTunableInjection):
             affordances_to_add.add(affordance)
 
         for affordance_list in self._get_affordance_lists_gen():
-            add_affordances(affordance_list, affordances_to_add, key='value')
+            inject_list(affordance_list, 'value', affordances_to_add)

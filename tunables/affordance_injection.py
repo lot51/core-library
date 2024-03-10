@@ -16,15 +16,15 @@ from interactions.utils.lighting_liability import LightingLiability
 from interactions.utils.route_goal_suppression_liability import RouteGoalSuppressionLiability
 from interactions.utils.teleport_liability import TeleportLiability
 from interactions.utils.temporary_state_change_liability import TemporaryStateChangeLiability
-from interactions.utils.tunable import TunableStatisticAdvertisements, TimeoutLiability
+from interactions.utils.tunable import TunableStatisticAdvertisements
 from interactions.utils.user_cancelable_chain_liability import UserCancelableChainLiability
 from interactions.vehicle_liabilities import VehicleLiability
-from lot51_core import logger
 from lot51_core.constants import SIM_OBJECT_ID
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.crafting_interaction_injection import TunableCraftingInteractionInjection
 from lot51_core.tunables.purchase_interaction_injection import TunablePurchaseInteractionInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
+from lot51_core.utils.injection import inject_list
 from objects.components.game.game_challenge_liability import GameChallengeLiability
 from pets.missing_pets_liability import MissingPetLiability
 from postures.proxy_posture_owner_liability import ProxyPostureOwnerLiability
@@ -216,10 +216,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 affordance.allow_from_world = self.allow_from_world_override
 
             if self.basic_extras is not None:
-                affordance.basic_extras += self.basic_extras
+                inject_list(affordance, 'basic_extras', self.basic_extras)
 
             if self.basic_liabilities is not None:
-                affordance.basic_liabilities += self.basic_liabilities
+                inject_list(affordance, 'basic_liabilities', self.basic_liabilities)
 
             if self.cheat_override is not None:
                 affordance.cheat = self.cheat_override
@@ -228,10 +228,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 affordance.debug = self.debug_override
 
             if self.false_advertisements is not None:
-                affordance._false_advertisements += self.false_advertisements
+                inject_list(affordance, '_false_advertisements', self.false_advertisements)
 
             if self.static_commodities is not None:
-                affordance._static_commodities += self.static_commodities
+                inject_list(affordance, '_static_commodities', self.static_commodities)
 
             if self.category_override is not None:
                 affordance.category = self.category_override.pie_menu_category
@@ -240,17 +240,17 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 if affordance.display_name_overrides is None:
                     affordance.display_name_overrides = self.display_name_overrides
                 else:
-                    affordance.display_name_overrides.overrides += self.display_name_overrides.overrides
+                    inject_list(affordance.display_name_overrides, 'overrides', self.display_name_overrides.overrides)
 
             if self.display_name_wrappers is not None:
                 if affordance.display_name_wrappers is None:
                     affordance.display_name_wrappers = self.display_name_wrappers
                 else:
                     # Prepend injection
-                    affordance.display_name_wrappers.wrappers = tuple(self.display_name_wrappers.wrappers) + affordance.display_name_wrappers.wrappers
+                    inject_list(affordance.display_name_wrappers, 'wrappers', self.display_name_wrappers.wrappers, prepend=True)
 
             if self.interaction_category_tags is not None:
-                affordance.interaction_category_tags = set(affordance.interaction_category_tags) | self.interaction_category_tags
+                inject_list(affordance, 'interaction_category_tags', self.interaction_category_tags)
 
             for test in self.tests:
                 if test is not None:

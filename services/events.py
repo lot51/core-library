@@ -8,6 +8,7 @@ class CoreEvent:
     CLIENT_DISCONNECT = 'client.disconnect'
     BUILD_BUY_ENTER = 'build_buy.enter'
     BUILD_BUY_EXIT = 'build_buy.exit'
+    BUILD_BUY_FIXUP = 'build_buy.fixup'
     GAME_SETUP = 'game.setup'
     GAME_LOAD = 'game.load'
     GAME_PRE_SAVE = 'game.pre_save'
@@ -22,6 +23,8 @@ class CoreEvent:
     ZONE_CLEANUP_OBJECTS = 'zone.cleanup_objects'
     ZONE_LOAD = 'zone.load'
     ZONE_UNLOAD = 'zone.unload'
+    LOT_CLEARING_BEGIN = 'lot_clearing.begin'
+    LOT_CLEARING_END = 'lot_clearing.end'
     OBJECT_ADDED = 'game_object.added'
     OBJECT_DESTROYED = 'game_object.destroyed'
 

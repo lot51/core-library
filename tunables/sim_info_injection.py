@@ -1,6 +1,7 @@
 import services
 from away_actions.away_actions import AwayAction
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_mapping_lists
 from sims.sim_info import SimInfo
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableList, TunableReference, TunableMapping
@@ -31,11 +32,7 @@ class TunableSimInfoInjection(BaseTunableInjection):
     __slots__ = ('away_actions', 'default_away_action')
 
     def inject(self):
-        for key, value in self.away_actions.items():
-            if key not in SimInfo.AWAY_ACTIONS:
-                SimInfo.AWAY_ACTIONS[key] = tuple(value)
-            else:
-                SimInfo.AWAY_ACTIONS[key] += tuple(value)
+        inject_mapping_lists(SimInfo, 'AWAY_ACTIONS', self.away_actions)
 
         for key, value in self.default_away_action.items():
             SimInfo.DEFAULT_AWAY_ACTION[key] = value

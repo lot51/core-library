@@ -1,4 +1,5 @@
 from lot51_core import logger
+from lot51_core.utils.injection import inject_list
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableList, TunableReference
@@ -16,5 +17,5 @@ class TunableCraftingInteractionInjection(HasTunableSingletonFactory, AutoFactor
             logger.error("Failed to inject to crafting interaction, affordance not found")
             return
 
-        if getattr('recipes', affordance, None) is not None:
-            affordance.recipes += self.recipes
+        if getattr(affordance, 'recipes', None) is not None:
+            inject_list(affordance, 'recipes', self.recipes)

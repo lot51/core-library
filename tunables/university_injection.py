@@ -1,9 +1,9 @@
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from services import get_instance_manager
-from sims.university.university_tuning import University
 from sims4.common import Pack
 from sims4.resources import Types
-from sims4.tuning.tunable import TunableList, TunableReference, TunableTuple, TunableMapping
+from sims4.tuning.tunable import TunableList, TunableReference, TunableTuple
 
 
 class TunableUniversityInjection(BaseTunableInjection):
@@ -30,4 +30,4 @@ class TunableUniversityInjection(BaseTunableInjection):
 
     def inject(self):
         if self.university is not None:
-            self.university.prestige_degrees += self.prestige_degrees
+            inject_list(self.university, 'prestige_degrees', self.prestige_degrees)

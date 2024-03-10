@@ -1,5 +1,6 @@
 from buffs.buff import Buff
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from sims4.common import Pack
 from sims4.tuning.tunable import TunableTuple, TunableEnumEntry, TunableList, OptionalTunable
 from interactions.utils.loot import LootActions
@@ -53,4 +54,4 @@ class TunableSocialBunnyInjection(BaseTunableInjection):
         return (Pack.EP12,)
 
     def inject(self):
-        SocialMediaTunables.TYPES_OF_POSTS += self.types_of_posts
+        inject_list(SocialMediaTunables, 'TYPES_OF_POSTS', self.types_of_posts)

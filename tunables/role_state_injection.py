@@ -1,9 +1,9 @@
 import services
 from buffs.tunable import TunableBuffReference
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList
-from lot51_core.utils.injection import add_affordances
 
 
 class TunableRoleStateInjection(BaseTunableInjection):
@@ -28,8 +28,8 @@ class TunableRoleStateInjection(BaseTunableInjection):
 
     def inject(self):
         if self.role_state is not None:
-            self.role_state._buffs += self.buffs
-            self.role_state.loot_on_load += self.loot_on_load
-            add_affordances(self.role_state, self.role_affordances, key='role_affordances')
-            add_affordances(self.role_state, self.role_target_affordances, key='role_target_affordances')
-            add_affordances(self.role_state, self.preroll_affordances, key='preroll_affordances')
+            inject_list(self.role_state, '_buffs', self.buffs)
+            inject_list(self.role_state, 'loot_on_load', self.loot_on_load)
+            inject_list(self.role_state, 'role_affordances', self.role_affordances)
+            inject_list(self.role_state, 'role_target_affordances', self.role_target_affordances)
+            inject_list(self.role_state, 'preroll_affordances', self.preroll_affordances)

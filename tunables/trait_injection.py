@@ -6,7 +6,7 @@ from crafting.food_restrictions_utils import FoodRestrictionUtils
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances, inject_to_enum
+from lot51_core.utils.injection import inject_to_enum, inject_mapping_lists, inject_list
 from lot51_core.utils.injection_tracker import injection_tracker
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple, Tunable
@@ -64,8 +64,7 @@ class TunableTraitInjection(BaseTunableInjection):
         ),
         'provided_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
-            value_type=TunableSet(
-                tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
+            value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
         'restricted_ingredients': TunableList(
             tunable=TunableEnumEntry(tunable_type=FoodRestrictionUtils.FoodRestrictionEnum, default=FoodRestrictionUtils.FoodRestrictionEnum.INVALID, invalid_enums=(FoodRestrictionUtils.FoodRestrictionEnum.INVALID,))
@@ -99,28 +98,22 @@ class TunableTraitInjection(BaseTunableInjection):
     def inject(self):
         if self.trait is not None:
 
-            for super_affordance, mixers in self.actor_mixers.items():
-                if super_affordance in self.trait.actor_mixers:
-                    self.trait.actor_mixers[super_affordance] += tuple(mixers)
-                else:
-                    self.trait.actor_mixers[super_affordance] = tuple(mixers)
+            inject_mapping_lists(self.trait, 'actor_mixers', self.actor_mixers)
+            inject_mapping_lists(self.trait, 'provided_mixers', self.provided_mixers)
 
             for (buff, replacement_buff) in self.buff_replacements.items():
                 if buff.trait_replacement_buffs is None:
                     buff.trait_replacement_buffs = {}
                 buff.trait_replacement_buffs[self.trait] = replacement_buff
 
-            self.trait.buffs += tuple(self.buffs          )
-
-            self.trait.buffs_proximity += tuple(self.buffs_proximity)
+            inject_list(self.trait, 'buffs', self.buffs)
+            inject_list(self.trait, 'buffs_proximity', self.buffs_proximity)
 
             if self.initial_commodities is not None:
-                new_initial_commodities = set(self.trait.initial_commodities) | set(self.initial_commodities)
-                self.trait.initial_commodities = frozenset(new_initial_commodities)
+                inject_list(self.trait, 'initial_commodities', self.initial_commodities)
 
             if self.initial_commodities_blacklist is not None:
-                new_initial_commodities_blacklist = set(self.trait.initial_commodities_blacklist) | set(self.initial_commodities_blacklist)
-                self.trait.initial_commodities_blacklist = frozenset(new_initial_commodities_blacklist)
+                inject_list(self.trait, 'initial_commodities_blacklist', self.initial_commodities_blacklist)
 
             if self.interactions is not None:
                 if self.trait.interactions is None:
@@ -129,29 +122,20 @@ class TunableTraitInjection(BaseTunableInjection):
                     self.trait.interactions._affordance_links += tuple(self.interactions._affordance_links)
                     self.trait.interactions._affordance_lists += tuple(self.interactions._affordance_lists)
 
-            for super_affordance, mixers in self.provided_mixers.items():
-                if super_affordance in self.trait.provided_mixers:
-                    self.trait.provided_mixers[super_affordance] += tuple(mixers)
-                else:
-                    self.trait.provided_mixers[super_affordance] = tuple(mixers)
-
             if self.restricted_ingredients is not None:
-                self.trait.restricted_ingredients += tuple(self.restricted_ingredients)
+                inject_list(self.trait, 'restricted_ingredients', self.restricted_ingredients)
 
             if self.super_affordances is not None:
-                add_affordances(self.trait, self.super_affordances, key='super_affordances')
+                inject_list(self.trait, 'super_affordances', self.super_affordances)
 
             if self.target_super_affordances is not None:
-                add_affordances(self.trait, self.target_super_affordances, key='target_super_affordances')
+                inject_list(self.trait, 'target_super_affordances', self.target_super_affordances)
 
             if self.loot_on_trait_add is not None:
-                if self.trait.loot_on_trait_add is None:
-                    self.trait.loot_on_trait_add = tuple(self.loot_on_trait_add)
-                else:
-                    self.trait.loot_on_trait_add += tuple(self.loot_on_trait_add)
+                inject_list(self.trait, 'loot_on_trait_add', self.loot_on_trait_add)
 
             if self.ui_commodity_sort_override is not None:
-                if injection_tracker.can_inject(self.trait, 'ui_commodity_sort_override'):
+                if injection_tracker.inject(self.trait, 'ui_commodity_sort_override'):
                     self.trait.ui_commodity_sort_override = self.ui_commodity_sort_override
 
             if self.whim_set is not None:
@@ -167,7 +151,7 @@ class TunableTraitInjection(BaseTunableInjection):
                 restriction_type = FoodRestrictionUtils.FoodRestrictionEnum[food_restriction.restriction_key]
 
                 # add to trait restrictions
-                self.trait.restricted_ingredients += (restriction_type,)
+                inject_list(self.trait, 'restricted_ingredients', (restriction_type,))
 
                 # apply to recipes
                 for recipe in food_restriction.recipes:

@@ -1,6 +1,6 @@
 import services
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableSet
 from snippets import TunableAffordanceListReference
@@ -29,6 +29,5 @@ class TunableClubInteractionGroupInjection(BaseTunableInjection):
 
     def inject(self):
         if self.query is not None:
-            self.query.affordance_lists |= self.affordance_lists
-
-            add_affordances(self.query, self.affordances, key='affordances')
+            inject_list(self.query, 'affordance_lists', self.affordance_lists)
+            inject_list(self.query, 'affordances', self.affordances)

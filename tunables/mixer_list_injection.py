@@ -2,7 +2,7 @@ import services
 from interactions.base.mixer_interaction import MixerInteraction
 from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList
 from snippets import TunableAffordanceListReference
@@ -40,4 +40,4 @@ class TunableMixerListInjection(BaseTunableInjection):
                 mixers_to_add.add(mixer)
 
         for mixer_list in self._get_affordance_lists_gen():
-            add_affordances(mixer_list, mixers_to_add, key='value')
+            inject_list(mixer_list, 'value', mixers_to_add)

@@ -1,7 +1,7 @@
 import services
 from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances
+from lot51_core.utils.injection import inject_list
 from objects.components.state import ObjectStateValue, StateChangeOperation, ObjectState
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
@@ -37,7 +37,7 @@ class TunableObjectStateInjection(BaseTunableInjection):
                 obj_state_value.state = self.object_state
                 state_values_to_add.add(obj_state_value)
 
-        self.object_state._values = tuple(self.object_state._values) + tuple(state_values_to_add)
+        inject_list(self.object_state, '_values', state_values_to_add)
 
 
 class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryInit):
@@ -61,7 +61,7 @@ class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryIn
             logger.warn("Skipping object state value injection. Expecting ObjectStateValue but {} is invalid".format(self.object_state))
             return
 
-        add_affordances(self.object_state_value, self.affordances, key="super_affordances")
+        inject_list(self.object_state_value, 'super_affordances', self.affordances)
 
         if self.new_client_state is not None:
             for key, op in self.new_client_state.ops.items():
