@@ -6,14 +6,16 @@ from interactions.utils.tunable_provided_affordances import TunableProvidedAffor
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
-from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance
+from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance, merge_list, merge_dict, merge_mapping_lists, inject_list, inject_dict
+from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides
 from objects.components.idle_component import IdleComponent
 from objects.components.inventory_enums import InventoryType
 from objects.components.locking_components import ObjectLockingComponent
 from objects.components.name_component import NameComponent
-from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, TestedStateValueReference, TunableStateComponent, ObjectStateMetaclass
+from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, \
+    TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent
 from objects.components.tooltip_component import TooltipComponent
-from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT
+from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT, RoutingComponent
 from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
 from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, TunableSimMinute, TunableEnumSet
@@ -23,11 +25,6 @@ from tag import Tag
 
 
 class BaseTunableObjectInjection(BaseTunableInjection):
-    IDLE_COMPONENT = IdleComponent.TunableFactory()
-    ROUTING_COMPONENT = ObjectRoutingComponent.TunableFactory()
-    STATE_COMPONENT = TunableStateComponent()
-    OBJECT_LOCKING_COMPONENT = ObjectLockingComponent.TunableFactory()
-    NAME_COMPONENT = NameComponent.TunableFactory()
 
     FACTORY_TUNABLES = {
         'affordances': TunableList(
@@ -120,113 +117,98 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         if self.idle_animation_map is not None:
             if hasattr(obj, '_components') and hasattr(obj._components, 'idle_component') and obj._components.idle_component is not None:
                 idle_component = obj._components.idle_component
-                idle_animation_map = dict(idle_component.idle_animation_map)
-                for key, idle in self.idle_animation_map.items():
-                    idle_animation_map[key] = idle
-                idle_component._tuned_values = idle_component._tuned_values.clone_with_overrides(idle_animation_map=idle_animation_map)
+                new_idle_component = clone_factory_wrapper_with_overrides(idle_component, idle_animation_map=merge_dict(idle_component.idle_animation_map, new_items=self.idle_animation_map))
+                inject_dict(obj, '_components', idle_component=new_idle_component)
             elif should_create_component:
-                obj._components = obj._components.clone_with_overrides(idle_component=self.IDLE_COMPONENT)
-                self._inject_idle_component(obj, should_create_component=False)
+                idle_component = create_factory_wrapper(IdleComponent, idle_animation_map=self.idle_animation_map)
+                inject_dict(obj, '_components', idle_component=idle_component)
 
     def _inject_routing_component(self, obj, should_create_component=True):
         if self.routing_component is not None:
             if hasattr(obj, '_components') and hasattr(obj._components, 'routing_component'):
                 routing_component = obj._components.routing_component
 
-                # get nested component
-                object_routing_component = routing_component._tuned_values.object_routing_component
-                routing_behavior_map = dict(object_routing_component.routing_behavior_map)
-                for key, behavior in self.routing_component.routing_behavior_map.items():
-                    routing_behavior_map[key] = behavior
+                new_object_routing_component = clone_factory_wrapper_with_overrides(
+                    routing_component.object_routing_component,
+                    routing_behavior_map=merge_dict(routing_component.object_routing_component.routing_behavior_map, new_items=self.routing_component.routing_behavior_map)
+                )
 
-                # add routing behaviors
-                object_routing_component._tuned_values = object_routing_component._tuned_values.clone_with_overrides(routing_behavior_map=routing_behavior_map)
-                # then add object routing component
-                routing_component._tuned_values = routing_component._tuned_values.clone_with_overrides(object_routing_component=object_routing_component)
+                new_routing_component = clone_factory_wrapper_with_overrides(routing_component, object_routing_component=new_object_routing_component)
+                inject_dict(obj, '_components', routing_component=new_routing_component)
             elif should_create_component:
-                obj._components = obj._components.clone_with_overrides(routing_component=self.ROUTING_COMPONENT)
-                self._inject_routing_component(obj, should_create_component=False)
+                object_routing_component = create_factory_wrapper(ObjectRoutingComponent, routing_behavior_map=self.routing_component.routing_behavior_map)
+                routing_component = create_factory_wrapper(RoutingComponent, object_routing_component=object_routing_component)
+                inject_dict(obj, '_components', routing_component=routing_component)
 
     def _inject_state_component(self, obj, should_create_component=True):
-        if hasattr(obj, '_components') and hasattr(obj._components, 'state'):
+        if hasattr(obj, '_components') and getattr(obj._components, 'state', None) is not None:
             state_component = obj._components.state
-            if state_component is not None and len(self.states) > 0:
-                new_states = tuple(state_component._tuned_values.states) + tuple(self.states)
-                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(states=new_states)
-                # logger.debug("injected states: {} {}".format(obj, self.states))
+            overrides = AttributeDict()
+            if len(self.states):
+                overrides.states = merge_list(state_component.states, self.states)
 
-            if state_component is not None and len(self.state_triggers) > 0:
-                new_state_triggers = tuple(state_component._tuned_values.state_triggers) + tuple(self.state_triggers)
-                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(state_triggers=new_state_triggers)
+            if len(self.state_triggers):
+                overrides.state_triggers = merge_list(state_component.state_triggers, self.state_triggers)
 
-            if state_component is not None and self.timed_state_triggers is not None:
-                new_timed_state_triggers = dict(state_component._tuned_values.timed_state_triggers)
-                for key, value in self.timed_state_triggers.items():
-                    new_timed_state_triggers[key] = value
-                state_component._tuned_values = state_component._tuned_values.clone_with_overrides(timed_state_triggers=new_timed_state_triggers)
-        elif should_create_component:
-            obj._components = obj._components.clone_with_overrides(state=self.STATE_COMPONENT)
-            self._inject_state_component(obj, should_create_component=False)
+            if self.timed_state_triggers is not None:
+                overrides.timed_state_triggers = merge_dict(state_component.timed_state_triggers, **self.timed_state_triggers)
+
+            if len(overrides):
+                new_state_component = clone_factory_wrapper_with_overrides(state_component, **overrides)
+                inject_dict(obj, '_components', state=new_state_component)
+        elif should_create_component and (len(self.states) or len(self.state_triggers) or self.timed_state_triggers is not None):
+            state_component = create_factory_wrapper(TunableStateComponent, states=self.states, state_triggers=self.state_triggers, timed_state_triggers=self.timed_state_triggers)
+            inject_dict(obj, '_components', state=state_component)
 
     def _inject_proximity_component(self, obj):
-        if len(self.proximity_buffs) > 0 and hasattr(obj, '_components') and hasattr(obj._components, 'proximity_component'):
+        if len(self.proximity_buffs) > 0 and hasattr(obj, '_components') and getattr(obj._components, 'proximity_component', None) is not None:
             proximity_component = obj._components.proximity_component
-            if proximity_component is not None:
-                proximity_buffs = tuple(proximity_component._tuned_values.buffs) + self.proximity_buffs
-                proximity_component._tuned_values = proximity_component._tuned_values.clone_with_overrides(buffs=proximity_buffs)
+            new_proximity_component = clone_factory_wrapper_with_overrides(proximity_component, buffs=merge_list(proximity_component.buffs, self.proximity_buffs))
+            inject_dict(obj, '_components', proximity_component=new_proximity_component)
 
     def _inject_carryable_component(self, obj):
-        if self.carryable_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'carryable'):
+        if self.carryable_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'carryable', None) is not None:
             carryable_component = obj._components.carryable
-            if carryable_component is not None:
-                provided_affordances = tuple(carryable_component._tuned_values.provided_affordances) + self.carryable_component.provided_affordances
-                carryable_component._tuned_values = carryable_component._tuned_values.clone_with_overrides(provided_affordances=provided_affordances)
+            new_carryable_component = clone_factory_wrapper_with_overrides(carryable_component, provided_affordances=merge_list(carryable_component.provided_affordances,  self.carryable_component.provided_affordances))
+            inject_dict(obj, '_components', carryable_component=new_carryable_component)
 
     def _inject_portal_component(self, obj):
-        if self.portal_component is not None and hasattr(obj, '_components') and hasattr(obj._components, 'portal'):
+        if self.portal_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'portal', None) is not None:
             portal_component = obj._components.portal
-            if portal_component is not None:
-                # Portal Data
-                if self.portal_component._replace_existing_portal_data:
-                    portal_data = tuple(self.portal_component._portal_data)
-                else:
-                    portal_data = tuple(portal_component._tuned_values._portal_data) + self.portal_component._portal_data
+            # Portal Data
+            if self.portal_component._replace_existing_portal_data:
+                portal_data = merge_list(self.portal_component._portal_data, ())
+            else:
+                portal_data = merge_list(portal_component._portal_data, self.portal_component._portal_data)
 
-                # State Values
-                state_values_which_disable_portals = dict(portal_component._tuned_values.state_values_which_disable_portals)
-                for state_value, portal_datas in self.portal_component.state_values_which_disable_portals.items():
-                    if state_value in state_values_which_disable_portals:
-                        state_values_which_disable_portals[state_value] += portal_datas
-                    else:
-                        state_values_which_disable_portals[state_value] = portal_datas
+            # State Values
+            state_values_which_disable_portals = merge_mapping_lists(portal_component.state_values_which_disable_portals, self.portal_component.state_values_which_disable_portals)
 
-                portal_component._tuned_values = portal_component._tuned_values.clone_with_overrides(_portal_data=portal_data, state_values_which_disable_portals=state_values_which_disable_portals)
+            new_portal_component = clone_factory_wrapper_with_overrides(portal_component, _portal_data=portal_data, state_values_which_disable_portals=state_values_which_disable_portals)
+            inject_dict(obj, '_components', portal=new_portal_component)
 
     def _inject_inventory_item_component(self, obj):
-        if self.inventory_item_component is not None:
-            inventory_item_component = obj._component.inventoryitem_component
-            if inventory_item_component is not None:
-                inventory_types = inventory_item_component.valid_inventory_types + tuple(self.inventory_item_component.valid_inventory_types)
-                inventory_item_component._tuned_values = inventory_item_component._tuned_values.clone_with_overrides(valid_inventory_types=inventory_types)
+        if self.inventory_item_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'inventoryitem_component', None) is not None:
+            inventory_item_component = obj._components.inventoryitem_component
+            new_inventory_item_component = clone_factory_wrapper_with_overrides(inventory_item_component, valid_inventory_types=merge_list(inventory_item_component.valid_inventory_types, self.inventory_item_component.valid_inventory_types))
+            inject_dict(obj, '_components', inventoryitem_component=new_inventory_item_component)
 
     def _inject_object_locking_component(self, obj, should_create_component=True):
-        if self.object_locking_component is not None:
-            if hasattr(obj, '_components') and hasattr(obj._components, 'object_locking_component'):
-                object_locking_component = obj._components.object_locking_component
-                if object_locking_component is not None:
-                    super_affordances = tuple(object_locking_component._tuned_values.super_affordances) + self.object_locking_component.super_affordances
-                    object_locking_component._tuned_values = object_locking_component._tuned_values.clone_with_overrides(super_affordances=super_affordances)
-            elif should_create_component:
-                obj._components = obj._components.clone_with_overrides(object_locking_component=self.OBJECT_LOCKING_COMPONENT)
-                self._inject_object_locking_component(obj, should_create_component=False)
+        if self.object_locking_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'object_locking_component', None) is not None:
+            object_locking_component = obj._components.object_locking_component
+            new_object_locking_component = clone_factory_wrapper_with_overrides(object_locking_component, super_affordances=merge_list(object_locking_component.super_affordances, self.object_locking_component.super_affordances))
+            inject_dict(obj, '_components', object_locking_component=new_object_locking_component)
+        elif self.object_locking_component is not None and should_create_component:
+            object_locking_component = create_factory_wrapper(RoutingComponent, super_affordances=self.object_locking_component.super_affordances)
+            inject_dict(obj, '_components', object_locking_component=object_locking_component)
 
     def _inject_tooltip_component(self, obj):
         if self.tooltip_component_override is not None:
-            obj._components = obj._components.clone_with_overrides(tooltip_component=self.tooltip_component_override)
+            inject_dict(obj, '_components', tooltip_component=self.tooltip_component_override)
 
     def _inject_name_component(self, obj):
         if self.name_component_override is not None:
-            obj._components = obj._components.clone_with_overrides(name_component=self.name_component_override)
+            inject_dict(obj, '_components', name_component=self.name_component_override)
 
     def _inject(self, obj):
         self._add_affordances(obj)
@@ -333,7 +315,7 @@ class TunableObjectInjectionByAffordance(BaseTunableObjectInjection):
     __slots__ = ('query',)
 
     def get_objects_gen(self):
-        for obj in services.get_instance_manager(Types.OBJECT).get_ordered_types():
+        for obj in services.get_instance_manager(Types.OBJECT)._tuned_classes.values():
             if self.query is not None and obj_has_affordance(obj, self.query):
                 yield obj
 
@@ -356,25 +338,27 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
         if self.idle_animation_map is not None:
             idle_component = obj.get_component(IDLE_COMPONENT)
             if idle_component is None and should_create_component:
-                obj.add_component(self.IDLE_COMPONENT(obj, idle_animation_map=self.idle_animation_map))
+                idle_component = create_factory_wrapper(IdleComponent, idle_animation_map=self.idle_animation_map)
+                obj.add_component(idle_component(obj))
             else:
-                for key, idle in self.idle_animation_map.items():
-                    idle_component.idle_animation_map[key] = idle
+                inject_dict(idle_component, 'idle_animation_map', self.idle_animation_map)
 
     def _inject_routing_component(self, obj, should_create_component=True):
         if self.routing_component is not None:
             routing_component = obj.get_component(OBJECT_ROUTING_COMPONENT)
             if routing_component is None and should_create_component:
-                obj.add_component(self.ROUTING_COMPONENT(obj, routing_behavior_map=self.routing_component.routing_behavior_map))
+                routing_component = create_factory_wrapper(RoutingComponent, routing_behavior_map=self.routing_component.routing_behavior_map)
+                object_routing_component = create_factory_wrapper(ObjectRoutingComponent, routing_component=routing_component)
+                obj.add_component(object_routing_component(obj))
             else:
-                for key, value in self.routing_component.routing_behavior_map.items():
-                    routing_component.routing_behavior_map[key] = value
+                inject_dict(routing_component, 'routing_behavior_map', self.routing_component.routing_behavior_map)
 
     def _inject_state_component(self, obj, should_create_component=True):
         state_component = obj.get_component(STATE_COMPONENT)
         if state_component is None and should_create_component:
-            obj.add_component(self.STATE_COMPONENT(obj, states=self.states, state_triggers=self.state_triggers, timed_state_triggers=self.timed_state_triggers))
-        else:
+            state_component = create_factory_wrapper(StateComponent, states=self.states, state_triggers=self.state_triggers, timed_state_triggers=self.timed_state_triggers)
+            obj.add_component(state_component(obj))
+        elif state_component is not None:
             for state_info in self.states:
                 default_value = state_info.default_value
                 if default_value:
@@ -403,16 +387,15 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
                             state_component._do_first_time_state_added_actions(state)
 
             if len(self.state_triggers):
-                state_component._state_triggers += tuple(self.state_triggers)
+                inject_list(state_component, '_state_triggers', self.state_triggers)
 
-            if self.timed_state_triggers:
-                for key, value in self.timed_state_triggers.items():
-                    state_component._timed_state_triggers[key] = value
+            if self.timed_state_triggers is not None:
+                inject_dict(state_component, '_timed_state_triggers', self.timed_state_triggers)
 
     def _inject_proximity_component(self, obj):
         proximity_component = obj.get_component(PROXIMITY_COMPONENT)
-        if proximity_component is not None and len(self.proximity_buffs):
-            proximity_component.buffs += tuple(self.proximity_buffs)
+        if proximity_component is not None:
+            inject_list(proximity_component, 'buffs', self.proximity_buffs)
 
     def _inject_object_locking_component(self, obj, should_create_component=True):
         if self.object_locking_component is not None:
@@ -420,4 +403,5 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
             if locking_component is not None:
                 add_affordances(locking_component, self.object_locking_component.super_affordances, key='super_affordances')
             elif should_create_component:
-                obj.add_component(self.OBJECT_LOCKING_COMPONENT(obj, super_affordances=self.object_locking_component.super_affordances))
+                locking_component = create_factory_wrapper(ObjectLockingComponent, super_affordances=self.object_locking_component.super_affordances)
+                obj.add_component(locking_component(obj))

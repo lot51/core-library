@@ -1,18 +1,105 @@
+import itertools
 from _sims4_collections import frozendict
 import functools
 import inspect
 from functools import wraps
 from event_testing.tests import TestList, CompoundTestList
+from lot51_core.utils.collections import AttributeDict
+from lot51_core.utils.tunables import create_factory_wrapper
 from services import get_instance_manager
 from lot51_core import logger
+from sims4.collections import _ImmutableSlotsBase
 from sims4.utils import blueprintmethod, blueprintproperty
+from singletons import DEFAULT
+from snippets import _TunableAffordanceFilter
 from tag import Tag
 
 DEFAULT_SA_KEY = '_super_affordances'
 DEFAULT_PHONE_SA_KEY = '_phone_affordances'
 
 
-def merge_list(original_list, new_items, prepend=False, list_type=None):
+def clone_immutable_slots(target, **overrides):
+    """
+    A helper function to clone an immutable slots object with overrides.
+
+    :param target: original immutable slots
+    :param overrides: key/values of items to override
+    :return: new immutable slots object
+    """
+    return target.clone_with_overrides(**overrides)
+
+
+def merge_dict(original_dict, force_frozen=False, new_items=None, **other_new_items):
+    """
+    Merges a dict/frozendict/immutableslots, automatically detecting and maintaining type.
+    Pass items as kwargs or pass a dict to new_items. If your dict has keys that are not strings you
+    cannot spread it using **.
+
+    :param original_dict:
+    :param force_frozen: Force a regular dict to return as a frozendict
+    :param new_items:
+    :param other_new_items:
+    :return:
+    """
+    if new_items is None:
+        new_items = dict()
+    if isinstance(original_dict, _ImmutableSlotsBase):
+        return clone_immutable_slots(original_dict, **new_items, **other_new_items)
+    new_dict = dict(original_dict)
+    for key, value in itertools.chain(new_items.items(), other_new_items.items()):
+        new_dict[key] = value
+    if force_frozen or type(original_dict) == frozendict:
+        new_dict = frozendict(new_dict)
+    return new_dict
+
+
+def inject_dict(owner, key, force_frozen=False, new_items=None, **other_new_items):
+    """
+    Merges key/values to a dict/frozendict/immutableslots and injects it back
+    onto the owning object.
+
+    :param owner:
+    :param key:
+    :param force_frozen:
+    :param new_items:
+    :param other_new_items:
+    :return:
+    """
+    if new_items is None:
+        new_items = dict()
+    original_dict = getattr(owner, key, dict())
+    new_dict = merge_dict(original_dict, force_frozen=force_frozen, new_items=new_items, **other_new_items)
+    setattr(owner, key, new_dict)
+
+
+def inject_tuned_values(owner, **tuned_value_overrides):
+    """
+    Merges keys/properties to the _tuned_values immutable slots of an
+    object and injects it back onto the owning object.
+
+    :param owner:
+    :param tuned_value_overrides:
+    :return:
+    """
+    tuned_values = getattr(owner, '_tuned_values')
+    new_tuned_values = clone_immutable_slots(tuned_values, **tuned_value_overrides)
+    setattr(owner, '_tuned_values', new_tuned_values)
+
+
+def get_tuned_value(owner, tuned_value_key, default=None):
+    """
+    Returns an item from _tuned_values by key on the owner, optionally returns a default
+    if the key is not found, otherwise None.
+
+    :param owner: The object with _tuned_values
+    :param tuned_value_key: The key to get
+    :param default: An optional default value to return if the key does not exist
+    :return: tuned value property, default, or None
+    """
+    return getattr(owner._tuned_values, tuned_value_key, default)
+
+
+def merge_list(original_list, new_items, prepend=False, list_type=None, unique_entries=True):
     """
     Merges a list/tuple/set of items with new items returning a new object. The returned iterable
     will maintain the type of the original_list param unless overridden with the list_type kwarg.
@@ -29,7 +116,7 @@ def merge_list(original_list, new_items, prepend=False, list_type=None):
     build_list = list(original_list if original_list is not None else ())
     pix = 0
     for item in new_items:
-        if item not in build_list:
+        if not unique_entries or (unique_entries and item not in build_list):
             if prepend:
                 build_list.insert(pix, item)
                 pix += 1
@@ -39,12 +126,12 @@ def merge_list(original_list, new_items, prepend=False, list_type=None):
     return list_type(build_list)
 
 
-def inject_list(owner, key, new_items, prepend=False, debug=False, safe=True):
+def inject_list(owner, key, new_items, prepend=False, debug=False, safe=True, unique_entries=True):
     """
     Inject new items to an existing list, tuple, set, frozenset.
 
     Creates a copy of the original list, appends new items to the list,
-    then injects the list back onto the owner.
+    then injects the list back onto the owning object.
 
     :param owner: The object that has the list to inject to.
     :param key: The key on the owner to get the original list
@@ -55,7 +142,7 @@ def inject_list(owner, key, new_items, prepend=False, debug=False, safe=True):
     :return: None
     """
     if safe and not hasattr(owner, key):
-        raise Exception("Object {} does not have key {}".format(owner, key))
+        raise KeyError("Object {} does not have key {}".format(owner, key))
 
     if new_items is None or not len(new_items):
         if debug:
@@ -65,7 +152,7 @@ def inject_list(owner, key, new_items, prepend=False, debug=False, safe=True):
     # Get original list
     original_list = getattr(owner, key, None)
     # Perform merge
-    new_list = merge_list(original_list, new_items, prepend=prepend)
+    new_list = merge_list(original_list, new_items, prepend=prepend, unique_entries=unique_entries)
 
     if debug:
         logger.info("Injecting List • Owner: {}, Key: {}, Original List: {}, Final List: {}".format(owner, key, original_list, new_list))
@@ -73,34 +160,99 @@ def inject_list(owner, key, new_items, prepend=False, debug=False, safe=True):
     setattr(owner, key, new_list)
 
 
-def inject_mapping_lists(owner, key, user_map, prepend=False, return_mode=False, safe=True):
+def merge_mapping_lists(owner_map, user_map, prepend=False, list_type=None, unique_entries=True):
     """
-    Merges an existing dict of `list_type` into a frozendict generated by a TunableMapping.
+    Merges an existing dict of `list_type` into a frozendict that was generated by a TunableMapping.
+
+    :param owner_map:
+    :param user_map:
+    :param prepend:
+    :param list_type:
+    :return: new mapping frozendict
+    """
+    new_mapping = dict(owner_map)
+    for k, v in user_map.items():
+        if k in new_mapping:
+            new_mapping[k] = merge_list(new_mapping[k], v, prepend=prepend, list_type=list_type, unique_entries=unique_entries)
+        else:
+            new_mapping[k] = merge_list(v, (), list_type=list_type)
+    return frozendict(new_mapping)
+
+
+def inject_mapping_lists(owner, key, user_map, prepend=False, safe=True, list_type=None):
+    """
+    Merges an existing dict of `list_type` into a frozendict that was generated by a TunableMapping
+    then injects it back onto the owning object.
 
     :param owner: The object that has the map
     :param key: The key of the map
     :param user_map: Your dict that should be merged into the owner's map
+    :param prepend: Set to True if items should be added to the beginning of the lists
+    :param safe: Injection will not be added to owner if the key does not exist and a KeyError will be raised
+    :param list_type: Override the list type inferred from the original mapping.
     :return: None
     """
     if safe and not hasattr(owner, key):
-        raise Exception("Object {} does not have key {}".format(owner, key))
-
+        raise KeyError("Object {} does not have key {}".format(owner, key))
     owner_map = dict(getattr(owner, key, {}))
-    did_change = False
-    for k, v in user_map.items():
-        if k in owner_map:
-            owner_map[k] = merge_list(owner_map[k], v, prepend=prepend)
-            did_change = True
-        else:
-            owner_map[k] = merge_list(v, ())
-            did_change = True
+    final_value = merge_mapping_lists(owner_map, user_map, prepend=prepend, list_type=list_type)
+    setattr(owner, key, final_value)
 
-    final_value = frozendict(owner_map)
-    if return_mode:
-        return final_value
 
-    if did_change or not safe:
-        setattr(owner, key, final_value)
+def merge_affordance_filter(tunable, other_filter=None, include_all_by_default=DEFAULT, include_affordances=(), exclude_affordances=(), include_lists=(), exclude_lists=()):
+    """
+    Merge affordances and affordance lists into an Affordance Compatibility tunable and return a new instance.
+
+    :param tunable: The original affordance filter object
+    :param include_affordances: A list of affordances to add to include_affordances
+    :param exclude_affordances: A list of affordances to add to exclude_affordances
+    :param include_lists: A list of affordance lists to add to include_lists
+    :param exclude_lists:  A list of affordance lists to add to exclude_lists
+    :return: new affordance filter tunable wrapper
+    """
+    default_inclusion = tunable.default_inclusion
+    overrides = AttributeDict()
+    if other_filter is not None:
+        other_inclusion = other_filter.default_inclusion
+        overrides.include_affordances = merge_list(overrides.include_affordances, other_inclusion.include_affordances)
+        overrides.exclude_affordances = merge_list(overrides.exclude_affordances, other_inclusion.exclude_affordances)
+        overrides.include_lists = merge_list(overrides.include_lists, other_inclusion.include_lists)
+        overrides.exclude_lists = merge_list(overrides.exclude_lists, other_inclusion.exclude_lists)
+        overrides.include_all_by_default = other_inclusion.include_all_by_default
+
+    overrides.include_affordances = merge_list(default_inclusion.include_affordances, include_affordances)
+    overrides.exclude_affordances = merge_list(default_inclusion.exclude_affordances, exclude_affordances)
+    overrides.include_lists = merge_list(default_inclusion.include_lists, include_lists)
+    overrides.exclude_lists = merge_list(default_inclusion.exclude_lists, exclude_lists)
+    if include_all_by_default is not DEFAULT:
+        overrides.include_all_by_default = include_all_by_default
+
+    return create_factory_wrapper(_TunableAffordanceFilter, default_inclusion=merge_dict(default_inclusion, **overrides))
+
+
+def inject_affordance_filter(owner, key, other_filter=None, include_all_by_default=DEFAULT, include_affordances=(), exclude_affordances=(), include_lists=(), exclude_lists=()):
+    """
+    Merge affordances and affordance lists into an Affordance Compatibility tunable and injects it
+    back onto the owning object.
+
+    :param tunable: The original affordance filter object
+    :param include_affordances: A list of affordances to add to include_affordances
+    :param exclude_affordances: A list of affordances to add to exclude_affordances
+    :param include_lists: A list of affordance lists to add to include_lists
+    :param exclude_lists:  A list of affordance lists to add to exclude_lists
+    :return: None
+    """
+    tunable = getattr(owner, key)
+    new_tunable = merge_affordance_filter(
+        tunable,
+        other_filter=other_filter,
+        include_all_by_default=include_all_by_default,
+        include_affordances=include_affordances,
+        exclude_affordances=exclude_affordances,
+        include_lists=include_lists,
+        exclude_lists=exclude_lists
+    )
+    setattr(owner, key, new_tunable)
 
 
 def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_and=False):
@@ -117,9 +269,11 @@ def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_
     # Represents a TestList returned from a TunableGlobalTestSet
     if isinstance(original_tests, TestList):
         new_tests = TestList(original_tests)
+        pix = 0
         for test in additional_and:
             if prepend_and:
-                new_tests.insert(test, 0)
+                new_tests.insert(test, pix)
+                pix += 1
             else:
                 new_tests.append(test)
         return new_tests
@@ -138,9 +292,11 @@ def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_
     else:
         # Clone the tuple and append additional AND tests
         new_tests = list(original_tests)
+        pix = 0
         for test in additional_and:
             if prepend_and:
-                new_tests.insert(test, 0)
+                new_tests.insert(test, pix)
+                pix += 1
             else:
                 new_tests.append(test)
         return tuple(new_tests)

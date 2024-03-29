@@ -1,5 +1,6 @@
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.collections import AttributeDict
+from lot51_core.utils.injection import inject_list
 from relationships.relationship_tracker_tuning import DefaultGenealogyLink
 from services import get_instance_manager
 from sims.pregnancy.pregnancy_enums import PregnancyOrigin
@@ -58,5 +59,4 @@ class TunableTraitTrackerInjection(BaseTunableInjection):
     __slots__ = ('trait_inheritance',)
 
     def inject(self):
-        if len(self.trait_inheritance):
-            TraitTracker.TRAIT_INHERITANCE += self.trait_inheritance
+        inject_list(TraitTracker, 'TRAIT_INHERITANCE', self.trait_inheritance)

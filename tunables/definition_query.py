@@ -15,8 +15,11 @@ class DefinitionData(AttributeDict):
 class DefinitionFilterVariant(TunableVariant):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, random_single_choice=ObjectFilterRandomSingleChoice.TunableFactory(), random_multiple_choice=ObjectFilterRandomMultipleChoice.TunableFactory(), **kwargs)
-
+        super().__init__(
+            *args,
+            random_single_choice=ObjectFilterRandomSingleChoice.TunableFactory(),
+            random_multiple_choice=ObjectFilterRandomMultipleChoice.TunableFactory(),
+            **kwargs)
 
 
 class BaseDefinitionSource(HasTunableSingletonFactory, AutoFactoryInit):
@@ -30,15 +33,15 @@ class BaseDefinitionSource(HasTunableSingletonFactory, AutoFactoryInit):
     def _get_definitions_gen(self, resolver=None):
         raise NotImplementedError
 
+    def _get_definition_data_gen(self, resolver=None):
+        for definition in self._get_definitions_gen(resolver=resolver):
+            yield DefinitionData({"definition": definition})
+
     def _get_filtered_gen(self, def_list):
         if self.filter is not None:
             yield from self.filter.filter_objects_gen(def_list)
         else:
             yield from def_list
-
-    def _get_definition_data_gen(self, resolver=None):
-        for definition in self._get_definitions_gen(resolver=resolver):
-            yield DefinitionData({"definition": definition})
 
     def get_definitions_gen(self, resolver=None):
         if self.tests.run_tests(resolver):
@@ -56,34 +59,38 @@ class BaseDefinitionSource(HasTunableSingletonFactory, AutoFactoryInit):
 class TaggedRecipesSource(BaseDefinitionSource):
     FACTORY_TUNABLES = {
         'tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
+        'exclude_recipes': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.RECIPE), pack_safe=True)),
+        'exclude_tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
     }
 
-    __slots__ = ('tags',)
+    __slots__ = ('tags', 'exclude_recipes', 'exclude_tags',)
 
     def _get_definitions_gen(self, resolver=None):
-        for tag in self.tags:
-            for recipe in get_recipes_matching_tag(tag):
-                if hasattr(recipe, 'has_final_product_definition') and recipe.recipe_tags is not None:
-                    yield recipe.final_product_definition
+        for def_data in self._get_definition_data_gen(resolver):
+            yield def_data.definition
 
     def _get_definition_data_gen(self, resolver=None):
+        _yield_cache = set()
         for tag in self.tags:
             for recipe in get_recipes_matching_tag(tag):
-                if hasattr(recipe, 'has_final_product_definition') and recipe.recipe_tags is not None:
-                    yield DefinitionData({"definition": recipe.final_product_definition, "recipe": recipe})
+                if hasattr(recipe, 'has_final_product_definition') and recipe.recipe_tags is not None and recipe not in _yield_cache:
+                    if not recipe.recipe_tags.intersection(self.exclude_tags) and recipe not in self.exclude_recipes:
+                        _yield_cache.add(recipe)
+                        yield DefinitionData({"definition": recipe.final_product_definition, "recipe": recipe})
 
 
 class SpecificRecipesSource(BaseDefinitionSource):
     FACTORY_TUNABLES = {
-        'recipes': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.RECIPE)))
+        'recipes': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.RECIPE), pack_safe=True),
+        ),
     }
 
     __slots__ = ('recipes',)
 
     def _get_definitions_gen(self, resolver=None):
-        for recipe in self.recipes:
-            if recipe is not None and recipe.has_final_product_definition:
-                yield recipe.final_product_definition
+        for def_data in self._get_definition_data_gen(resolver):
+            yield def_data.definition
 
     def _get_definition_data_gen(self, resolver=None):
         for recipe in self.recipes:
@@ -93,7 +100,7 @@ class SpecificRecipesSource(BaseDefinitionSource):
 
 class SpecificDefinitionsSource(BaseDefinitionSource):
     FACTORY_TUNABLES = {
-        'definitions': TunableList(tunable=TunableReference(manager=services.definition_manager()))
+        'definitions': TunableList(tunable=TunableReference(manager=services.definition_manager(), pack_safe=True))
     }
 
     __slots__ = ('definitions',)
@@ -107,13 +114,16 @@ class SpecificDefinitionsSource(BaseDefinitionSource):
 class TaggedDefinitionsSource(BaseDefinitionSource):
     FACTORY_TUNABLES = {
         'tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
+        'exclude_definitions': TunableList(tunable=TunableReference(manager=services.definition_manager(), pack_safe=True)),
+        'exclude_tags': TunableEnumSet(enum_type=Tag, invalid_enums=(Tag.INVALID,)),
     }
 
-    __slots__ = ('tags',)
+    __slots__ = ('tags', 'exclude_definitions', 'exclude_tags')
 
     def _get_definitions_gen(self, resolver=None):
         for definition in services.definition_manager().get_definitions_for_tags_gen(self.tags):
-            yield definition
+            if not definition.build_buy_tags.intersection(self.exclude_tags) and definition not in self.exclude_definitions:
+                yield definition
 
 
 class ObjectTuningSource(BaseDefinitionSource):

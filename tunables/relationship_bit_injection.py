@@ -1,6 +1,6 @@
 import services
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import add_affordances
+from lot51_core.utils.injection import add_affordances, inject_mapping_lists, inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableSet, TunableMapping
 
@@ -27,12 +27,6 @@ class TunableRelationshipBitInjection(BaseTunableInjection):
 
     def inject(self):
         for bit in self.bits:
-            bit.bit_added_loot_list += tuple(self.bit_added_loot_list)
-
-            for super_affordance, mixers in self.provided_mixers.items():
-                if super_affordance in bit.provided_mixers:
-                    bit.provided_mixers[super_affordance] += tuple(mixers)
-                else:
-                    bit.provided_mixers[super_affordance] = tuple(mixers)
-
+            inject_list(bit, 'bit_added_loot_list', self.bit_added_loot_list)
+            inject_mapping_lists(bit, 'provided_mixers', self.provided_mixers)
             add_affordances(bit, self.super_affordances, key='super_affordances')

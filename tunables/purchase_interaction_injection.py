@@ -3,6 +3,8 @@ from interactions.base.picker_interaction import DefinitionsFromTags, Definition
 from lot51_core import logger
 from lot51_core.tunables.multiplier_injection import TunableMultiplierInjection
 from lot51_core.utils.collections import AttributeDict
+from lot51_core.utils.injection import merge_list, inject_list
+from lot51_core.utils.tunables import clone_factory_wrapper_with_overrides
 from services import get_instance_manager
 from sims4.localization import TunableLocalizedString
 from sims4.resources import Types
@@ -98,23 +100,12 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
         if self.use_dropdown_filter_override is not None:
             overrides.use_dropdown_filter = self.use_dropdown_filter_override
 
-        # Check if the tag is in the existing picker list
-        def can_add_category(cat):
-            for picker_cat in affordance.picker_dialog._tuned_values.categories:
-                if cat.tag == picker_cat.tag:
-                    return False
-            return True
-
-        categories_to_add = list()
-        for category in self.additional_picker_categories:
-            if can_add_category(category):
-                categories_to_add.append(category)
-
-        if len(categories_to_add):
-            overrides.categories = affordance.picker_dialog._tuned_values.categories + tuple(categories_to_add)
+        if len(self.additional_picker_categories):
+            overrides.categories = merge_list(affordance.picker_dialog.categories, self.additional_picker_categories)
 
         if len(overrides):
-            affordance.picker_dialog._tuned_values = affordance.picker_dialog._tuned_values.clone_with_overrides(**overrides)
+            cloned_dialog = clone_factory_wrapper_with_overrides(affordance.picker_dialog, **overrides)
+            setattr(affordance, 'picker_dialog', cloned_dialog)
 
     def inject_to_affordance(self, affordance):
         if affordance is None:
@@ -125,10 +116,10 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
             affordance.delivery_method_override = self.delivery_method_override
 
         if hasattr(affordance, 'loots_on_purchase'):
-            affordance.loots_on_purchase += self.loots_on_purchase
+            inject_list(affordance, 'loots_on_purchase', self.loots_on_purchase)
 
         if hasattr(affordance, 'purchase_list_option'):
-            affordance.purchase_list_option += self.purchase_list_option
+            inject_list(affordance, 'purchase_list_option', self.purchase_list_option)
 
         if hasattr(affordance, 'price_multiplier') and self.price_multiplier is not None:
             self.price_multiplier.inject(affordance, 'price_multiplier')

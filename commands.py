@@ -19,11 +19,16 @@ def command_refresh_purchase_picker(purchase_picker:TunableInstanceParam(Types.S
 
 @Command('purchase_picker.open', command_type=CommandType.Live)
 def command_open_purchase_picker(purchase_picker:TunableInstanceParam(Types.SNIPPET), _connection=None):
-    if purchase_picker is not None:
-        sim = services.get_active_sim()
-        resolver = DoubleObjectResolver(sim, sim)
-        picker = purchase_picker(resolver)
-        picker.show_picker_dialog()
+    try:
+        if purchase_picker is not None:
+            sim = services.get_active_sim()
+            resolver = DoubleObjectResolver(sim, sim)
+            picker = purchase_picker(resolver)
+            picker.show_picker_dialog()
+        else:
+            logger.error("[command][purchase_picker.open] Unable to find purchase picker snippet")
+    except:
+        logger.exception("[command][purchase_picker.open] Failed to open purchase picker")
 
 
 @Command("lot51_core.open_url", command_type=CommandType.Live)

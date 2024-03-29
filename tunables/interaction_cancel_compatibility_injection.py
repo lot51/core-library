@@ -1,5 +1,6 @@
 from interactions.interaction_cancel_compatibility import InteractionCancelReason, InteractionCancelCompatibility
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import merge_affordance_filter, inject_dict
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableList, TunableReference, TunableEnumEntry
@@ -21,9 +22,10 @@ class InteractionCancelCompatibilityInjection(BaseTunableInjection):
         )
     }
 
+    __slots__ = ('reason', 'include_affordances',)
+
     def inject(self):
         filter = InteractionCancelCompatibility.INTERACTION_CANCEL_COMPATIBILITY.get(self.reason, None)
         if filter is not None:
-            new_included_list = filter._tuned_values.default_inclusion.include_affordances + self.include_affordances
-            new_default_inclusion = filter._tuned_values.default_inclusion.clone_with_overrides(include_affordances=new_included_list)
-            filter._tuned_values = filter._tuned_values.clone_with_overrides(default_inclusion=new_default_inclusion)
+            new_filter = merge_affordance_filter(filter, include_affordances=self.include_affordances)
+            inject_dict(InteractionCancelCompatibility, 'INTERACTION_CANCEL_COMPATIBILITY', new_items={self.reason:new_filter})

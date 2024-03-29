@@ -1,7 +1,6 @@
 import math
 import random
 import build_buy
-import enum
 import services
 import sims4.random
 import uuid
@@ -9,13 +8,15 @@ from crafting.crafting_interactions import create_craftable
 from date_and_time import create_time_span, TimeSpan
 from distributor.shared_messages import IconInfoData
 from event_testing.resolver import SingleObjectResolver
+from interactions.payment.payment_info import PaymentInfo
 from interactions.payment.payment_source import get_tunable_payment_source_variant
 from interactions.picker.object_marketplace_picker_interaction import ObjectMarketplacePickerInteraction
 from interactions.utils.tunable_icon import TunableIcon
 from lot51_core import logger
-from interactions import ParticipantType
+from interactions import ParticipantTypeSingle
 from lot51_core.snippets.purchase_picker_modifier import PurchasePickerModifier
 from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, InventoryDeliveryMethod
+from lot51_core.tunables.payment_destination import TunablePaymentDestinationVariant
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from lot51_core.utils.math import chance_succeeded
 from objects.components.name_component import NameComponent
@@ -24,7 +25,8 @@ from objects.system import create_object
 from sims4.localization import TunableLocalizedStringFactory, _create_localized_string, LocalizationHelperTuning
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableList, TunableReference, Tunable, OptionalTunable, TunableSimMinute, HasTunableReference
+from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableList, \
+    TunableReference, Tunable, OptionalTunable, TunableSimMinute, HasTunableReference, TunableEnumEntry
 from tunable_multiplier import TunableMultiplier
 from ui.ui_dialog_notification import UiDialogNotification
 from ui.ui_dialog_picker import PurchasePickerRow, UiPurchasePicker
@@ -54,13 +56,16 @@ class StockManager:
     DEFAULT_REFRESH_PERIOD = 1440
 
     @classmethod
-    def get_stock_manager(cls, key, refresh_period=None):
-        logger.debug("getting stock manager: {}".format(key))
+    def get_stock_manager(cls, key, refresh_period=DEFAULT_REFRESH_PERIOD):
         if key in cls.STOCK_MANAGERS:
             return cls.STOCK_MANAGERS[key]
         stock_manager = cls(refresh_period=refresh_period)
         cls.STOCK_MANAGERS[key] = stock_manager
         return stock_manager
+
+    @classmethod
+    def clear_stock_managers(cls):
+        cls.STOCK_MANAGERS.clear()
 
     def __init__(self, refresh_period=DEFAULT_REFRESH_PERIOD):
         self._refresh_required = True
@@ -84,20 +89,20 @@ class StockManager:
         if self.has_picker_cache():
             yield from self.picker_cache
 
-    def subtract_stock(self, definition, amount=1):
-        if self.is_tracked(definition):
-            self.stock_map[definition] = max(0, self.stock_map[definition] - amount)
+    def subtract_stock(self, stock_key, amount=1):
+        if self.is_tracked(stock_key):
+            self.stock_map[stock_key] = max(0, self.stock_map[stock_key] - amount)
 
-    def set_stock(self, definition, amount):
-        self.stock_map[definition] = amount
+    def set_stock(self, stock_key, amount):
+        self.stock_map[stock_key] = amount
 
-    def get_stock(self, definition):
-        if self.is_tracked(definition):
-            return self.stock_map[definition]
+    def get_stock(self, stock_key):
+        if self.is_tracked(stock_key):
+            return self.stock_map[stock_key]
         return -1
 
-    def is_tracked(self, definition):
-        return definition in self.stock_map
+    def is_tracked(self, stock_key):
+        return stock_key in self.stock_map
 
     def should_refresh(self):
         if self._refresh_required:
@@ -134,6 +139,11 @@ class TunableStockManagement(HasTunableSingletonFactory, AutoFactoryInit):
 class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
 
     INSTANCE_TUNABLES = {
+        'owner_participant': TunableEnumEntry(
+            description="The Sim to perform/own purchases. Usually should be Actor.",
+            tunable_type=ParticipantTypeSingle,
+            default=ParticipantTypeSingle.Actor
+        ),
         'delivery_method': TunableVariant(
             description="Where to spawn objects on successful purchase.",
             participant_fgl=FglDeliveryMethod.TunableFactory(),
@@ -156,6 +166,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             )
         ),
         'payment_source': get_tunable_payment_source_variant(description="All purchases will be debited from this source"),
+        'payment_destination': TunablePaymentDestinationVariant(description="If enabled, the total debited amount will be credited to this destination."),
         'picker_dialog': UiPurchasePicker.TunableFactory(),
         'price_multiplier': TunableMultiplier.TunableFactory(description="A multiplier applied to all purchase items"),
         'purchase_items': TunableList(
@@ -175,7 +186,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         'stop_on_first_failure': Tunable(description="Stop all purchases if an individual item failed to deliver, or had insufficient funds. Otherwise each item will attempt delivery and debit from sim.", tunable_type=bool, default=False),
     }
 
-    __slots__ = ('delivery_method', 'loot_on_success', 'loot_on_failure', 'payment_source', 'picker_dialog', 'price_multiplier', 'purchase_items', 'purchase_success_notification', 'purchase_failed_notification', 'stock_management', 'show_descriptions', 'show_tooltips', 'stop_on_first_failure',)
+    __slots__ = ('owner_participant', 'delivery_method', 'loot_on_success', 'loot_on_failure', 'payment_source', 'payment_destination', 'picker_dialog', 'price_multiplier', 'purchase_items', 'purchase_success_notification', 'purchase_failed_notification', 'stock_management', 'show_descriptions', 'show_tooltips', 'stop_on_first_failure',)
 
     @classmethod
     def _tuning_loaded_callback(cls):
@@ -186,7 +197,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
     def __init__(self, resolver, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.resolver = resolver
-        self.sim_info = resolver.get_participant(ParticipantType.Actor)
+        self.sim_info = resolver.get_participant(self.owner_participant)
         self.current_item_data = {}
         self.current_price_data = {}
         self._populated_objects = list()
@@ -238,6 +249,14 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             for snippet in services.get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=(PurchasePickerModifier,)):
                 if snippet.purchase_picker is not None and snippet.purchase_picker.guid64 == self.guid64:
                     yield from snippet.additional_purchase_items
+
+    def attempt_payment_source_debit(self, total_debit, resolver):
+        return self.payment_source.try_remove_funds(self.sim_info, total_debit, resolver=resolver)
+
+    def attempt_payment_destination_credit(self, total_amount, resolver):
+        if self.payment_destination is not None:
+            pay_info = PaymentInfo(total_amount, resolver)
+            return self.payment_destination.give_payment(pay_info)
 
     def _picker_rows_gen(self):
         resolver = self.get_resolver()
@@ -533,7 +552,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     for x in range(amount_to_purchase):
                         try:
                             # Attempt payment
-                            if price > 0 and not self.payment_source.try_remove_funds(self.sim_info, price, resolver=resolver):
+                            if price > 0 and not self.attempt_payment_source_debit(price, resolver):
                                 raise PurchaseException("NOT_ENOUGH_FUNDS")
 
                             # Object Creation
@@ -578,7 +597,6 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             # Attempt to deliver object
                             if purchase_data.purchase_item.delivery_override is not None:
                                 delivery_method = purchase_data.purchase_item.delivery_override
-                                logger.debug("using delivery override: {}".format(delivery_method))
                             else:
                                 delivery_method = self.delivery_method
 
@@ -595,7 +613,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                                 stock_manager.subtract_stock(stock_key)
 
                         except PurchaseException:
-                            logger.exception("Delivery failed reason: {}".format(stock_key))
+                            logger.exception("Delivery failed for purchase item with stock key: {}".format(stock_key))
                             # Aggregate failure count and stop looping if flagged to stop
                             if self.stop_on_first_failure:
                                 failed_count = amount_to_purchase
@@ -606,15 +624,22 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                                 continue
 
                 if purchase_count > 0:
+                    # Apply success loot
                     for loot in self.loot_on_success:
                         loot.apply_to_resolver(resolver)
 
+                    # Give payment to payment_destinations
+                    self.attempt_payment_destination_credit(total_debit, resolver)
+
+                    # Show success notification
                     self._show_purchase_notification(self.purchase_success_notification, resolver, tokens=(purchase_count, failed_count, total_debit,))
 
                 if failed_count > 0:
+                    # Apply failure loot
                     for loot in self.loot_on_failure:
                         loot.apply_to_resolver(resolver)
 
+                    # Show failure notification
                     self._show_purchase_notification(self.purchase_failed_notification, resolver, tokens=(purchase_count, failed_count, total_debit,))
         except:
             logger.exception("failed purchasing")
@@ -624,3 +649,4 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             self.current_price_data.clear()
             for obj in self._populated_objects:
                 obj.destroy()
+            self._populated_objects.clear()

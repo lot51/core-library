@@ -6,7 +6,8 @@ from crafting.food_restrictions_utils import FoodRestrictionUtils
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import inject_to_enum, inject_mapping_lists, inject_list
+from lot51_core.utils.injection import inject_to_enum, inject_mapping_lists, inject_list, inject_tuned_values, \
+    merge_list, get_tuned_value
 from lot51_core.utils.injection_tracker import injection_tracker
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, TunableEnumEntry, TunableTuple, Tunable
@@ -119,8 +120,11 @@ class TunableTraitInjection(BaseTunableInjection):
                 if self.trait.interactions is None:
                     self.trait.interactions = self.interactions
                 else:
-                    self.trait.interactions._affordance_links += tuple(self.interactions._affordance_links)
-                    self.trait.interactions._affordance_lists += tuple(self.interactions._affordance_lists)
+                    inject_tuned_values(
+                        self.trait.interactions,
+                        affordance_links=merge_list(get_tuned_value(self.trait.interactions, 'affordance_links'), get_tuned_value(self.interactions, 'affordance_links')),
+                        affordance_lists=merge_list(get_tuned_value(self.trait.interactions, 'affordance_lists'), get_tuned_value(self.interactions, 'affordance_lists')),
+                    )
 
             if self.restricted_ingredients is not None:
                 inject_list(self.trait, 'restricted_ingredients', self.restricted_ingredients)
@@ -156,4 +160,4 @@ class TunableTraitInjection(BaseTunableInjection):
                 # apply to recipes
                 for recipe in food_restriction.recipes:
                     if hasattr(recipe, 'food_restriction_ingredients'):
-                        recipe.food_restriction_ingredients += (restriction_type,)
+                        inject_list(recipe, 'food_restriction_ingredients', (restriction_type,))

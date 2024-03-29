@@ -1,5 +1,6 @@
 import services
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference
 from whims.whim import TunableWeightedWhimCollection
@@ -15,4 +16,4 @@ class TunableWhimSetInjection(BaseTunableInjection):
 
     def inject(self):
         if self.whim_set is not None:
-            self.whim_set.whims += self.whims
+            inject_list(self.whim_set, 'whims', self.whims)

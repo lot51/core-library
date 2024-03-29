@@ -2,6 +2,7 @@ import services
 from event_testing.tests import TunableGlobalTestSet
 from interactions.utils.tunable_icon import TunableIconAllPacks
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_list
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
 from sims4.tuning.tunable import Tunable, TunableReference, TunableVariant, TunableList, TunableEnumEntry
@@ -44,7 +45,7 @@ class TunableServicePickerInjection(BaseTunableInjection):
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            picker_tuning.non_service_npcs += (self,)
+            inject_list(picker_tuning, 'service_npcs', (self,))
 
 
 class TunableHireableServicePickerInjection(BaseTunableInjection):
@@ -65,4 +66,4 @@ class TunableHireableServicePickerInjection(BaseTunableInjection):
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            picker_tuning.service_npcs += (self,)
+            inject_list(picker_tuning, 'service_npcs', (self,))

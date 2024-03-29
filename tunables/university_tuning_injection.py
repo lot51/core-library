@@ -1,5 +1,7 @@
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.collections import AttributeDict
+from lot51_core.utils.injection import inject_list, merge_list, inject_dict, inject_mapping_lists
 from services import get_instance_manager
 from sims.university.university_commands import UniversityCommandTuning
 from sims.university.university_tuning import University
@@ -85,21 +87,20 @@ class TunableUniversityTuningInjection(BaseTunableInjection):
 
     def inject(self):
         # Add additional_majors
-        University.ALL_DEGREES += self.additional_majors
+        inject_list(University, 'ALL_DEGREES', self.additional_majors)
 
         # Add COURSE_ELECTIVES overrides
         elective_overrides = AttributeDict()
-        elective_overrides.electives = University.COURSE_ELECTIVES.electives + self.additional_electives
+        if len(self.additional_electives):
+            elective_overrides.electives = merge_list(University.COURSE_ELECTIVES.electives, self.additional_electives)
         if self.elective_count is not None:
             elective_overrides.elective_count = self.elective_count
-        University.COURSE_ELECTIVES = University.COURSE_ELECTIVES.clone_with_overrides(**elective_overrides)
+
+        if len(elective_overrides):
+            inject_dict(University, 'COURSE_ELECTIVES', **elective_overrides)
 
         # Add additional_degree_traits
-        UniversityCommandTuning.DEGREE_TRAITS += self.additional_degree_traits
+        inject_list(UniversityCommandTuning, 'DEGREE_TRAITS', self.additional_degree_traits)
 
         # Add skill_to_major
-        for skill, majors in self.skill_to_majors:
-            if skill in University.SKILL_TO_MAJOR_TUNING:
-                University.SKILL_TO_MAJOR_TUNING[skill] += majors
-            else:
-                University.SKILL_TO_MAJOR_TUNING[skill] = majors
+        inject_mapping_lists(University, 'SKILL_TO_MAJOR_TUNING', self.skill_to_majors)

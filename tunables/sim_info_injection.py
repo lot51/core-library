@@ -1,7 +1,7 @@
 import services
 from away_actions.away_actions import AwayAction
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import inject_mapping_lists
+from lot51_core.utils.injection import inject_mapping_lists, inject_dict
 from sims.sim_info import SimInfo
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableList, TunableReference, TunableMapping
@@ -33,6 +33,4 @@ class TunableSimInfoInjection(BaseTunableInjection):
 
     def inject(self):
         inject_mapping_lists(SimInfo, 'AWAY_ACTIONS', self.away_actions)
-
-        for key, value in self.default_away_action.items():
-            SimInfo.DEFAULT_AWAY_ACTION[key] = value
+        inject_dict(SimInfo, 'DEFAULT_AWAY_ACTION', self.default_away_action)

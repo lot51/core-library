@@ -27,11 +27,18 @@ class TunableMultiplierInjection(HasTunableSingletonFactory, AutoFactoryInit):
             tuple_elements['locked_args'] = {'tooltip': frozendict()}
         return {'additional_multipliers': _get_tunable_multiplier_list_entry(**tuple_elements)}
 
+    def create_multiplier(self, base_value, multipliers):
+        return TunableMultiplier(base_value=base_value, multipliers=multipliers)
+
     def inject(self, target, key):
         tunable = getattr(target, key, None)
         if tunable is not None:
             base_value = tunable.base_value if self.base_value_override is None else self.base_value_override
             multipliers = merge_list(tunable.multipliers, self.additional_multipliers)
-            new_tunable = TunableMultiplier(base_value=base_value, multipliers=multipliers)
-            # logger.debug("replacing multiplier {} with {}".format(getattr(target, key, None), new_tunable))
+            new_tunable = self.create_multiplier(base_value, multipliers)
+            setattr(target, key, new_tunable)
+        else:
+            base_value = self.base_value_override if self.base_value_override is not None else 1
+            multipliers = merge_list(self.additional_multipliers, ())
+            new_tunable = self.create_multiplier(base_value, multipliers)
             setattr(target, key, new_tunable)

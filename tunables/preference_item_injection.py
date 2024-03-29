@@ -1,6 +1,6 @@
 import services
-from _sims4_collections import frozendict
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.utils.injection import inject_dict
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableMapping, TunableRange
 
@@ -18,8 +18,4 @@ class TunableCharacteristicPreferenceItemInjection(BaseTunableInjection):
 
     def inject(self):
         if self.preference_item is not None:
-            trait_map = dict(self.preference_item.trait_map)
-            for trait, weight in self.trait_map.items():
-                trait_map[trait] = weight
-
-            self.preference_item.trait_map = frozendict(trait_map)
+            inject_dict(self.preference_item, 'trait_map', new_items=self.trait_map, force_frozen=True)

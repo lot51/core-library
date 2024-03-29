@@ -1,6 +1,7 @@
 import services
 import sims4
-from lot51_core import logger, __version__
+from lot51_core import logger, __version__, __minimum_game_version__
+from lot51_core.lib.game_version import get_game_version, GameVersion
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, \
     TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList, \
@@ -27,6 +28,7 @@ from lot51_core.tunables.region_injection import TunableRegionInjection
 from lot51_core.tunables.route_event_injection import TunableRouteEventInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
+from lot51_core.tunables.situation_injection import TunableSituationInjection
 from lot51_core.tunables.situation_job_injection import TunableSituationJobInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
@@ -57,9 +59,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     INSTANCE_TUNABLES = {
         "_required_packs": TunableEnumSet(enum_type=Pack, default_enum_list=(Pack.BASE_GAME,)),
-        "minimum_core_version": Tunable(tunable_type=str, allow_empty=True, default='1.0.0'),
-        "creator_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
-        "mod_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
+        "minimum_core_version": Tunable(tunable_type=str, default=__version__),
+        "minimum_game_version": Tunable(tunable_type=str, default=__minimum_game_version__),
+        "creator_name": Tunable(tunable_type=str, default='N/A'),
+        "mod_name": Tunable(tunable_type=str, default='N/A'),
         "inject_by_affordance": TunableList(
             description="Inject to object tuning based on an existing affordance",
             tunable=TunableObjectInjectionByAffordance.TunableFactory(),
@@ -168,6 +171,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject to service_npcs in the hire a service picker",
             tunable=TunableHireableServicePickerInjection.TunableFactory(),
         ),
+        "inject_to_situations": TunableList(
+            tunable=TunableSituationInjection.TunableFactory(),
+        ),
         "inject_to_situation_jobs": TunableList(
             tunable=TunableSituationJobInjection.TunableFactory(),
         ),
@@ -199,14 +205,19 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     __injectors__ = tuple(INSTANCE_TUNABLES.keys())
 
+    @classmethod
+    def get_author(cls):
+        return '{} by {} ({})'.format(cls.mod_name, cls.creator_name, cls.__name__)
 
     @classmethod
     def to_str(cls):
-        return '<TuningInjector {} by {} ({}); minimum core version {}>'.format(cls.mod_name, cls.creator_name, cls.__name__, cls.minimum_core_version)
+        return '<TuningInjector {}; minimum core version {};>'.format(cls.get_author(), cls.minimum_core_version)
 
     @classmethod
     def _tuning_loaded_callback(cls):
         logger.info('[tuning_loaded_callback] {}'.format(cls.to_str()))
+        if not GameVersion.test(cls.minimum_game_version):
+            logger.warn("Invalid minimum_game_version defined: {} Please fix this value.".format(cls.minimum_game_version))
 
     @classmethod
     def all_snippets_gen(cls):
@@ -221,8 +232,19 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         return Version.parse(cls.minimum_core_version, optional_minor_and_patch=True)
 
     @classmethod
+    def get_minimum_game_version(cls):
+        return GameVersion.parse(cls.minimum_game_version)
+
+    @classmethod
     def is_valid_version(cls):
         return cls.get_core_version() >= cls.get_minimum_version()
+
+    @classmethod
+    def is_valid_game_version(cls):
+        game_version = get_game_version()
+        if game_version is None:
+            return True
+        return game_version >= cls.get_minimum_game_version()
 
     @classmethod
     def are_packs_available(cls):
@@ -242,10 +264,13 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
     @classmethod
     def perform_injections(cls, timing: InjectionTiming):
         if not cls.are_packs_available():
-            logger.warn("[TuningInjector] skipping injector due to missing packs: {}".format(cls.to_str()))
+            logger.warn("[TuningInjector] skipping injector {} due to missing packs".format(cls.get_author()))
+            return
+        if not cls.is_valid_game_version():
+            logger.warn("[TuningInjector] skipping injector {} due to incompatibility with the current game version. Minimum version required: {}".format(cls.get_author(), cls.minimum_core_version))
             return
 
-        logger.info('[TuningInjector] starting injections for timing {}: {}'.format(timing, cls.to_str()))
+        logger.info('[TuningInjector] starting injections for timing {}: {}'.format(timing, cls.get_author()))
 
         total = 0
         for key, injector in cls._get_injectors_gen():
