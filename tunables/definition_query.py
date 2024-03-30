@@ -74,7 +74,7 @@ class TaggedRecipesSource(BaseDefinitionSource):
         for tag in self.tags:
             for recipe in get_recipes_matching_tag(tag):
                 if hasattr(recipe, 'has_final_product_definition') and recipe.recipe_tags is not None and recipe not in _yield_cache:
-                    if not recipe.recipe_tags.intersection(self.exclude_tags) and recipe not in self.exclude_recipes:
+                    if not set(recipe.recipe_tags).intersection(self.exclude_tags) and recipe not in self.exclude_recipes:
                         _yield_cache.add(recipe)
                         yield DefinitionData({"definition": recipe.final_product_definition, "recipe": recipe})
 
@@ -122,7 +122,7 @@ class TaggedDefinitionsSource(BaseDefinitionSource):
 
     def _get_definitions_gen(self, resolver=None):
         for definition in services.definition_manager().get_definitions_for_tags_gen(self.tags):
-            if not definition.build_buy_tags.intersection(self.exclude_tags) and definition not in self.exclude_definitions:
+            if not set(definition.get_tags()).intersection(self.exclude_tags) and definition not in self.exclude_definitions:
                 yield definition
 
 

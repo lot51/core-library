@@ -137,11 +137,12 @@ def fetch_game_version(root=None):
         root = get_game_dir()
     path = os.path.join(root, 'GameVersion.txt')
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            text = f.read()
-        # Remove special characters
-        text = re.sub('[^0-9.]+', '', text)
-        return text
+        if os.path.exists(path):
+            with open(path, 'r', encoding='utf-8') as f:
+                text = f.read()
+            # Remove special characters
+            text = re.sub('[^0-9.]+', '', text)
+            return text
     except:
         pass
 
