@@ -30,4 +30,4 @@ class TunableSatisfactionStoreInjection(BaseTunableInjection):
     __slots__ = ('rewards',)
 
     def inject(self):
-        inject_dict(SatisfactionTracker, 'SATISFACTION_STORE_ITEMS', self.rewards)
+        inject_dict(SatisfactionTracker, 'SATISFACTION_STORE_ITEMS', new_items=self.rewards)

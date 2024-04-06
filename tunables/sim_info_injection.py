@@ -33,4 +33,4 @@ class TunableSimInfoInjection(BaseTunableInjection):
 
     def inject(self):
         inject_mapping_lists(SimInfo, 'AWAY_ACTIONS', self.away_actions)
-        inject_dict(SimInfo, 'DEFAULT_AWAY_ACTION', self.default_away_action)
+        inject_dict(SimInfo, 'DEFAULT_AWAY_ACTION', new_items=self.default_away_action)

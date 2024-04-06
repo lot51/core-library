@@ -3,7 +3,7 @@ from sims4.tuning.tunable import TunableFactory
 
 def create_factory_wrapper(cls, locked_args=None, **tuned_values):
     """
-    Create a tunable factory wrapper from a base class.
+    Create a tunable factory wrapper from a base class that has a tunable factory, or extends TunableFactory.
 
     :param cls: The factory class to be wrapped
     :param locked_args: A dict of locked properties on the wrapper, that cant be overidden during call.
