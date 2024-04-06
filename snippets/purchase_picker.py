@@ -1,4 +1,3 @@
-import math
 import random
 import build_buy
 import services
@@ -14,8 +13,10 @@ from interactions.picker.object_marketplace_picker_interaction import ObjectMark
 from interactions.utils.tunable_icon import TunableIcon
 from lot51_core import logger
 from interactions import ParticipantTypeSingle
+from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.snippets.purchase_picker_modifier import PurchasePickerModifier
-from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, InventoryDeliveryMethod
+from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, \
+    InventoryDeliveryMethod, MailboxDeliveryMethod
 from lot51_core.tunables.payment_destination import TunablePaymentDestinationVariant
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from lot51_core.utils.math import chance_succeeded
@@ -148,6 +149,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             description="Where to spawn objects on successful purchase.",
             participant_fgl=FglDeliveryMethod.TunableFactory(),
             inventory=InventoryDeliveryMethod.TunableFactory(),
+            mailbox=MailboxDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
             default='participant_fgl'
         ),
@@ -261,7 +263,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
     def _picker_rows_gen(self):
         resolver = self.get_resolver()
 
-        global_price_multiplier = math.ceil(self.price_multiplier.get_multiplier(resolver))
+        global_price_multiplier = self.price_multiplier.get_multiplier(resolver)
         stock_manager = self.get_stock_manager()
 
         # Generate Cached Rows
@@ -278,7 +280,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 stock_key = picker_data.stock_key
 
                 # Check the global visibility test for this row
-                if not item.visibility_tests.run_tests(resolver):
+                visibility_result = item.visibility_tests.run_tests(resolver)
+                if not visibility_result:
                     continue
 
                 # Recalculate stock if necessary
@@ -310,9 +313,16 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
                 self._populated_objects.append(temp_obj)
 
+                # Calculate price
+                price = base_cost
+
+                # Add quality_info multiplier
+                if quality_info is not None:
+                    price *= quality_info.static_price_multiplier
+
                 # Add sim specific multipliers
                 cost_multiplier = item.price_multiplier.get_multiplier(resolver)
-                price = round(base_cost * cost_multiplier * global_price_multiplier)
+                price = round(price * cost_multiplier * global_price_multiplier)
 
                 # Check for discount
                 is_discounted = item.show_discount and price < base_cost
@@ -349,7 +359,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
                 # Cache row info for immediate dialog response
                 # Assumes dialog.purchase_by_object_ids is set to True.
-                self.current_price_data[temp_obj.id] = price
+                self.current_price_data[temp_obj.id] = (price, base_cost,)
                 self.current_item_data[temp_obj.id] = picker_data
 
                 row = PurchasePickerRow(def_id=definition.id, is_enable=is_enabled, objects={temp_obj},
@@ -364,7 +374,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         # Otherwise generate new rows
         for item in self.get_purchase_items_gen():
             # Check the global visibility test for this row
-            if not item.visibility_tests.run_tests(resolver):
+            visibility_result = item.visibility_tests.run_tests(resolver)
+            if not visibility_result:
                 continue
 
             # Generate weighted list of possible quality info for this row
@@ -440,14 +451,15 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
                     # Calculate price
                     base_cost = item.custom_price if item.custom_price is not None else definition.price
+                    price = base_cost
 
                     # Add quality_info multiplier
                     if quality_info is not None:
-                        base_cost *= quality_info.static_price_multiplier
+                        price *= quality_info.static_price_multiplier
 
                     # Add sim specific multipliers
                     cost_multiplier = item.price_multiplier.get_multiplier(resolver)
-                    price = round(base_cost * cost_multiplier * global_price_multiplier)
+                    price = round(price * cost_multiplier * global_price_multiplier)
 
                     # Check for discount
                     is_discounted = item.show_discount and price < base_cost
@@ -503,7 +515,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
 
                     # Cache row info for immediate dialog response
                     # Assumes dialog.purchase_by_object_ids is set to True.
-                    self.current_price_data[temp_obj.id] = price
+                    self.current_price_data[temp_obj.id] = (price, base_cost,)
                     self.current_item_data[temp_obj.id] = picker_data
 
                     # Cache picker row for future use
@@ -545,7 +557,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                         continue
 
                     purchase_data = self.current_item_data[obj_id]
-                    price = self.current_price_data[obj_id]
+                    price, base_cost = self.current_price_data[obj_id]
                     stock_key = purchase_data.stock_key
 
                     # Generate each item based on quantity purchased
@@ -591,8 +603,17 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             if purchase_data.purchase_item.set_sim_as_owner and obj.ownable_component:
                                 obj.ownable_component.update_sim_ownership(self.sim_info.sim_id)
 
+                            depreciation_multiplier = purchase_data.purchase_item.depreciation_multiplier.get_multiplier(resolver)
+                            if purchase_data.quality is not None:
+                                depreciation_multiplier *= purchase_data.quality.static_depreciation_multiplier
+
                             # Set object value to purchase price
-                            obj.current_value = price
+                            if purchase_data.purchase_item.use_base_cost_as_value:
+                                obj_value = base_cost
+                            else:
+                                obj_value = price
+
+                            obj.current_value = obj_value * depreciation_multiplier
 
                             # Attempt to deliver object
                             if purchase_data.purchase_item.delivery_override is not None:
@@ -600,7 +621,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             else:
                                 delivery_method = self.delivery_method
 
-                            if not delivery_method(resolver, obj):
+                            if not delivery_method(resolver, obj, participant=self.owner_participant):
                                 obj.destroy()
                                 raise PurchaseException("DELIVERY_FAILED")
 
@@ -650,3 +671,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             for obj in self._populated_objects:
                 obj.destroy()
             self._populated_objects.clear()
+
+
+@event_handler(CoreEvent.GAME_SERVICES_STARTED)
+def _purchase_picker_services_on_game_services_started(*args, **kwargs):
+    StockManager.clear_stock_managers()

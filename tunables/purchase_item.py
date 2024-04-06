@@ -1,7 +1,8 @@
 from event_testing.tests import TunableTestSet
 from interactions.utils.success_chance import SuccessChance
 from lot51_core.loot import LotFiftyOneCoreLootActionVariant
-from lot51_core.tunables.delivery_method import FglDeliveryMethod, InventoryDeliveryMethod, MultipleInventoriesDeliveryMethod
+from lot51_core.tunables.delivery_method import FglDeliveryMethod, InventoryDeliveryMethod, \
+    MultipleInventoriesDeliveryMethod, MailboxDeliveryMethod
 from lot51_core.tunables.definition_query import DefinitionSearchMethodVariant
 from services import get_instance_manager
 from sims4.localization import TunableLocalizedStringFactory
@@ -51,6 +52,7 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             description="Where to spawn objects on successful purchase.",
             participant_fgl=FglDeliveryMethod.TunableFactory(),
             inventory=InventoryDeliveryMethod.TunableFactory(),
+            mailbox=MailboxDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
         ),
         'description_override': OptionalTunable(
@@ -75,16 +77,19 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             tunable=TunableInterval(tunable_type=int, default_lower=1, default_upper=1, minimum=0)
         ),
         'price_multiplier': TunableMultiplier.TunableFactory(description="A multiplier only applied to this purchase item's price  (not cached)"),
+        'depreciation_multiplier': TunableMultiplier.TunableFactory(description="A multiplier applied to the object value upon purchase (not cached)"),
         'quality_states': TunableList(
             description="An item from this list will be randomly selected to add additional value/quality to an object",
             tunable=TunableTuple(
                 states=TunableList(tunable=TunableReference(manager=get_instance_manager(Types.OBJECT_STATE))),
-                static_price_multiplier=Tunable(tunable_type=int, default=1),
+                static_price_multiplier=Tunable(tunable_type=float, default=1),
+                static_depreciation_multiplier=Tunable(tunable_type=float, default=1),
                 weight=TunableMultiplier.TunableFactory(),
             )
         ),
         'set_custom_name_on_object': Tunable(description="If custom_names is enabled, the chosen name will be set in the NAME_COMPONENT and provided as the 0 index token in description. Set to false to only use the custom name for the description.", tunable_type=bool, default=True),
         'set_sim_as_owner': Tunable(tunable_type=bool, default=False),
         'show_discount': Tunable(tunable_type=bool, default=False),
+        'use_base_cost_as_value': Tunable(tunable_type=bool, default=False, description="Instead of using the purchase price, the original base cost will be set as the purchased object's value."),
         'visibility_tests': TunableTestSet(description="Tests to decide if row is visible (not cached)"),
     }
