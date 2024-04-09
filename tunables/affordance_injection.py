@@ -323,7 +323,9 @@ class TunableAffordanceInjectionByCategory(BaseTunableAffordanceInjection):
         'exclude_affordances': TunableList(
             tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
         ),
-        'pie_menu_categories': TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY))),
+        'pie_menu_categories': TunableSet(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.PIE_MENU_CATEGORY), pack_safe=True),
+        ),
     }
 
     __slots__ = ('pie_menu_categories', 'exclude_affordances',)
