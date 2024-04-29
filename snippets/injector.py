@@ -248,7 +248,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
 
     @classmethod
     def are_packs_available(cls):
-        return sims4.common.are_packs_available(cls._required_packs)
+        return sims4.common.are_packs_available(tuple(cls._required_packs))
 
     @classmethod
     def _get_injectors_gen(cls):

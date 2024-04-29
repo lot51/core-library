@@ -55,6 +55,10 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             mailbox=MailboxDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
         ),
+        'display_name_override': OptionalTunable(
+            description="Override the display name of the object in the picker. (Does not override custom_names)",
+            tunable=TunableLocalizedStringFactory()
+        ),
         'description_override': OptionalTunable(
             description="Override the object catalog description",
             tunable=TunableLocalizedStringFactory()

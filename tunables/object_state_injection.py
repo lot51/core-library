@@ -4,8 +4,7 @@ from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import inject_list
 from objects.components.state import ObjectStateValue, StateChangeOperation, ObjectState
 from sims4.resources import Types
-from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference, TunableList, \
-    OptionalTunable
+from sims4.tuning.tunable import TunableReference, TunableList, OptionalTunable
 from singletons import UNSET
 
 
@@ -40,12 +39,12 @@ class TunableObjectStateInjection(BaseTunableInjection):
         inject_list(self.object_state, '_values', state_values_to_add)
 
 
-class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryInit):
+class TunableObjectStateValueInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'object_state_value': TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE)),
         'affordances': TunableList(
             description="Inject to super_affordances",
-            tunable=TunableReference(services.get_instance_manager(Types.INTERACTION))
+            tunable=TunableReference(services.get_instance_manager(Types.INTERACTION), pack_safe=True)
         ),
         'new_client_state': OptionalTunable(
             tunable=StateChangeOperation.TunableFactory()
@@ -58,7 +57,7 @@ class TunableObjectStateValueInjection(HasTunableSingletonFactory, AutoFactoryIn
         if self.object_state_value is None:
             return
         elif not isinstance(self.object_state_value, ObjectStateValue):
-            logger.warn("Skipping object state value injection. Expecting ObjectStateValue but {} is invalid".format(self.object_state))
+            logger.warn("Skipping object state value injection. Expecting ObjectStateValue but {} is invalid".format(self.object_state_value))
             return
 
         inject_list(self.object_state_value, 'super_affordances', self.affordances)

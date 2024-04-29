@@ -338,7 +338,9 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     icon_override = IconInfoData(icon_resource=self.stock_management.sold_out_icon)
 
                 # Get row name override
-                if picker_data.custom_name is not None:
+                if item.display_name_override is not None:
+                    row_name = item.display_name_override(build_buy.get_object_catalog_name(definition.id))
+                elif picker_data.custom_name is not None:
                     row_name = LocalizationHelperTuning.get_raw_text(picker_data.custom_name)
                 else:
                     row_name = _create_localized_string(build_buy.get_object_catalog_name(definition.id))
@@ -480,9 +482,10 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                         custom_name = random.choice(item.custom_names)
 
                     # Get row name override
-                    if custom_name is not None:
+                    if item.display_name_override is not None:
+                        row_name = item.display_name_override(build_buy.get_object_catalog_name(definition.id))
+                    elif custom_name is not None:
                         row_name = LocalizationHelperTuning.get_raw_text(custom_name)
-                    # Otherwise fallback to catalog name
                     else:
                         row_name = _create_localized_string(build_buy.get_object_catalog_name(definition.id))
 
