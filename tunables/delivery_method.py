@@ -83,6 +83,21 @@ class MailboxDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
         return False
 
 
+class HouseholdInventoryDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
+
+    FACTORY_TUNABLES = {
+        'household_inventory': TunableEnumEntry(tunable_type=InventoryDeliveryFallback, default=InventoryDeliveryFallback.ACTIVE_HOUSEHOLD),
+    }
+
+    __slots__ = ('household_inventory',)
+
+    def __call__(self, resolver, obj, **kwargs):
+        if attempt_fallback_delivery(resolver, obj, self.household_inventory):
+            return True
+        return False
+
+
+
 class InventoryDeliveryMethod(HasTunableSingletonFactory, AutoFactoryInit):
 
     FACTORY_TUNABLES = {

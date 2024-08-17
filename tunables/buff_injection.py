@@ -5,6 +5,7 @@ from interactions.base.mixer_interaction import MixerInteraction
 from interactions.utils.tunable import TunableAffordanceLinkList
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
+from lot51_core.tunables.test_injection import TestInjectionVariant
 from lot51_core.utils.injection import inject_mapping_lists, inject_list, merge_list, inject_dict, get_tuned_value
 from lot51_core.utils.tunables import create_factory_wrapper
 from sims4.resources import Types
@@ -30,6 +31,7 @@ class TunableBuffInjection(BaseTunableInjection):
         ),
         'game_effect_modifiers': TunableList(description='A list of game effect modifiers', tunable=TunableGameEffectVariant()),
         'interaction_items': TunableAffordanceLinkList(class_restrictions=(MixerInteraction,)),
+        'modify_add_test_set': TestInjectionVariant(),
         'provided_mixers': TunableMapping(
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
             value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
@@ -42,7 +44,7 @@ class TunableBuffInjection(BaseTunableInjection):
         'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False})
     }
 
-    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'provided_mixers', 'super_affordances', 'target_super_affordances', 'refresh_lock',)
+    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'modify_add_test_set', 'provided_mixers', 'super_affordances', 'target_super_affordances', 'refresh_lock',)
 
     _create_interaction_items = make_immutable_slots_class({'interaction_items', 'scored_commodity', 'weight'})
 
@@ -70,6 +72,9 @@ class TunableBuffInjection(BaseTunableInjection):
                 buff_type.refresh_lock = self.refresh_lock
 
             inject_list(buff_type, 'super_affordances', self.super_affordances)
+
+            if self.modify_add_test_set is not None:
+                self.modify_add_test_set.inject(buff_type, '_add_test_set')
 
             if self.target_super_affordances is not None:
                 inject_list(buff_type, 'target_super_affordances', self.target_super_affordances)

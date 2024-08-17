@@ -35,6 +35,8 @@ def command_open_purchase_picker(purchase_picker:TunableInstanceParam(Types.SNIP
 def command_on_version_dialog_response(base_url:str=None, params:str=None, _connection=None):
     if params is not None:
         params = json.loads(params)
+    else:
+        params = dict()
     open_url_in_browser(base_url, **params)
 
 

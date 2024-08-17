@@ -4,12 +4,14 @@ from lot51_core.utils.collections import AttributeDict
 
 
 class Config:
-    def __init__(self, root_path, config_filename, logger, default_data: dict = dict()):
+    def __init__(self, root_path, config_filename, logger, default_data: dict = None, lazy=False):
         self._config = dict()
-        self._default_data = dict(default_data)
+        self._default_data = dict(default_data if default_data is not None else {})
         self._root_path = root_path
         self.logger = logger
         self._config_filename = config_filename
+        self._lazy = lazy
+        self._dirty = False
         self.load()
 
     @property
@@ -25,6 +27,8 @@ class Config:
         if not self._config or not self._root_path:
             return False
         try:
+            if self._lazy and not self._dirty:
+                return False
             self._save_config_file(self._config)
             return True
         except:
@@ -41,10 +45,11 @@ class Config:
 
     def set(self, key, value):
         self._config[key] = value
+        self._dirty = True
         return True
 
     def set_hard(self, key, value):
-        self._config[key] = value
+        self.set(key, value)
         return self.save()
 
     def get_root_path(self):

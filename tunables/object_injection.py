@@ -12,6 +12,7 @@ from objects.components.idle_component import IdleComponent
 from objects.components.inventory_enums import InventoryType
 from objects.components.locking_components import ObjectLockingComponent
 from objects.components.name_component import NameComponent
+from objects.components.object_relationship_component import ObjectRelationshipComponent
 from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, \
     TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent
 from objects.components.tooltip_component import TooltipComponent
@@ -69,6 +70,11 @@ class BaseTunableObjectInjection(BaseTunableInjection):
                 valid_inventory_types=TunableEnumSet(enum_type=InventoryType, enum_default=InventoryType.UNDEFINED, invalid_enums=(InventoryType.UNDEFINED)),
             ),
         ),
+        'inventory_component': OptionalTunable(
+            tunable=TunableTuple(
+                starting_objects=TunableList(tunable=TunableReference(manager=services.definition_manager(), pack_safe=True)),
+            ),
+        ),
         'name_component_override': OptionalTunable(
             tunable=NameComponent.TunableFactory(),
         ),
@@ -76,6 +82,9 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             tunable=TunableTuple(
                 super_affordances=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)),
             )
+        ),
+        'object_relationship_component_override': OptionalTunable(
+            tunable=ObjectRelationshipComponent.TunableFactory(),
         ),
         'portal_component': OptionalTunable(
             tunable=TunableTuple(
@@ -100,7 +109,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         ),
     }
 
-    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'tooltip_component_override',)
+    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'object_relationship_component_override', 'tooltip_component_override',)
 
     def get_objects_gen(self):
         raise NotImplementedError
@@ -170,7 +179,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         if self.carryable_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'carryable', None) is not None:
             carryable_component = obj._components.carryable
             new_carryable_component = clone_factory_wrapper_with_overrides(carryable_component, provided_affordances=merge_list(carryable_component.provided_affordances,  self.carryable_component.provided_affordances))
-            inject_dict(obj, '_components', carryable_component=new_carryable_component)
+            inject_dict(obj, '_components', carryable=new_carryable_component)
 
     def _inject_portal_component(self, obj):
         if self.portal_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'portal', None) is not None:
@@ -188,10 +197,16 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             inject_dict(obj, '_components', portal=new_portal_component)
 
     def _inject_inventory_item_component(self, obj):
-        if self.inventory_item_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'inventoryitem_component', None) is not None:
-            inventory_item_component = obj._components.inventoryitem_component
+        if self.inventory_item_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'inventory_item', None) is not None:
+            inventory_item_component = obj._components.inventory_item
             new_inventory_item_component = clone_factory_wrapper_with_overrides(inventory_item_component, valid_inventory_types=merge_list(inventory_item_component.valid_inventory_types, self.inventory_item_component.valid_inventory_types))
-            inject_dict(obj, '_components', inventoryitem_component=new_inventory_item_component)
+            inject_dict(obj, '_components', inventory_item=new_inventory_item_component)
+
+    def _inject_inventory_component(self, obj):
+        if self.inventory_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'inventory', None) is not None:
+            inventory_component = obj._components.inventory
+            new_inventory_component = clone_factory_wrapper_with_overrides(inventory_component, starting_objects=merge_list(inventory_component.starting_objects, self.inventory_component.starting_objects))
+            inject_dict(obj, '_components', inventory=new_inventory_component)
 
     def _inject_object_locking_component(self, obj, should_create_component=True):
         if self.object_locking_component is not None and hasattr(obj, '_components') and getattr(obj._components, 'object_locking_component', None) is not None:
@@ -210,6 +225,10 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         if self.name_component_override is not None:
             inject_dict(obj, '_components', name_component=self.name_component_override)
 
+    def _inject_object_relationship_component_override(self, obj):
+        if self.object_relationship_component_override is not None:
+            inject_dict(obj, '_components', object_relationship_component=self.object_relationship_component_override)
+
     def _inject(self, obj):
         self._add_affordances(obj)
         self._inject_idle_component(obj)
@@ -219,9 +238,11 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         self._inject_proximity_component(obj)
         self._inject_carryable_component(obj)
         self._inject_inventory_item_component(obj)
+        self._inject_inventory_component(obj)
         self._inject_object_locking_component(obj)
         self._inject_tooltip_component(obj)
         self._inject_name_component(obj)
+        self._inject_object_relationship_component_override()
 
     def inject(self):
         for obj in self.get_objects_gen():

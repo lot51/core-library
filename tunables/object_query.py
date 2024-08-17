@@ -2,7 +2,7 @@ import services
 import random
 from build_buy import get_room_id
 from event_testing.tests import TunableTestSet
-from event_testing.resolver import SingleObjectResolver, DoubleObjectResolver, SingleSimResolver
+from event_testing.resolver import SingleObjectResolver, DoubleObjectResolver, SingleSimResolver, GlobalResolver
 from interactions import ParticipantType, ParticipantTypeSingle
 from lot51_core import logger
 from lot51_core.utils.math import weighted_sort, flatten_weighted_list
@@ -208,7 +208,7 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
     __slots__ = ('additional_tests', 'additional_tests_actor', 'exclude_tags', 'filter', 'sort', 'tests', 'test_in_use',)
 
     def get_test_resolver(self, original_resolver, target):
-        if original_resolver is None:
+        if original_resolver is None or isinstance(original_resolver, GlobalResolver):
             return SingleObjectResolver(target)
         # get original loot subject as actor
         if isinstance(original_resolver, SingleSimResolver) and self.additional_tests_actor in (ParticipantTypeSingle.Object, ParticipantTypeSingle.TargetSim, ParticipantType.Object, ParticipantType.TargetSim,):
@@ -248,7 +248,7 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
 
     def _filter_exclude_tags_gen(self, obj_list):
         for obj in obj_list:
-            if self.exclude_tags is not None and obj.has_any_tag(self.exclude_tags):
+            if self.exclude_tags is not None and hasattr(obj, 'has_any_tag') and obj.has_any_tag(self.exclude_tags):
                 continue
             yield obj
 
@@ -489,6 +489,7 @@ class GetSimsInteractingWithParticipant(_GetObjectsBase):
                         si_target = si.get_participant(ParticipantType.Object)
                         if si_target == target:
                             yield sim
+                            break
 
 
 class GetObjectsByParent(_GetObjectsBase):
@@ -504,7 +505,8 @@ class GetObjectsByParent(_GetObjectsBase):
             if isinstance(target, SimInfo):
                 target = target.get_sim_instance()
             if target is not None:
-                yield from target.get_all_children_gen()
+                if hasattr(target, 'get_all_children_gen'):
+                    yield from target.get_all_children_gen()
 
 
 class GetObjectsByActiveHousehold(GetObjectsBySimInfo):

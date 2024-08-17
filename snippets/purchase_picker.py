@@ -6,7 +6,7 @@ import uuid
 from crafting.crafting_interactions import create_craftable
 from date_and_time import create_time_span, TimeSpan
 from distributor.shared_messages import IconInfoData
-from event_testing.resolver import SingleObjectResolver
+from event_testing.resolver import SingleObjectResolver, SingleActorAndObjectResolver
 from interactions.payment.payment_info import PaymentInfo
 from interactions.payment.payment_source import get_tunable_payment_source_variant
 from interactions.picker.object_marketplace_picker_interaction import ObjectMarketplacePickerInteraction
@@ -16,9 +16,10 @@ from interactions import ParticipantTypeSingle
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.snippets.purchase_picker_modifier import PurchasePickerModifier
 from lot51_core.tunables.delivery_method import FglDeliveryMethod, MultipleInventoriesDeliveryMethod, \
-    InventoryDeliveryMethod, MailboxDeliveryMethod
+    InventoryDeliveryMethod, MailboxDeliveryMethod, HouseholdInventoryDeliveryMethod
 from lot51_core.tunables.payment_destination import TunablePaymentDestinationVariant
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
+from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.math import chance_succeeded
 from objects.components.name_component import NameComponent
 from objects.components.types import NAME_COMPONENT
@@ -48,6 +49,7 @@ class PurchaseRowData:
         self.purchase_item_source = None
         self.quality = None
         self.stock_key = None
+        self.additional_data = AttributeDict()
 
 
 class StockManager:
@@ -147,10 +149,11 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         ),
         'delivery_method': TunableVariant(
             description="Where to spawn objects on successful purchase.",
-            participant_fgl=FglDeliveryMethod.TunableFactory(),
+            household_inventory=HouseholdInventoryDeliveryMethod.TunableFactory(),
             inventory=InventoryDeliveryMethod.TunableFactory(),
             mailbox=MailboxDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
+            participant_fgl=FglDeliveryMethod.TunableFactory(),
             default='participant_fgl'
         ),
         'loot_on_success': TunableList(
@@ -260,11 +263,52 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
             pay_info = PaymentInfo(total_amount, resolver)
             return self.payment_destination.give_payment(pay_info)
 
+    def _create_purchase_data(self):
+        return PurchaseRowData()
+
+    def _hook_additional_row_data(self, additional_data, purchase_item):
+        pass
+
+    def _hook_row_price(self, price, purchase_item, additional_data, resolver):
+        """
+        Modify the row price
+
+        :param purchase_item: the purchase item tuning
+        :param price: base_cost with default purchase item multipliers and global price multiplier
+        :param resolver: the resolver that includes the actor and original target
+        :return: price: the new price
+        """
+        return price
+
+    def _hook_row_description(self, original_description, purchase_item, additional_data, resolver, obj=None):
+        return original_description
+
+    def _hook_obj_purchased(self, obj, purchase_row_data, price, resolver):
+        """
+        Modify the purchased object before it is delivered. All default effects have been
+        applied at this point.
+
+        :param obj: The spawned object
+        :param purchase_row_data: The PurchaseRowData cached during picker_row_gen (including purchase item tuning, quality, base cost)
+        :param price: The final price the sim has paid
+        :param resolver: The resolver with the actor and the original target
+        :return: None
+        """
+        pass
+
+    def _hook_temporary_obj_created(self, obj, purchase_item, additional_data, quality_info=None):
+        pass
+
+    def _hook_on_picker_rows_gen(self):
+        pass
+
     def _picker_rows_gen(self):
         resolver = self.get_resolver()
 
         global_price_multiplier = self.price_multiplier.get_multiplier(resolver)
         stock_manager = self.get_stock_manager()
+
+        self._hook_on_picker_rows_gen()
 
         # Generate Cached Rows
         if stock_manager and stock_manager.has_picker_cache():
@@ -278,6 +322,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 category_tags = picker_data.category_tags
                 base_cost = picker_data.base_cost
                 stock_key = picker_data.stock_key
+                additional_data = picker_data.additional_data
 
                 # Check the global visibility test for this row
                 visibility_result = item.visibility_tests.run_tests(resolver)
@@ -296,15 +341,15 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     continue
 
                 # Spawn temporary object
-                _post_add = None
-                if quality_info:
-                    def _post_add(obj):
-                        for state_value in quality_info.states:
-                            try:
+                def _post_add(obj):
+                    try:
+                        if quality_info:
+                            for state_value in quality_info.states:
                                 if state_value is not None:
                                     obj.set_state(state_value.state, state_value, force_update=True)
-                            except:
-                                logger.exception("Failed setting state on cached temp purchase picker object")
+                        self._hook_temporary_obj_created(obj, item, additional_data, quality_info=quality_info)
+                    except:
+                        logger.exception("Failed post_add on cached temp purchase picker object")
 
                 if definition_data.recipe is not None:
                     temp_obj = create_craftable(definition_data.recipe, None, post_add=_post_add)
@@ -323,6 +368,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                 # Add sim specific multipliers
                 cost_multiplier = item.price_multiplier.get_multiplier(resolver)
                 price = round(price * cost_multiplier * global_price_multiplier)
+
+                price = self._hook_row_price(price, item, additional_data, resolver)
 
                 # Check for discount
                 is_discounted = item.show_discount and price < base_cost
@@ -357,7 +404,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     row_description = item.description_override(row_name, default_description)
                 # Otherwise fallback to catalog description
                 else:
-                    row_description = default_description
+                    row_description = self._hook_row_description(default_description, item, additional_data, resolver, obj=temp_obj)
 
                 # Cache row info for immediate dialog response
                 # Assumes dialog.purchase_by_object_ids is set to True.
@@ -402,6 +449,9 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     definition = definition_data.definition
                     stock_key = (item.stock_id, definition, index,)
 
+                    additional_data = AttributeDict()
+                    self._hook_additional_row_data(additional_data, item)
+
                     # Calculate available stock
                     current_stock = None
                     # Get current stock if managed
@@ -421,18 +471,17 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                         continue
 
                     # Select quality states and add to temp object
-                    quality_info = None
-                    _post_add = None
-                    if len(weighted_qualities) > 0:
-                        quality_info = sims4.random.weighted_random_item(weighted_qualities)
+                    quality_info = sims4.random.weighted_random_item(weighted_qualities) if len(weighted_qualities) > 0 else None
 
-                        def _post_add(obj):
-                            for state_value in quality_info.states:
-                                try:
+                    def _post_add(obj):
+                        try:
+                            if quality_info:
+                                for state_value in quality_info.states:
                                     if state_value is not None:
                                         obj.set_state(state_value.state, state_value, force_update=True)
-                                except:
-                                    logger.exception("Failed setting state on temp purchase picker object")
+                            self._hook_temporary_obj_created(obj, item, additional_data, quality_info=quality_info)
+                        except:
+                            logger.exception("Failed post_add on cached temp purchase picker object")
 
                     if definition_data.recipe is not None:
                         temp_obj = create_craftable(definition_data.recipe, None, post_add=_post_add)
@@ -463,6 +512,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     cost_multiplier = item.price_multiplier.get_multiplier(resolver)
                     price = round(price * cost_multiplier * global_price_multiplier)
 
+                    price = self._hook_row_price(price, item, additional_data, resolver)
+
                     # Check for discount
                     is_discounted = item.show_discount and price < base_cost
                     prediscounted_price = base_cost if is_discounted else None
@@ -489,9 +540,10 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                     else:
                         row_name = _create_localized_string(build_buy.get_object_catalog_name(definition.id))
 
-                    # Show disabled text override if not available to subject
+                    # Get row description, fallback to object catalog description
                     default_description = _create_localized_string(build_buy.get_object_catalog_description(definition.id))
 
+                    # Show disabled text override if not available to subject
                     if not is_enabled and item.disabled_description is not None:
                         row_description = item.disabled_description(row_name, default_description)
                     # Otherwise show out of stock description if stock is managed
@@ -502,28 +554,29 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                         row_description = item.description_override(row_name, default_description)
                     # Otherwise fallback to catalog description
                     else:
-                        row_description = default_description
+                        row_description = self._hook_row_description(default_description, item, additional_data, resolver, obj=temp_obj)
 
                     # Cache item data
-                    picker_data = PurchaseRowData()
-                    picker_data.base_cost = base_cost
-                    picker_data.category_tags = category_tags
-                    picker_data.custom_name = custom_name
-                    picker_data.definition = definition
-                    picker_data.definition_data = definition_data
-                    picker_data.purchase_item = item
-                    picker_data.purchase_item_source = item_source
-                    picker_data.quality = quality_info
-                    picker_data.stock_key = stock_key
+                    purchase_row_data = self._create_purchase_data()
+                    purchase_row_data.base_cost = base_cost
+                    purchase_row_data.category_tags = category_tags
+                    purchase_row_data.custom_name = custom_name
+                    purchase_row_data.definition = definition
+                    purchase_row_data.definition_data = definition_data
+                    purchase_row_data.purchase_item = item
+                    purchase_row_data.purchase_item_source = item_source
+                    purchase_row_data.quality = quality_info
+                    purchase_row_data.stock_key = stock_key
+                    purchase_row_data.additional_data = additional_data
 
                     # Cache row info for immediate dialog response
                     # Assumes dialog.purchase_by_object_ids is set to True.
                     self.current_price_data[temp_obj.id] = (price, base_cost,)
-                    self.current_item_data[temp_obj.id] = picker_data
+                    self.current_item_data[temp_obj.id] = purchase_row_data
 
                     # Cache picker row for future use
                     if stock_manager:
-                        stock_manager.add_to_picker_cache(picker_data)
+                        stock_manager.add_to_picker_cache(purchase_row_data)
 
                     # Increment row index for stock key
                     index += 1
@@ -544,6 +597,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         try:
             if dialog.accepted:
                 resolver = dialog._resolver
+                actor = resolver.get_participant(ParticipantTypeSingle.Actor)
                 obj_ids, counts = dialog.get_result_definitions_and_counts()
                 purchase_count = 0
                 failed_count = 0
@@ -590,8 +644,8 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                                     except:
                                         logger.exception("Failed setting state on final purchase picker object")
 
-                            # Apply individual loot actions on object creation
-                            obj_resolver = SingleObjectResolver(obj)
+                            # Apply loot actions on object creation
+                            obj_resolver = SingleActorAndObjectResolver(actor, obj, source='yourmom')
                             for loot_action in purchase_data.purchase_item.actions_on_creation:
                                 loot_action.apply_to_resolver(obj_resolver)
 
@@ -606,6 +660,7 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             if purchase_data.purchase_item.set_sim_as_owner and obj.ownable_component:
                                 obj.ownable_component.update_sim_ownership(self.sim_info.sim_id)
 
+                            # Get "off-the-lot" Depreciation
                             depreciation_multiplier = purchase_data.purchase_item.depreciation_multiplier.get_multiplier(resolver)
                             if purchase_data.quality is not None:
                                 depreciation_multiplier *= purchase_data.quality.static_depreciation_multiplier
@@ -616,7 +671,11 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
                             else:
                                 obj_value = price
 
+                            # Apply depreciation
                             obj.current_value = obj_value * depreciation_multiplier
+
+                            # Handle Object Purchased Hook
+                            self._hook_obj_purchased(obj, purchase_data, price, resolver)
 
                             # Attempt to deliver object
                             if purchase_data.purchase_item.delivery_override is not None:

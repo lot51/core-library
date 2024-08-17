@@ -4,15 +4,18 @@ from sims.sim import Sim
 from sims.sim_info import SimInfo
 
 
+def get_sim_info(sim_or_sim_info) -> SimInfo:
+    if isinstance(sim_or_sim_info, SimInfo):
+        return sim_or_sim_info
+    elif isinstance(sim_or_sim_info, Sim):
+        return sim_or_sim_info.sim_info
+
+
 def get_sim_name(sim_or_sim_info):
     template = '{} {}'
-    if isinstance(sim_or_sim_info, SimInfo):
-        sim_info = sim_or_sim_info
-    elif isinstance(sim_or_sim_info, Sim):
-        sim_info = sim_or_sim_info.sim_info
-    else:
-        return None
-    return template.format(sim_info.first_name, sim_info.last_name)
+    sim_info = get_sim_info(sim_or_sim_info)
+    if sim_info is not None:
+        return template.format(sim_info.first_name, sim_info.last_name)
 
 
 def cancel_all_interactions(sim_or_sim_info, allow_hidden=True, finishing_type=FinishingType.USER_CANCEL, cancel_reason='Canceled via script'):

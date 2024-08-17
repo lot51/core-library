@@ -2,7 +2,7 @@ from event_testing.tests import TunableTestSet
 from interactions.utils.success_chance import SuccessChance
 from lot51_core.loot import LotFiftyOneCoreLootActionVariant
 from lot51_core.tunables.delivery_method import FglDeliveryMethod, InventoryDeliveryMethod, \
-    MultipleInventoriesDeliveryMethod, MailboxDeliveryMethod
+    MultipleInventoriesDeliveryMethod, MailboxDeliveryMethod, HouseholdInventoryDeliveryMethod
 from lot51_core.tunables.definition_query import DefinitionSearchMethodVariant
 from services import get_instance_manager
 from sims4.localization import TunableLocalizedStringFactory
@@ -52,6 +52,7 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
             description="Where to spawn objects on successful purchase.",
             participant_fgl=FglDeliveryMethod.TunableFactory(),
             inventory=InventoryDeliveryMethod.TunableFactory(),
+            household_inventory=HouseholdInventoryDeliveryMethod.TunableFactory(),
             mailbox=MailboxDeliveryMethod.TunableFactory(),
             multiple_inventories=MultipleInventoriesDeliveryMethod.TunableFactory(),
         ),

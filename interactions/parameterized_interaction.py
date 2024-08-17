@@ -1,5 +1,6 @@
 import element_utils
 import sims4.random
+from event_testing.resolver import SingleActorAndObjectResolver, DoubleObjectResolver
 from interactions import ParticipantType, ParticipantTypeSavedActor
 from interactions.aop import AffordanceObjectPair
 from interactions.context import InteractionSource, InteractionContext
@@ -20,6 +21,9 @@ class ParameterizedRequestContinuationMixin:
     INSTANCE_TUNABLES = {
         'paramaterized_autonomy_continuation': OptionalTunable(
             tunable=TunableTuple(
+                commodities=TunableList(
+                    tunable=TunableReference(manager=get_instance_manager(Types.STATISTIC))
+                ),
                 static_commodities=TunableList(
                     tunable=TunableReference(manager=get_instance_manager(Types.STATIC_COMMODITY))
                 ),
@@ -51,7 +55,7 @@ class ParameterizedRequestContinuationMixin:
         static_commodity_list = parameters.static_commodities
         exclude_static_commodity_list = parameters.exclude_static_commodities
 
-        resolver = self.get_resolver()
+        resolver = self.get_resolver(target=obj)
         actor_info = resolver.get_participant(ParticipantType.Actor)
         actor = actor_info.get_sim_instance()
         autonomy_rule = actor.get_off_lot_autonomy_rule()
@@ -61,20 +65,41 @@ class ParameterizedRequestContinuationMixin:
             ctx = self.context.clone_for_continuation(self, source=parameters.context_source_override if parameters.context_source_override is not None else self.context.source, carry_target=self.carry_target)
             potential_aops = list()
             for aop in obj.potential_interactions(ctx):
-                if ctx.source == InteractionContext.SOURCE_AUTONOMY:
-                    if not aop.affordance.allow_autonomous or not aop.affordance.test_autonomous.run_tests(resolver, skip_safe_tests=False, search_for_tooltip=False):
-                        logger.debug("[{}] affordance NOT allowed autonomously {}".format(self, aop.affordance))
-                        continue
-                    logger.debug("[{}] affordance allowed autonomously {}".format(self, aop.affordance))
+                try:
+                    if ctx.source == InteractionContext.SOURCE_AUTONOMY:
+                        if not aop.affordance.allow_autonomous or not aop.affordance.test_autonomous.run_tests(resolver, skip_safe_tests=False, search_for_tooltip=False):
+                            # logger.debug("[{}] affordance NOT allowed autonomously {}".format(self, aop.affordance))
+                            continue
+                        # logger.debug("[{}] affordance allowed autonomously {}".format(self, aop.affordance))
 
-                total_desire = 0
-                for sc_data in aop.affordance._static_commodities:
-                    if sc_data.static_commodity in static_commodity_list and sc_data.static_commodity not in exclude_static_commodity_list:
-                        total_desire += sc_data.desire * sc_data.static_commodity.ad_data
+                    execute_result = aop.interaction_factory(ctx)
+                    interaction = execute_result.interaction
 
-                if total_desire > 0:
-                    if aop.test(ctx):
-                        potential_aops.append((total_desire, aop))
+                    total_desire = 0
+                    for sc_data in interaction._static_commodities:
+                        if sc_data.static_commodity in static_commodity_list and sc_data.static_commodity not in exclude_static_commodity_list:
+                            total_desire += sc_data.desire * sc_data.static_commodity.ad_data
+
+                    if len(parameters.commodities):
+                        for stat_op_list in interaction.autonomy_ads_gen(target=obj, include_hidden_false_ads=False):
+                            if stat_op_list.is_valid(interaction):
+                                stat = actor.get_tracker(stat_op_list.stat).get_statistic(stat_op_list.stat, False)
+                                if stat is not None:
+                                    logger.debug("Testing stat {}".format(stat.stat_type))
+                                    if stat.stat_type in parameters.commodities:
+                                        fulfillment_rate = stat_op_list.get_fulfillment_rate(interaction)
+                                        scored_value = stat.autonomous_desire * actor.get_score_multiplier(stat.stat_type) * stat.autonomy_weight * fulfillment_rate
+                                        logger.debug("Scored value {}".format(scored_value))
+                                        total_desire += scored_value
+
+                    if total_desire > 0:
+                        test_result = aop.test(ctx)
+                        logger.debug("[{}] affordance {}, desire {}, result {}".format(self, interaction, total_desire, test_result))
+                        if test_result:
+                            potential_aops.append((total_desire, aop))
+                except:
+                    logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
+
             if len(potential_aops):
                 aop_select = sims4.random.weighted_random_item(potential_aops)
                 if aop_select is not None:

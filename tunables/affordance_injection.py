@@ -335,8 +335,10 @@ class TunableAffordanceInjectionByCategory(BaseTunableAffordanceInjection):
         return InjectionTiming.POST_TUNING_LOADED
 
     def get_affordances_gen(self):
+        _yield_cache = set()
         for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
-            if affordance.category in self.pie_menu_categories and affordance not in self.exclude_affordances:
+            if affordance not in _yield_cache and affordance.category in self.pie_menu_categories and affordance not in self.exclude_affordances:
+                _yield_cache.add(affordance)
                 yield affordance
 
 
@@ -358,8 +360,10 @@ class TunableAffordanceInjectionByCategoryTags(BaseTunableAffordanceInjection):
         return InjectionTiming.POST_TUNING_LOADED
 
     def get_affordances_gen(self):
+        _yield_cache = set()
         for affordance in services.get_instance_manager(Types.INTERACTION).get_ordered_types():
-            if affordance.interaction_category_tags.intersection(self.category_tags) and affordance not in self.exclude_affordances:
+            if affordance not in _yield_cache and affordance.interaction_category_tags.intersection(self.category_tags) and affordance not in self.exclude_affordances:
+                _yield_cache.add(affordance)
                 yield affordance
 
 

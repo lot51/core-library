@@ -4,6 +4,7 @@ from lot51_core.tests.daytime import DaytimeTest
 from lot51_core.tests.distance_2d import Distance2dTest
 from lot51_core.tests.food_restriction import CustomFoodRestrictionTest
 from lot51_core.tests.identity_comparison import IdentityComparisonTest
+from lot51_core.tests.inventory_owner import InventoryOwnerTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
 from lot51_core.tests.lot import LotSizeTest
 from lot51_core.tests.mood import MoodIntensityTest, MoodWeightTest
@@ -31,6 +32,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'distance_2d': Distance2dTest,
         'has_pack': PackTest,
         'identity_comparison': IdentityComparisonTest,
+        'inventory_owner': InventoryOwnerTest,
         'lot_size': LotSizeTest,
         'mood_intensity': MoodIntensityTest,
         'mood_weight': MoodWeightTest,
