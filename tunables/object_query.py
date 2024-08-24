@@ -8,6 +8,7 @@ from lot51_core import logger
 from lot51_core.utils.math import weighted_sort, flatten_weighted_list
 from objects import ALL_HIDDEN_REASONS
 from objects.components.types import INVENTORY_COMPONENT
+from objects.prop_object import PropObject
 from sims.sim_info import SimInfo
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableInterval, Tunable, TunableVariant, TunableEnumSet, TunableEnumEntry, TunableReference, TunableList, OptionalTunable, TunableTuple
@@ -242,6 +243,8 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
 
     def _get_tested_objects_gen(self, obj_list, resolver, log_results=False):
         for obj in obj_list:
+            if isinstance(obj, PropObject):
+                continue
             result = self.run_additional_tests(resolver, obj, log_results=log_results)
             if result:
                 yield obj
@@ -316,21 +319,32 @@ class GetSituationTargetObject(_GetObjectsBase):
     FACTORY_TUNABLES = {
         'subject': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Actor),
         'situation': TunableReference(manager=services.get_instance_manager(Types.SITUATION)),
+        'situation_tags':  TunableEnumSet(enum_type=Tag, enum_default=Tag.INVALID, invalid_enums=(Tag.INVALID,))
     }
 
-    __slots__ = ('subject', 'situation')
+    __slots__ = ('subject', 'situation', 'situation_tags',)
 
     def _get_objects_gen(self, resolver=None):
         situation_manager = services.get_zone_situation_manager()
         if resolver is not None:
             subject = resolver.get_participant(self.subject)
+
+            def test_situation(situation):
+                if self.situation is not None and situation.guid64 == self.situation.guid64:
+                    return True
+                if situation.tags & self.situation_tags:
+                    return True
+                return False
+
             if subject is not None:
                 if isinstance(subject, SimInfo):
                     subject = subject.get_sim_instance(allow_hidden_flags=ALL_HIDDEN_REASONS)
                 for situation in situation_manager.get_situations_sim_is_in(subject):
-                    if situation.guid64 == self.situation.guid64:
+                    if test_situation(situation):
                         if hasattr(situation, 'get_target_object'):
-                            yield situation.get_target_object()
+                            obj = situation.get_target_object()
+                            if obj is not None:
+                                yield obj
 
 
 class GetObjectsOnActiveLot(_GetObjectsBase):

@@ -1,4 +1,33 @@
 import services
+from plex.plex_enums import PlexBuildingType
+from sims4.resources import Types
+
+
+def current_zone_is_apartment(consider_penthouse_an_apartment=False, consider_multi_unit_an_apartment=False):
+    zone_id = services.current_zone_id()
+    plex_service = services.get_plex_service()
+    return plex_service.is_zone_an_apartment(zone_id, consider_penthouse_an_apartment=consider_penthouse_an_apartment, consider_multi_unit_an_apartment=consider_multi_unit_an_apartment)
+
+
+def current_zone_is_penthouse():
+    plex_service = services.get_plex_service()
+    plex_type = plex_service.get_plex_building_type(services.current_zone_id())
+    return plex_type in (PlexBuildingType.PENTHOUSE_PLEX, PlexBuildingType.BT_PENTHOUSE_RENTAL,)
+
+
+def current_zone_is_multi_unit():
+    current_zone_id = services.current_zone_id()
+    persistence_service = services.get_persistence_service()
+    if persistence_service is None:
+        return False
+    zone_data = persistence_service.get_zone_proto_buff(current_zone_id)
+    if zone_data is None:
+        return False
+    lot_data = persistence_service.get_lot_data_from_zone_data(zone_data)
+    if lot_data is None:
+        return False
+    venue_tuning = services.get_instance_manager(Types.VENUE).get(lot_data.venue_key)
+    return venue_tuning.is_multi_unit
 
 
 def in_world_edit_mode():

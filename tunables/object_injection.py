@@ -242,7 +242,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         self._inject_object_locking_component(obj)
         self._inject_tooltip_component(obj)
         self._inject_name_component(obj)
-        self._inject_object_relationship_component_override()
+        self._inject_object_relationship_component_override(obj)
 
     def inject(self):
         for obj in self.get_objects_gen():

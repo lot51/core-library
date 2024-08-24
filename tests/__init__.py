@@ -13,6 +13,7 @@ from lot51_core.tests.object_tuning import ObjectTuningTest
 from lot51_core.tests.packs import PackTest
 from lot51_core.tests.room import ObjectInRoomTest
 from lot51_core.tests.situation_state import CustomStateSituationTest
+from lot51_core.tests.situation_target_test import SituationTargetObjectTest
 from lot51_core.tests.slots import ObjectSlotInUseTest
 from lot51_core.tests.statistics import StatisticLockedTest
 from lot51_core.tests.stolen import ObjectStolenTest
@@ -42,6 +43,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'object_slots_in_use': ObjectSlotInUseTest,
         'object_stolen': ObjectStolenTest,
         'resource_existence': ResourceExistenceTest,
+        'situation_target': SituationTargetObjectTest,
         'statistic_locked': StatisticLockedTest,
         'stored_sim_test': StoredSimComponentTest,
         'terrain_features': TerrainTest,
