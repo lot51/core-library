@@ -2,6 +2,7 @@ from caches import cached_test
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
 from interactions import ParticipantTypeSingle
+from sims.sim_info import SimInfo
 from sims4.tuning.tunable import AutoFactoryInit, Tunable, TunableEnumEntry, HasTunableSingletonFactory
 
 
@@ -52,15 +53,16 @@ class IdentityComparisonTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTe
     def __call__(self, subject_a=None, subject_b=None, **kwargs):
         subject_a = next(iter(subject_a), None)
         subject_b = next(iter(subject_b), None)
+
         if self.use_part_owner:
-            if subject_a and subject_a.is_part:
+            if subject_a and not isinstance(subject_a, SimInfo) and subject_a.is_part:
                 subject_a = subject_a.part_owner
-            if subject_b and subject_b.is_part:
+            if subject_b and not isinstance(subject_b, SimInfo) and subject_b.is_part:
                 subject_b = subject_b.part_owner
         if self.use_definition:
-            if subject_a:
+            if subject_a and not isinstance(subject_a, SimInfo):
                 subject_a = subject_a.definition
-            if subject_b:
+            if subject_b and not isinstance(subject_b, SimInfo):
                 subject_b = subject_b.definition
         if self.subjects_match:
             if subject_a != subject_b:
