@@ -26,6 +26,7 @@ class ObjectSearchMethodVariant(TunableVariant):
                          actual_lot_levels=GetActualLotLevelObjects.TunableFactory(),
                          affordance=GetObjectsByAffordance.TunableFactory(),
                          all=GetAllObjects.TunableFactory(),
+                         carried_objects=GetCarriedObjectsByParticipant.TunableFactory(),
                          children=GetObjectsByParent.TunableFactory(),
                          definition=GetObjectsByDefinition.TunableFactory(),
                          inventory=GetObjectsFromInventory.TunableFactory(),
@@ -521,6 +522,24 @@ class GetObjectsByParent(_GetObjectsBase):
             if target is not None:
                 if hasattr(target, 'get_all_children_gen'):
                     yield from target.get_all_children_gen()
+
+
+class GetCarriedObjectsByParticipant(_GetObjectsBase):
+    FACTORY_TUNABLES = {
+        'participant': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Actor),
+    }
+
+    __slots__ = ('participant',)
+
+    def _get_objects_gen(self, resolver=None):
+        if resolver is not None:
+            target = resolver.get_participant(self.participant)
+            if isinstance(target, SimInfo):
+                target = target.get_sim_instance()
+            if target is not None and target.is_sim:
+                for carry_target in target.posture_state.carry_targets:
+                    if carry_target is not None:
+                        yield carry_target
 
 
 class GetObjectsByActiveHousehold(GetObjectsBySimInfo):

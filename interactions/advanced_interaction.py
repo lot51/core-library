@@ -29,5 +29,5 @@ class AdvancedSuperInteraction(SuperInteraction):
             one_shot=True,
             flexible_length=True,
             default='one_shot',
-        )
+        ),
     }

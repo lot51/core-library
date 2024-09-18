@@ -1,8 +1,11 @@
 import services
 from event_testing.tests import TunableTestVariant, TunableGlobalTestSet
+from interactions import ParticipantType
 from interactions.base.basic import TunableBasicExtras
 from interactions.utils.display_name import TunableDisplayNameVariant, TunableDisplayNameWrapper
 from interactions.utils.tunable import TunableStatisticAdvertisements
+from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core import logger
 from lot51_core.constants import SIM_OBJECT_ID
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.basic_content_injection import TunableBasicContentInjection
@@ -90,6 +93,11 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         'pie_menu_priority': OptionalTunable(
             tunable=Tunable(tunable_type=int, default=0)
         ),
+        'provided_affordances': TunableProvidedAffordances(
+            target_default=ParticipantType.Actor,
+            carry_target_default=ParticipantType.Invalid,
+            class_restrictions=('SuperInteraction',)
+        ),
         'static_commodities': OptionalTunable(
             tunable=TunableList(
                 tunable=TunableTuple(
@@ -123,7 +131,14 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         )
     }
 
-    __slots__ = ( 'allow_user_directed_override', 'allow_autonomous_override', 'allow_forward_from_object_inventory_override', 'allow_from_portrait_override', 'allow_from_sim_inventory_override', 'allow_from_world_override', 'basic_extras', 'basic_liabilities', 'cheat_override', 'category_override', 'debug_override', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction', 'interaction_category_tags', 'display_name_overrides', 'display_name_wrappers', 'false_advertisements', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'basic_content', 'static_commodities', 'super_affordance_compatibility', 'super_affordance_klobberers', 'tests', 'outfit_change', 'outfit_change_on_exit', 'pie_menu_priority', 'utility_info',)
+    __slots__ = (
+    'allow_user_directed_override', 'allow_autonomous_override', 'allow_forward_from_object_inventory_override',
+    'allow_from_portrait_override', 'allow_from_sim_inventory_override', 'allow_from_world_override', 'basic_content',
+    'basic_extras', 'basic_liabilities', 'cheat_override', 'category_override', 'debug_override', 'display_name_overrides',
+    'display_name_wrappers', 'false_advertisements', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction',
+    'interaction_category_tags', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'outfit_change',
+    'outfit_change_on_exit', 'provided_affordances', 'pie_menu_priority', 'static_commodities',
+    'super_affordance_compatibility', 'super_affordance_klobberers', 'tests', 'utility_info',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -200,8 +215,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 inject_list(affordance, 'interaction_category_tags', self.interaction_category_tags)
 
             for test in self.tests:
-                if test is not None:
+                if test is not None and not isinstance(test, str):
                     affordance.add_additional_test(test)
+                else:
+                    logger.warn("Invalid test found in affordance injection")
 
             if self.modify_autonomous_tests is not None:
                 self.modify_autonomous_tests.inject(affordance, 'test_autonomous')
@@ -223,6 +240,9 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
 
             if self.pie_menu_priority is not None:
                 affordance.pie_menu_priority = self.pie_menu_priority
+
+            if self.provided_affordances is not None:
+                inject_list(affordance, 'provided_affordances', self.provided_affordances)
 
             if self.super_affordance_compatibility is not None:
                 inject_affordance_filter(

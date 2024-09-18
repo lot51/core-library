@@ -3,6 +3,7 @@ from _sims4_collections import frozendict
 from autonomy.content_sets import ContentSet
 from buffs.tunable import TunableBuffReference
 from crafting.food_restrictions_utils import FoodRestrictionUtils
+from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
 from lot51_core.tunables.base_injection import BaseTunableInjection
@@ -51,6 +52,13 @@ class TunableTraitInjection(BaseTunableInjection):
                 )
             )
         ),
+        'conditional_commodities': TunableList(
+            tunable=TunableTuple(
+                commodity=Commodity.TunableReference(pack_safe=True),
+                tests=TunableTestSet(),
+                delay=Tunable(tunable_type=bool, default=False)
+            )
+        ),
         'initial_commodities': TunableSet(
             tunable=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), pack_safe=True),
         ),
@@ -94,7 +102,7 @@ class TunableTraitInjection(BaseTunableInjection):
         )
     }
 
-    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'initial_commodities', 'initial_commodities_blacklist', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'ui_commodity_sort_override', 'whim_set', 'custom_food_restrictions',)
+    __slots__ = ('trait', 'actor_mixers', 'buffs', 'buffs_proximity', 'buff_replacements', 'conditional_commodities', 'initial_commodities', 'initial_commodities_blacklist', 'interactions', 'loot_on_trait_add', 'provided_mixers', 'restricted_ingredients', 'super_affordances', 'target_super_affordances', 'ui_commodity_sort_override', 'whim_set', 'custom_food_restrictions',)
 
     def inject(self):
         if self.trait is not None:
@@ -107,8 +115,14 @@ class TunableTraitInjection(BaseTunableInjection):
                     buff.trait_replacement_buffs = {}
                 buff.trait_replacement_buffs[self.trait] = replacement_buff
 
-            inject_list(self.trait, 'buffs', self.buffs)
-            inject_list(self.trait, 'buffs_proximity', self.buffs_proximity)
+            if self.buffs is not None:
+                inject_list(self.trait, 'buffs', self.buffs)
+
+            if self.buffs_proximity is not None:
+                inject_list(self.trait, 'buffs_proximity', self.buffs_proximity)
+
+            if self.conditional_commodities is not None:
+                inject_list(self.trait, 'conditional_commodities', self.conditional_commodities)
 
             if self.initial_commodities is not None:
                 inject_list(self.trait, 'initial_commodities', self.initial_commodities)

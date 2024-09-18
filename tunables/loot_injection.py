@@ -27,7 +27,7 @@ class TunableLootInjection(BaseTunableInjection):
         inject_list(self.loot, 'loot_actions', self.ops)
 
         if self.modify_tests is not None:
-            self.modify_tests.inject(self.loot.tests)
+            self.modify_tests.inject(self.loot, 'tests')
 
 
 class TunableRandomWeightedLootInjection(BaseTunableInjection):

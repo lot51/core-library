@@ -98,7 +98,8 @@ class ParameterizedRequestContinuationMixin:
                         if test_result:
                             potential_aops.append((total_desire, aop))
                 except:
-                    logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
+                    pass
+                    # logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
 
             if len(potential_aops):
                 aop_select = sims4.random.weighted_random_item(potential_aops)

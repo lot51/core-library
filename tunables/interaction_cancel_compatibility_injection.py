@@ -1,4 +1,5 @@
 from interactions.interaction_cancel_compatibility import InteractionCancelReason, InteractionCancelCompatibility
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import merge_affordance_filter, inject_dict
 from services import get_instance_manager
@@ -25,7 +26,8 @@ class InteractionCancelCompatibilityInjection(BaseTunableInjection):
     __slots__ = ('reason', 'include_affordances',)
 
     def inject(self):
-        filter = InteractionCancelCompatibility.INTERACTION_CANCEL_COMPATIBILITY.get(self.reason, None)
-        if filter is not None:
-            new_filter = merge_affordance_filter(filter, include_affordances=self.include_affordances)
-            inject_dict(InteractionCancelCompatibility, 'INTERACTION_CANCEL_COMPATIBILITY', new_items={self.reason:new_filter})
+        if self.include_affordances is not None:
+            filter = InteractionCancelCompatibility.INTERACTION_CANCEL_COMPATIBILITY.get(self.reason, None)
+            if filter is not None:
+                new_filter = merge_affordance_filter(filter, include_affordances=self.include_affordances)
+                inject_dict(InteractionCancelCompatibility, 'INTERACTION_CANCEL_COMPATIBILITY', new_items={self.reason:new_filter})

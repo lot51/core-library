@@ -1,6 +1,7 @@
 import services
 from lot51_core.tunables.base_injection import BaseTunableInjection
-from lot51_core.utils.injection import inject_list, merge_mapping_lists
+from lot51_core.utils.collections import AttributeDict
+from lot51_core.utils.injection import inject_list, inject_mapping_lists, merge_list, merge_dict
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, OptionalTunable, TunableEnumEntry, Tunable, \
     TunableEnumWithFilter, TunableSet, TunableMapping, TunableTuple
@@ -94,16 +95,29 @@ class TunableSituationInjection(BaseTunableInjection):
             if len(self.tags):
                 inject_list(situation_type, 'tags', self.tags)
 
-            merge_mapping_lists(situation_type, self.additional_activity_goals)
+            inject_mapping_lists(situation_type, 'activity_goals', self.additional_activity_goals)
 
-            # if self.additional_activity_selection is not None and situation_type.activity_selection is not None:
-            #     if len(self.additional_activity_selection.available_activities):
-            #         inject_list(situation_type.activity_selection, 'available_activities', self.additional_activity_selection.available_activities)
-            #
-            #     if self.additional_activity_selection.required_activities is not None:
-            #         if situation_type.activity_selection.required_activities is not None:
-            #             inject_list(situation_type.activity_selection, 'required_activities', self.additional_activity_selection.required_activities)
-            #
-            #     if self.additional_activity_selection.randomize_activities is not None:
-            #         if situation_type.activity_selection.randomize_activities is not None:
-            #             inject_list(situation_type.activity_selection.randomize_activities, 'randomizable_activities', self.additional_activity_selection.randomize_activities.randomizable_activities)
+            if self.additional_activity_selection is not None and situation_type.activity_selection is not None:
+                new_activity_selection = AttributeDict()
+                if len(self.additional_activity_selection.available_activities):
+                    new_activity_selection.available_activities = merge_list(situation_type.activity_selection.available_activities, self.additional_activity_selection.available_activities)
+
+                if self.additional_activity_selection.required_activities is not None:
+                    if situation_type.activity_selection.required_activities is not None:
+                        new_activity_selection.required_activities = merge_list(situation_type.activity_selection.required_activities, self.additional_activity_selection.required_activities)
+
+                if self.additional_activity_selection.randomize_activities is not None:
+                    if situation_type.activity_selection.randomize_activities is not None:
+
+                        new_activity_selection.randomize_activities = merge_dict(
+                            situation_type.activity_selection.randomize_activities,
+                            randomizable_activities=merge_list(
+                                situation_type.activity_selection.randomize_activities.randomizable_activities,
+                                self.additional_activity_selection.randomize_activities.randomizable_activities
+                            ),
+                        )
+
+                situation_type.activity_selection = merge_dict(
+                    situation_type.activity_selection,
+                    **new_activity_selection
+                )

@@ -40,11 +40,14 @@ class TunableBasicContentInjection(HasTunableSingletonFactory, AutoFactoryInit):
         if self.periodic_stat_change is not None:
             if isinstance(affordance.basic_content, FlexibleLengthContent):
                 periodic_stat_change = affordance.basic_content.periodic_stat_change
-                overrides.periodic_stat_change = clone_factory_wrapper_with_overrides(
-                    periodic_stat_change,
-                    operation_actions=merge_dict(periodic_stat_change.operation_actions, actions=merge_list(periodic_stat_change.operation_actions.actions, self.periodic_stat_change.operation_actions.actions)),
-                    operations=merge_list(periodic_stat_change.operations, self.periodic_stat_change.operations)
-                )
+                if periodic_stat_change is not None:
+                    overrides.periodic_stat_change = clone_factory_wrapper_with_overrides(
+                        periodic_stat_change,
+                        operation_actions=merge_dict(periodic_stat_change.operation_actions, actions=merge_list(periodic_stat_change.operation_actions.actions, self.periodic_stat_change.operation_actions.actions)),
+                        operations=merge_list(periodic_stat_change.operations, self.periodic_stat_change.operations)
+                    )
+                else:
+                    logger.warn('Cannot inject periodic_stat_change to {}. This affordance does not have existing periodic_stat_change content.'.format(affordance))
             else:
                 logger.warn('Cannot inject periodic_stat_change to {}. This affordance does not use flexible_content basic_content.'.format(affordance))
 

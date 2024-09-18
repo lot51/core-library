@@ -33,9 +33,8 @@ class TunableAffordanceListInjection(BaseTunableInjection):
         for affordance in self.affordances:
             # Check if subclass instead of using strict class_restrictions in TunableReference
             # to allow modded subclasses
-            if not issubclass(affordance, SuperInteraction):
-                logger.warn("Class does not extend SuperInteraction: {}, skipping in affordance list injection. If this interaction is a MixerInteraction did you mean to use `inject_to_mixer_list`?".format(affordance))
-                continue
+            # if not issubclass(affordance, SuperInteraction):
+            #     logger.warn("Class does not extend SuperInteraction: {}, If this interaction is a MixerInteraction did you mean to use `inject_to_mixer_list`?".format(affordance))
             affordances_to_add.add(affordance)
 
         for affordance_list in self._get_affordance_lists_gen():

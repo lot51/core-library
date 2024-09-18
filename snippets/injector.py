@@ -28,6 +28,7 @@ from lot51_core.tunables.region_injection import TunableRegionInjection
 from lot51_core.tunables.route_event_injection import TunableRouteEventInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
+from lot51_core.tunables.situation_goal_injection import TunableSituationGoalInjection
 from lot51_core.tunables.situation_injection import TunableSituationInjection
 from lot51_core.tunables.situation_job_injection import TunableSituationJobInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
@@ -174,6 +175,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_situations": TunableList(
             tunable=TunableSituationInjection.TunableFactory(),
         ),
+        "inject_to_situation_goals": TunableList(
+            tunable=TunableSituationGoalInjection.TunableFactory(),
+        ),
         "inject_to_situation_jobs": TunableList(
             tunable=TunableSituationJobInjection.TunableFactory(),
         ),
@@ -289,7 +293,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         dialog = cls.VERSION_DIALOG(active_sim)
         dialog.title = lambda *_: LocalizationHelperTuning.get_raw_text("Lot 51 Core Library Issue Detected")
         text = "{} by {} requires a newer version of Core Library.\n\n" \
-               "Current Version: {}\nRequired Version: {}\n\nPlease download the latest version from https://lot51.cc/core to use this mod.\n\n" \
+               "Current Version: {}\nRequired Version: {}\n\nPlease download the latest version from https://lot51.cc/core to use this mod. Otherwise double check that an older version is not still in your Mods folder.\n\n" \
                "If you still experience issues, join the Lot 51 Discord.".format(cls.mod_name, cls.creator_name, __version__, cls.minimum_core_version)
         dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(text)
         dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
