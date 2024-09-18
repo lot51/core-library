@@ -28,7 +28,6 @@ from lot51_core.tunables.region_injection import TunableRegionInjection
 from lot51_core.tunables.route_event_injection import TunableRouteEventInjection
 from lot51_core.tunables.satisfaction_store_injection import TunableSatisfactionStoreInjection
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
-from lot51_core.tunables.situation_goal_injection import TunableSituationGoalInjection
 from lot51_core.tunables.situation_injection import TunableSituationInjection
 from lot51_core.tunables.situation_job_injection import TunableSituationJobInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
@@ -174,9 +173,6 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         ),
         "inject_to_situations": TunableList(
             tunable=TunableSituationInjection.TunableFactory(),
-        ),
-        "inject_to_situation_goals": TunableList(
-            tunable=TunableSituationGoalInjection.TunableFactory(),
         ),
         "inject_to_situation_jobs": TunableList(
             tunable=TunableSituationJobInjection.TunableFactory(),
