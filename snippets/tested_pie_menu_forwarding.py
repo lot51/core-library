@@ -33,11 +33,13 @@ class TestedPieMenuForwarding(HasTunableReference, metaclass=HashedTunedInstance
     @classmethod
     def add_additional_aops(cls, add_potential_aops, target, context):
         resolver = SingleObjectResolver(target)
+        shift_held = context.shift_held if context is not None else False
         for row in cls.forward_data:
             for obj in row.object_query.get_objects_gen(resolver=resolver):
                 for affordance in row.affordances:
-                    potential_aops = affordance.potential_interactions(obj, context)
-                    add_potential_aops(potential_aops, obj)
+                    if obj._can_show_affordance(shift_held, affordance):
+                        potential_aops = affordance.potential_interactions(obj, context)
+                        add_potential_aops(potential_aops, obj)
 
 
 @inject_to(ChoiceMenu, 'add_potential_aops')

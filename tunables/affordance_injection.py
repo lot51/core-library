@@ -241,8 +241,8 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
             if self.pie_menu_priority is not None:
                 affordance.pie_menu_priority = self.pie_menu_priority
 
-            if self.provided_affordances is not None:
-                inject_list(affordance, 'provided_affordances', self.provided_affordances)
+            if self.provided_affordances is not None and len(self.provided_affordances):
+                inject_list(affordance, 'provided_affordances', self.provided_affordances, safe=True)
 
             if self.super_affordance_compatibility is not None:
                 inject_affordance_filter(
