@@ -1,6 +1,7 @@
 import services
 from event_testing.tests import TunableGlobalTestSet
 from interactions.utils.tunable_icon import TunableIconAllPacks
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import inject_list
 from sims4.localization import TunableLocalizedStringFactory
@@ -13,6 +14,7 @@ from tag import Tag
 class TunableServicePickerInjection(BaseTunableInjection):
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
+        'picker_tuning': Tunable(tunable_type=int, default=0),
         'icon': TunableIconAllPacks(description="The icon to be displayed in 'Hire a Service' UI"),
         'name': TunableLocalizedStringFactory(description="The name to be displayed for this NPC in the 'Hire a Service' UI."),
         'cost_string': TunableVariant(
@@ -40,17 +42,20 @@ class TunableServicePickerInjection(BaseTunableInjection):
 
     @classmethod
     def get_picker_tuning(cls):
-        return services.get_instance_manager(Types.INTERACTION).get(cls.PICKER_TUNING_ID)
+        return services.get_instance_manager(Types.INTERACTION).get(cls.picker_tuning)
 
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            inject_list(picker_tuning, 'service_npcs', (self,))
+            inject_list(picker_tuning, 'non_service_npcs', (self,))
+        else:
+            logger.warn("Could not find service npc picker tuning to inject with id {}".format(self.picker_tuning))
 
 
 class TunableHireableServicePickerInjection(BaseTunableInjection):
     PICKER_TUNING_ID = 9838
     FACTORY_TUNABLES = {
+        'picker_tuning': Tunable(tunable_type=int, default=0),
         'service_npc': TunableReference(manager=services.get_instance_manager(Types.SERVICE_NPC), class_restrictions=(ServiceNpcHireable,), pack_safe=True),
         'tag_list': TunableList(description='Tags to be filtered by.', tunable=TunableEnumEntry(tunable_type=Tag, default=Tag.INVALID), unique_entries=True),
         'already_hired_tooltip': TunableLocalizedStringFactory(description='Tooltip that displays if the service has already been hired.'),
@@ -61,9 +66,11 @@ class TunableHireableServicePickerInjection(BaseTunableInjection):
 
     @classmethod
     def get_picker_tuning(cls):
-        return services.get_instance_manager(Types.INTERACTION).get(cls.PICKER_TUNING_ID)
+        return services.get_instance_manager(Types.INTERACTION).get(cls.picker_tuning)
 
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
             inject_list(picker_tuning, 'service_npcs', (self,))
+        else:
+            logger.warn("Could not find hireable service npc picker tuning to inject with id {}".format(self.picker_tuning))

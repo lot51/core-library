@@ -49,6 +49,7 @@ class ParameterizedRequestContinuationMixin:
     def _handle_failure(self, resolver):
         for loot in self.paramaterized_autonomy_continuation.loot_on_failure:
             loot.apply_to_resolver(resolver)
+        self.cancel(FinishingType.FAILED_TESTS, cancel_reason_msg="No available continuation")
 
     def _run_paramaterized_request(self, obj):
         parameters = self.paramaterized_autonomy_continuation

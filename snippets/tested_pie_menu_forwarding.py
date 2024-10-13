@@ -2,7 +2,7 @@ from event_testing.resolver import SingleObjectResolver
 from interactions.choices import ChoiceMenu
 from lot51_core import logger
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
-from lot51_core.utils.injection import inject_to, obj_has_affordance
+from lot51_core.utils.injection import inject_to
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass

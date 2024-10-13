@@ -165,11 +165,15 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         ),
         "inject_to_service_picker": TunableList(
             description="Inject to non_service_npcs in the hire a service picker",
-            tunable=TunableServicePickerInjection.TunableFactory(),
+            tunable=TunableServicePickerInjection.TunableFactory(locked_args={'picker_tuning':9838}),
         ),
         "inject_to_service_picker_hireable": TunableList(
             description="Inject to service_npcs in the hire a service picker",
-            tunable=TunableHireableServicePickerInjection.TunableFactory(),
+            tunable=TunableHireableServicePickerInjection.TunableFactory(locked_args={'picker_tuning':9838}),
+        ),
+        "inject_to_service_picker_deliveries": TunableList(
+            description="Inject to service_npcs in the order a delivery picker",
+            tunable=TunableHireableServicePickerInjection.TunableFactory(locked_args={'picker_tuning':261896}),
         ),
         "inject_to_situations": TunableList(
             tunable=TunableSituationInjection.TunableFactory(),

@@ -43,7 +43,9 @@ def flatten_weighted_list(pairs, flipped=False):
      return [item[value_index] for item in pairs]
 
 
-def weighted_sort(pairs, flipped=False, descending=True):
+def weighted_sort(pairs, flipped=False, flatten=True, descending=True):
     weight_index = 1 if flipped else 0
     sorted_pairs = sorted(pairs, key=lambda item: random.random() * item[weight_index], reverse=descending)
+    if not flatten:
+        return sorted_pairs
     return flatten_weighted_list(sorted_pairs, flipped=flipped)

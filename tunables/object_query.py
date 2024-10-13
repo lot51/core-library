@@ -187,8 +187,7 @@ class ObjectSortWeightedRandom(BaseObjectSort):
             resolver = SingleObjectResolver(obj)
             weight = self.weight.get_multiplier(resolver)
             weighted_list.append((weight, obj))
-        weighted_list = weighted_sort(weighted_list)
-        return flatten_weighted_list(weighted_list)
+        return weighted_sort(weighted_list)
 
 
 class ObjectSortVariant(TunableVariant):

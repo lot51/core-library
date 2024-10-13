@@ -4,6 +4,7 @@ import services
 from event_testing.resolver import DoubleObjectResolver
 from lot51_core import logger
 from lot51_core.utils.os import open_url_in_browser
+from lot51_core.utils.save_based_config import instanced_configs
 from server_commands.argument_helpers import TunableInstanceParam
 from sims4.commands import Command, CommandType, output
 from sims4.resources import Types
@@ -40,7 +41,7 @@ def command_on_version_dialog_response(base_url:str=None, params:str=None, _conn
     open_url_in_browser(base_url, **params)
 
 
-@Command("lot51_core.toggle_debug")
+@Command("lot51_core.toggle_debug", command_type=CommandType.Live)
 def command_toggle_debug_logging(_connection=None):
     if logger.level == logging.DEBUG:
         mode = 'off'
@@ -50,3 +51,10 @@ def command_toggle_debug_logging(_connection=None):
         logger.setLevel(logging.DEBUG)
 
     output("Logging Debug Mode: {}".format(mode), _connection)
+
+
+@Command("lot51_core.config_debug", command_type=CommandType.Live)
+def command_print_config_debug(_connection=None):
+    output("Save Based Configs:", _connection)
+    for config in instanced_configs:
+        output("Name: {}, Household Name: {}".format(config.config_name, config.household_name), _connection)

@@ -171,7 +171,7 @@ def get_game_version():
     return None
 
 
-def is_game_version(match_expr: str):
+def is_game_version(match_expr: str, invert_on_fail=False):
     """
     Test the current game version against a version match expression.
     Example: test_game_version(">=1.105.0")
@@ -183,7 +183,13 @@ def is_game_version(match_expr: str):
           ``<=``  smaller or equal than
           ``==``  equal
           ``!=``  not equal
+    :param invert_on_fail: By default if the game version is non detected this function with return False.
+        Set this parameter to True to return True if the game version is not detected.
     :return: True if the expression matches the current game version, otherwise False
     """
     game_version = get_game_version()
+    if game_version is None:
+        if invert_on_fail:
+            return True
+        return False
     return game_version.match(match_expr)

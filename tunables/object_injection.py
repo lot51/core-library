@@ -214,7 +214,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             new_object_locking_component = clone_factory_wrapper_with_overrides(object_locking_component, super_affordances=merge_list(object_locking_component.super_affordances, self.object_locking_component.super_affordances))
             inject_dict(obj, '_components', object_locking_component=new_object_locking_component)
         elif self.object_locking_component is not None and should_create_component:
-            object_locking_component = create_factory_wrapper(RoutingComponent, super_affordances=self.object_locking_component.super_affordances)
+            object_locking_component = create_factory_wrapper(ObjectLockingComponent, super_affordances=self.object_locking_component.super_affordances)
             inject_dict(obj, '_components', object_locking_component=object_locking_component)
 
     def _inject_tooltip_component(self, obj):
