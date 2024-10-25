@@ -54,6 +54,7 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
         ),
         'inject_to_purchase_interaction': OptionalTunable(tunable=TunablePurchaseInteractionInjection.TunableFactory()),
         'inject_to_crafting_interaction': OptionalTunable(tunable=TunableCraftingInteractionInjection.TunableFactory()),
+        'inject_to_map_view_picker_interaction': OptionalTunable(tunable=TunableMapViewPickerInteractionInjection.TunableFactory()),
         'interaction_category_tags': TunableSet(
             description='This attribute is used to tag an interaction to allow for searching, testing, and categorization. An example would be using a tag to selectively test certain interactions. On each of the interactions you want to test together you would add the same tag, then the test routine would only test interactions with that tag. Interactions can have multiple tags. This attribute has no effect on gameplay.',
             tunable=TunableEnumEntry(description='These tag values are used for searching, testing, and categorizing interactions.', tunable_type=Tag, default=Tag.INVALID, pack_safe=True)
@@ -136,6 +137,7 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
     'allow_from_portrait_override', 'allow_from_sim_inventory_override', 'allow_from_world_override', 'basic_content',
     'basic_extras', 'basic_liabilities', 'cheat_override', 'category_override', 'debug_override', 'display_name_overrides',
     'display_name_wrappers', 'false_advertisements', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction',
+    'inject_to_map_view_picker_interaction',
     'interaction_category_tags', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'outfit_change',
     'outfit_change_on_exit', 'provided_affordances', 'pie_menu_priority', 'static_commodities',
     'super_affordance_compatibility', 'super_affordance_klobberers', 'tests', 'utility_info',)
@@ -263,6 +265,9 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
 
             if self.inject_to_crafting_interaction is not None:
                 self.inject_to_crafting_interaction.inject_to_affordance(affordance)
+
+            if self.inject_to_map_view_picker_interaction is not None:
+                self.inject_to_map_view_picker_interaction.inject_to_affordance(affordance)
 
             if self.utility_info is not None:
                 new_utility_info = dict(affordance.utility_info)

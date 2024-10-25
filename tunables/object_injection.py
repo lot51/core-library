@@ -101,7 +101,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         ),
         'routing_component': OptionalTunable(
             tunable=TunableTuple(
-                routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=ObjectRoutingBehavior.TunableReference(), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
+                routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=TunableReference(manager=services.get_instance_manager(Types.SNIPPET), class_restrictions=('ObjectRoutingBehavior',)), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
             )
         ),
         'tooltip_component_override': OptionalTunable(
@@ -408,7 +408,7 @@ class TunableObjectInjectionByObjectSource(BaseTunableObjectInjection):
                             state_component._do_first_time_state_added_actions(state)
 
             if len(self.state_triggers):
-                inject_list(state_component, '_state_triggers', self.state_triggers)
+                inject_list(state_component, '_state_triggers', self.state_triggers, unique_entries=False)
 
             if self.timed_state_triggers is not None:
                 inject_dict(state_component, '_timed_state_triggers', self.timed_state_triggers)

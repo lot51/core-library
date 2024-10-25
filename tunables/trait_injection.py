@@ -54,7 +54,7 @@ class TunableTraitInjection(BaseTunableInjection):
         ),
         'conditional_commodities': TunableList(
             tunable=TunableTuple(
-                commodity=Commodity.TunableReference(pack_safe=True),
+                commodity=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), pack_safe=True),
                 tests=TunableTestSet(),
                 delay=Tunable(tunable_type=bool, default=False)
             )
@@ -85,8 +85,8 @@ class TunableTraitInjection(BaseTunableInjection):
             locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False}
         ),
         'ui_commodity_sort_override': OptionalTunable(
-            description="Warning! this tunable will replace the existing list.",
-            tunable=TunableList(tunable=Commodity.TunableReference(pack_safe=True)),
+            description="Warning! this tunable will replace the existing list. List of commodities",
+            tunable=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), pack_safe=True)),
         ),
         'whim_set': OptionalTunable(
             tunable=TunableReference(manager=services.get_instance_manager(Types.ASPIRATION), class_restrictions=(ObjectivelessWhimSet,))

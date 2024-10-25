@@ -18,13 +18,13 @@ class TunableSimInfoInjection(BaseTunableInjection):
             ),
             value_type=TunableList(
                 description='A list of away actions that are available for the player to select from and apply to the sim.',
-                tunable=AwayAction.TunableReference(pack_safe=True)
+                tunable=TunableReference(manager=services.get_instance_manager(Types.AWAY_ACTION), pack_safe=True)
             )
         ),
         'default_away_action': TunableMapping(
             description='Map of commodities to away action.  When the default away action is asked for we look at the ad data of each commodity and select the away action linked to the commodity that is advertising the highest. ',
-            key_type=Commodity.TunableReference(description='The commodity that we will look at the advertising value for.', pack_safe=True),
-            value_type=AwayAction.TunableReference(description='The away action that will applied if the key is the highest advertising commodity of the ones listed.', pack_safe=True)
+            key_type=TunableReference(manager=services.get_instance_manager(Types.STATISTIC), description='The commodity that we will look at the advertising value for.', pack_safe=True),
+            value_type=TunableReference(manager=services.get_instance_manager(Types.AWAY_ACTION), description='The away action that will applied if the key is the highest advertising commodity of the ones listed.', pack_safe=True)
         )
 
     }

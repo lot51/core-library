@@ -3,10 +3,16 @@ from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from sims4.resources import Types
 from sims4.tuning.tunable import Tunable, TunableReference
-from interactions.utils.death import DeathType, DeathTracker
+from interactions.utils.death import DeathTracker
 from sims4.collections import  make_immutable_slots_class
 from _sims4_collections import frozendict
 from lot51_core.utils.injection import inject_to_enum, add_affordance
+
+# Backwards compatibility for <1.110
+try:
+    from interactions.utils.death_enums import DeathType
+except:
+    from interactions.utils.death import DeathType
 
 
 class TunableCustomDeath(BaseTunableInjection):
