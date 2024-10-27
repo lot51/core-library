@@ -40,14 +40,13 @@ class TunableServicePickerInjection(BaseTunableInjection):
 
     __slots__ = ('description', 'icon', 'name', 'cost_string', 'hire_interaction', 'tag_list', 'tests', 'free_service_traits',)
 
-    @classmethod
-    def get_picker_tuning(cls):
-        return services.get_instance_manager(Types.INTERACTION).get(cls.picker_tuning)
+    def get_picker_tuning(self):
+        return services.get_instance_manager(Types.INTERACTION).get(self.picker_tuning)
 
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            inject_list(picker_tuning, 'non_service_npcs', (self,))
+            inject_list(picker_tuning, 'non_service_npcs', (self,), unique_entries=False)
         else:
             logger.warn("Could not find service npc picker tuning to inject with id {}".format(self.picker_tuning))
 
@@ -64,13 +63,12 @@ class TunableHireableServicePickerInjection(BaseTunableInjection):
 
     __slots__ = ('service_npc', 'tag_list', 'already_hired_tooltip', 'tests',)
 
-    @classmethod
-    def get_picker_tuning(cls):
-        return services.get_instance_manager(Types.INTERACTION).get(cls.picker_tuning)
+    def get_picker_tuning(self):
+        return services.get_instance_manager(Types.INTERACTION).get(self.picker_tuning)
 
     def inject(self):
         picker_tuning = self.get_picker_tuning()
         if picker_tuning is not None:
-            inject_list(picker_tuning, 'service_npcs', (self,))
+            inject_list(picker_tuning, 'service_npcs', (self,), unique_entries=False)
         else:
             logger.warn("Could not find hireable service npc picker tuning to inject with id {}".format(self.picker_tuning))

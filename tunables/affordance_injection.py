@@ -11,6 +11,7 @@ from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTi
 from lot51_core.tunables.basic_content_injection import TunableBasicContentInjection
 from lot51_core.tunables.basic_liability import BasicLiabilityVariant
 from lot51_core.tunables.crafting_interaction_injection import TunableCraftingInteractionInjection
+from lot51_core.tunables.map_view_picker_injection import TunableMapViewPickerInteractionInjection
 from lot51_core.tunables.purchase_interaction_injection import TunablePurchaseInteractionInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
 from lot51_core.utils.injection import inject_list, merge_list, inject_affordance_filter
@@ -165,6 +166,9 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
 
     def inject(self):
         for affordance in self.get_affordances_gen():
+            if affordance is None:
+                continue
+
             if self.allow_autonomous_override is not None:
                 affordance.allow_autonomous = self.allow_autonomous_override
 
@@ -187,10 +191,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 self.basic_content.inject_to_affordance(affordance)
 
             if self.basic_extras is not None:
-                inject_list(affordance, 'basic_extras', self.basic_extras)
+                inject_list(affordance, 'basic_extras', self.basic_extras, unique_entries=False)
 
             if self.basic_liabilities is not None:
-                inject_list(affordance, 'basic_liabilities', self.basic_liabilities)
+                inject_list(affordance, 'basic_liabilities', self.basic_liabilities, unique_entries=False)
 
             if self.cheat_override is not None:
                 affordance.cheat = self.cheat_override
@@ -199,10 +203,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
                 affordance.debug = self.debug_override
 
             if self.false_advertisements is not None:
-                inject_list(affordance, '_false_advertisements', self.false_advertisements)
+                inject_list(affordance, '_false_advertisements', self.false_advertisements, unique_entries=False)
 
             if self.static_commodities is not None:
-                inject_list(affordance, '_static_commodities', self.static_commodities)
+                inject_list(affordance, '_static_commodities', self.static_commodities, unique_entries=False)
 
             if self.category_override is not None:
                 affordance.category = self.category_override.pie_menu_category

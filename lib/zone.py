@@ -58,6 +58,7 @@ def get_lot_description_id_from_zone_data(zone_data):
     zone_lot_description_id = services.get_lot_description_id(zone_data.lot_id, zone_world_description_id)
     return zone_lot_description_id
 
+
 def get_lot_description_id_from_zone_id(zone_id):
     zone_data = get_zone_data(zone_id)
     return get_lot_description_id_from_zone_data(zone_data)
@@ -74,9 +75,9 @@ def get_zone_data_from_lot_description_id(lot_desc_id):
 
 
 def get_zone_id_from_lot_description_id(lot_desc_id):
-    for zone_proto in get_zone_data_gen():
-        if zone_proto.lot_description_id == lot_desc_id:
-            return zone_proto.zone_id
+    zone_data = get_zone_data_from_lot_description_id(lot_desc_id)
+    if zone_data is not None:
+        return zone_data.zone_id
 
 
 def add_zone_modifier(zone_modifier, zone_id=None, apply_immediately=True):

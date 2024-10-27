@@ -119,7 +119,7 @@ class TunablePurchaseInteractionInjection(HasTunableSingletonFactory, AutoFactor
             inject_list(affordance, 'loots_on_purchase', self.loots_on_purchase)
 
         if hasattr(affordance, 'purchase_list_option'):
-            inject_list(affordance, 'purchase_list_option', self.purchase_list_option)
+            inject_list(affordance, 'purchase_list_option', self.purchase_list_option, unique_entries=False)
 
         if hasattr(affordance, 'price_multiplier') and self.price_multiplier is not None:
             self.price_multiplier.inject(affordance, 'price_multiplier')

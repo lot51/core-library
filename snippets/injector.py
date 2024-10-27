@@ -9,6 +9,7 @@ from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionB
     TunableAffordanceInjectionByCategoryTags
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
+from lot51_core.tunables.business_tuning_injection import TunableBusinessTuningInjection
 from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
 from lot51_core.tunables.pregnancy_tracker_injector import TunablePregnancyTrackerInjection
@@ -197,6 +198,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             tunable=TunableCustomDeath.TunableFactory(),
         ),
         "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
+        "business_tuning": TunableBusinessTuningInjection.TunableFactory(),
         "interaction_cancel_compatibility": TunableList(
             tunable=InteractionCancelCompatibilityInjection.TunableFactory()
         ),
@@ -221,7 +223,7 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
     def _tuning_loaded_callback(cls):
         logger.info('[tuning_loaded_callback] {}'.format(cls.to_str()))
         if not GameVersion.test(cls.minimum_game_version):
-            logger.warn("Invalid minimum_game_version defined: {} Please fix this value.".format(cls.minimum_game_version))
+            logger.warn("Invalid minimum_game_version defined: {} Please use a fully qualified version with three segments.".format(cls.minimum_game_version))
 
     @classmethod
     def all_snippets_gen(cls):

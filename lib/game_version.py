@@ -22,13 +22,13 @@ class GameVersion:
     semver style match, with helper methods to convert
     to SemVer object, or tuple.
     """
-    GAME_VERSION_REGEX = re.compile(r"^(?P<major>\d{1})\.(?P<minor>\d{1,3})\.(?P<patch>\d{1,3})(?:\.(?P<platform>(?P<os>10|12|15|16)(?P<unused>10|20|30)))?$")
+    GAME_VERSION_REGEX = re.compile(r"^(?P<major>\d{1})\.(?P<minor>\d{1,3})(?:\.(?P<patch>\d{1,3}))?(?:\.(?P<platform>(?P<os>10|12|15|16)(?P<unused>10|20|30)))?$")
     # GAME_VERSION_REGEX = re.compile(r"^(?P<major>\d{1})\.(?P<minor>\d{1,3})\.(?P<patch>\d{1,3})\.(?P<platform>(?P<os>10|12|15|16)(?P<unused>10|20|30))$")
 
     def __init__(self, major=None, minor=None, patch=None, platform=None, os=None, unused=None):
-        self.major = int(major)
-        self.minor = int(minor)
-        self.patch = int(patch)
+        self.major = int(major) if major is not None else 0
+        self.minor = int(minor) if minor is not None else 0
+        self.patch = int(patch) if patch is not None else 0
         self.platform = int(platform) if platform is not None else None
         self.os = int(os) if os is not None else None
         self.unused = int(unused) if unused is not None else None

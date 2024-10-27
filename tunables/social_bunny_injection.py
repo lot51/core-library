@@ -54,4 +54,4 @@ class TunableSocialBunnyInjection(BaseTunableInjection):
         return (Pack.EP12,)
 
     def inject(self):
-        inject_list(SocialMediaTunables, 'TYPES_OF_POSTS', self.types_of_posts)
+        inject_list(SocialMediaTunables, 'TYPES_OF_POSTS', self.types_of_posts, unique_entries=False)
