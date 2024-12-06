@@ -76,6 +76,8 @@ class LotFiftyOneCoreLootActions(LootActions):
     @blueprintmethod
     def get_loot_ops_gen(self, resolver=None, **kwargs):
         try:
+            if resolver is not None and self.tests and not self.tests.run_tests(resolver):
+                return
             if self.chance is not None:
                 chance = self.chance.get_chance(resolver)
                 if not chance_succeeded(chance):

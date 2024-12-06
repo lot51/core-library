@@ -4,7 +4,7 @@ from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.injection import inject_list, inject_mapping_lists, merge_list, merge_dict
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, OptionalTunable, TunableEnumEntry, Tunable, \
-    TunableEnumWithFilter, TunableSet, TunableMapping, TunableTuple
+    TunableEnumWithFilter, TunableSet, TunableMapping, TunableTuple, TunableSimMinute
 from situations.situation_goal import TunableWeightedSituationGoalReference
 from situations.situation_types import SituationDisplayType
 from tag import Tag
@@ -63,10 +63,10 @@ class TunableSituationInjection(BaseTunableInjection):
             tunable=Tunable(tunable_type=bool, default=False)
         ),
         'duration': OptionalTunable(
-            tunable=Tunable(tunable_type=int, default=0)
+            tunable=TunableSimMinute(description='How long the situation will last in sim minutes. 0 means forever.', default=0)
         ),
         'duration_randomizer': OptionalTunable(
-            tunable=Tunable(tunable_type=int, default=0)
+            tunable=TunableSimMinute(description="A random time between 0 and this tuned time will be added to the situation's duration.", default=0, minimum=0)
         ),
         'situation_display_type_override': OptionalTunable(
             tunable=TunableEnumEntry(tunable_type=SituationDisplayType, default=SituationDisplayType.NORMAL)

@@ -24,7 +24,7 @@ class TunableRelationshipBitInjection(BaseTunableInjection):
             tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)
         ),
         'buffs_to_add_if_on_active_lot': TunableList(
-            tunable=TunableBuffReference(pack_safe=False)
+            tunable=TunableBuffReference(pack_safe=True)
         ),
     }
 

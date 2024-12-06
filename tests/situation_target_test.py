@@ -38,6 +38,7 @@ class SituationTargetObjectTest(HasTunableSingletonFactory, AutoFactoryInit, Bas
                 if hasattr(situation, 'get_target_object'):
                     situation_target = situation.get_target_object()
                     if situation_target and situation_target == target:
+                        logger.debug("SITUATION TARGET TEST PASSED. {}: {} == {}".format(subject, target, situation_target))
                         return TestResult.TRUE
                     logger.debug("SITUATION TARGET TEST FAILED. DOES NOT MATCH TARGET. {}: {} != {}".format(subject, target, situation_target))
                     return TestResult(False, "Object does not match situation target object", tooltip=self.tooltip)

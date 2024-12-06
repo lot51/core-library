@@ -19,6 +19,7 @@ class AffordanceLockOutSnippet(HasTunableReference, metaclass=HashedTunedInstanc
         "mod_name": Tunable(tunable_type=str, allow_empty=True, default='N/A'),
         'lock_out': TunableList(
             tunable=TunableTuple(
+                _disabled=Tunable(tunable_type=bool, default=False),
                 affordances=TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION))),
                 compatibility_type=TunableEnumEntry(tunable_type=LockCompatibilityType, default=LockCompatibilityType.ANY),
                 interval=TunableInterval(description='Time in sim minutes in which this affordance will not be valid for.', tunable_type=TunableSimMinute, default_lower=1, default_upper=1, minimum=0),

@@ -509,9 +509,10 @@ class GetSimsInteractingWithParticipant(_GetObjectsBase):
 class GetObjectsByParent(_GetObjectsBase):
     FACTORY_TUNABLES = {
         'participant': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Object),
+        'use_part_owner': Tunable(tunable_type=bool, default=False),
     }
 
-    __slots__ = ('participant',)
+    __slots__ = ('participant', 'use_part_owner',)
 
     def _get_objects_gen(self, resolver=None):
         if resolver is not None:
@@ -519,8 +520,10 @@ class GetObjectsByParent(_GetObjectsBase):
             if isinstance(target, SimInfo):
                 target = target.get_sim_instance()
             if target is not None:
-                if hasattr(target, 'get_all_children_gen'):
-                    yield from target.get_all_children_gen()
+                if self.use_part_owner and target.is_part:
+                    target = target.part_owner
+                if hasattr(target, 'children_recursive_gen'):
+                    yield from target.children_recursive_gen()
 
 
 class GetCarriedObjectsByParticipant(_GetObjectsBase):

@@ -1,8 +1,8 @@
 from event_testing.resolver import DoubleObjectResolver
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
+from event_testing.tests import TunableTestSet
 from interactions import ParticipantTypeSingle
-from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableEnumEntry
 
 
@@ -14,7 +14,7 @@ class InventoryOwnerTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
 
     FACTORY_TUNABLES = {
         'target': TunableEnumEntry(tunable_type=ParticipantTypeSingle, default=ParticipantTypeSingle.Object),
-        'inventory_tests': ObjectSearchMethodVariant()
+        'inventory_tests': TunableTestSet()
     }
 
     __slots__ = ('target', 'inventory_tests')

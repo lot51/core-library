@@ -17,6 +17,7 @@ except:
 
 class TunableCustomDeath(BaseTunableInjection):
     DEATH_TYPE_AFFORDANCE_LIST_ID = 16338
+
     FACTORY_TUNABLES = {
         'death_type_key': Tunable(tunable_type=str, default=''),
         'death_type_id': Tunable(tunable_type=int, default=0),

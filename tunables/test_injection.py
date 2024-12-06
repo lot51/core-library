@@ -45,6 +45,11 @@ class TunableTestReplaceGlobalsInjection(TestReplaceMixin, HasTunableSingletonFa
 
 class TunableTestMergeInjection(HasTunableSingletonFactory, AutoFactoryInit):
     FACTORY_TUNABLES = {
+        'add_if_empty_list': Tunable(
+            description="When merging AND tests, if the list is empty one will be created.",
+            tunable_type=bool,
+            default=False
+        ),
         'prepend_and': Tunable(
             description="If True, the AND tests will be prepended instead of appending.",
             tunable_type=bool,
@@ -61,7 +66,11 @@ class TunableTestMergeInjection(HasTunableSingletonFactory, AutoFactoryInit):
 
     def inject(self, target, key):
         original_list = getattr(target, key, None)
-        new_list = clone_test_set(original_list, additional_and=self.AND, additional_or=self.OR, prepend_and=self.prepend_and)
+        new_list = clone_test_set(original_list,
+                                  additional_and=self.AND,
+                                  additional_or=self.OR,
+                                  prepend_and=self.prepend_and,
+                                  add_if_empty_list=self.add_if_empty_list)
         setattr(target, key, new_list)
         logger.debug("tuned_values {}".format(getattr(target, '_tuned_values', None)))
         logger.debug("original {}: final {}".format(original_list, getattr(target, key, None)))

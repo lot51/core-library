@@ -265,7 +265,7 @@ def inject_affordance_filter(owner, key, other_filter=None, include_all_by_defau
     setattr(owner, key, new_tunable)
 
 
-def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_and=False):
+def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_and=False, add_if_empty_list=True):
     """
     This function will clone a TunableTestSet/TunableGlobalTestSet and add additional tests,
     returning an object that can safely replace
@@ -274,6 +274,8 @@ def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_
     :param additional_and: A tuple of tests that will be appended to each test list.
     :param additional_or: A tuple of tests that will be appended to the CompoundTestList.
     :param prepend_and: If True, the additional_and tests will be prepended instead of appended.
+    :param add_if_empty_list: if the injection target is a CompoundTestList and is empty, then a new TestList will be
+        created with additional_and tests.
     :return: A TestList, CompoundTestList, or tuple of tests matching the `original_tests` param.
     """
     # Represents a TestList returned from a TunableGlobalTestSet
@@ -290,10 +292,17 @@ def clone_test_set(original_tests, additional_and=(), additional_or=(), prepend_
     # Represents a CompoundTestList returned from a TunableTestSet
     elif isinstance(original_tests, CompoundTestList):
         new_compound = CompoundTestList()
-        # Clone nested test lists with additional AND tests appended
-        for test_list in original_tests:
-            new_tests = clone_test_set(test_list, additional_and=additional_and)
+
+        if not len(original_tests) and add_if_empty_list:
+            # Add nested test list if empty
+            new_tests = clone_test_set(TestList(), additional_and=additional_and)
             new_compound.append(new_tests)
+        else:
+            # Clone nested test lists with additional AND tests appended
+            for test_list in original_tests:
+                new_tests = clone_test_set(test_list, additional_and=additional_and)
+                new_compound.append(new_tests)
+
         # Add additional OR tests
         for test_list in additional_or:
             new_compound.append(test_list)
@@ -398,6 +407,8 @@ def inject_to(target_object, target_function_name, force_flex=False, force_untun
             return blueprintmethod(_wrapped_func)
         elif type(target_function) is blueprintproperty:
             return blueprintproperty(_wrapped_func)
+        elif type(target_function) is staticmethod:
+            return staticmethod(_wrapped_func)
         elif inspect.ismethod(target_function):
             if hasattr(target_function, '__self__') and force_untuned_cls:
                 return _wrapped_func.__get__(target_function.__self__, target_function.__self__.__class__)

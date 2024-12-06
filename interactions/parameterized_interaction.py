@@ -1,7 +1,6 @@
 import element_utils
 import sims4.random
-from event_testing.resolver import SingleActorAndObjectResolver, DoubleObjectResolver
-from interactions import ParticipantType, ParticipantTypeSavedActor
+from interactions import ParticipantType
 from interactions.aop import AffordanceObjectPair
 from interactions.context import InteractionSource, InteractionContext
 from interactions.interaction_finisher import FinishingType
@@ -74,6 +73,8 @@ class ParameterizedRequestContinuationMixin:
                         # logger.debug("[{}] affordance allowed autonomously {}".format(self, aop.affordance))
 
                     execute_result = aop.interaction_factory(ctx)
+                    if not execute_result:
+                        continue
                     interaction = execute_result.interaction
 
                     total_desire = 0
@@ -98,7 +99,7 @@ class ParameterizedRequestContinuationMixin:
                         logger.debug("[{}] affordance {}, desire {}, result {}".format(self, interaction, total_desire, test_result))
                         if test_result:
                             potential_aops.append((total_desire, aop))
-                except:
+                except BaseException:
                     pass
                     # logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
 
@@ -107,11 +108,9 @@ class ParameterizedRequestContinuationMixin:
                 if aop_select is not None:
                     if aop_select.execute(ctx):
                         logger.debug("executed aop {}".format(aop_select))
-                        self._handle_success(resolver)
                         return True
                     logger.debug("failed to execute aop {}".format(aop_select))
         logger.debug("no aops found for obj {}".format(obj))
-        self._handle_failure(resolver)
         return False
 
 
@@ -125,7 +124,16 @@ class SpecificInteractionContinuationMixin:
         ),
     }
 
+    def _handle_success(self, resolver):
+        pass
+
+    def _handle_failure(self, resolver):
+        self.cancel(FinishingType.FAILED_TESTS, cancel_reason_msg="No available continuation")
+
     def _run_paramaterized_request(self, obj):
+        if self.affordance_continuation is None:
+            logger.error("Affordance continuation was None in {} targeting {}".format(self, obj))
+            return False
         ctx = self.context.clone_for_continuation(self, carry_target=self.carry_target)
         # si = self.continuation_si_override if self.continuation_si_override is not None else self.affordance_continuation
         aop = AffordanceObjectPair(self.affordance_continuation, obj, self.affordance_continuation, None, saved_participants=self._saved_participants)
@@ -164,8 +172,10 @@ class BaseParameterizedSuperInteraction(SuperInteraction):
         # logger.debug("Running interaction {}".format(self))
         for chosen_obj in self.object_source.get_objects_gen(resolver=resolver, log_results=False):
             if self._run_paramaterized_request(chosen_obj):
+                self._handle_success(resolver)
                 return True
-        self.cancel(FinishingType.TRANSITION_FAILURE, cancel_reason_msg="Failed to push continuation")
+        # self.cancel(FinishingType.TRANSITION_FAILURE, cancel_reason_msg="Failed to push continuation")
+        self._handle_failure(resolver)
         return False
 
     def _build_outcome_sequence(self, *args, **kwargs):

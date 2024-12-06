@@ -1,6 +1,11 @@
 import services
 
 
+def get_household(household_id):
+    if household_id is not None:
+        return services.household_manager().get(household_id)
+
+
 def get_daily_household_income(household=None):
     total_daily_income = 0
     if household is None:

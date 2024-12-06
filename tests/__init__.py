@@ -3,6 +3,7 @@
 from lot51_core.tests.daytime import DaytimeTest
 from lot51_core.tests.distance_2d import Distance2dTest
 from lot51_core.tests.food_restriction import CustomFoodRestrictionTest
+from lot51_core.tests.has_owned_zone import OwnedZoneThresholdTest
 from lot51_core.tests.identity_comparison import IdentityComparisonTest
 from lot51_core.tests.inventory_owner import InventoryOwnerTest
 from lot51_core.tests.lock_out import AffordanceLockOutTest
@@ -42,6 +43,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'object_tuning_test': ObjectTuningTest,
         'object_slots_in_use': ObjectSlotInUseTest,
         'object_stolen': ObjectStolenTest,
+        'owned_zone_threshold': OwnedZoneThresholdTest,
         'resource_existence': ResourceExistenceTest,
         'situation_target': SituationTargetObjectTest,
         'statistic_locked': StatisticLockedTest,

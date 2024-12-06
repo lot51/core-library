@@ -28,6 +28,8 @@ class AffordanceLockOutRegistry(RegisterTestEventMixin):
     def get_lock_out_time(self, affordance, is_user_directed=False, default=0):
         for snippet in AffordanceLockOutSnippet.all_snippets_gen():
             for row in snippet.lock_out:
+                if row._disabled:
+                    continue
                 if affordance in row.affordances:
                     if (is_user_directed and row.compatibility_type is LockCompatibilityType.AUTONOMOUS_ONLY) or (not is_user_directed and row.compatibility_type is LockCompatibilityType.USER_DIRECTED_ONLY):
                         return 0
