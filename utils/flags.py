@@ -7,6 +7,9 @@ class Flag:
     def __str__(self):
         return str(self.value)
 
+    def __int__(self):
+        return self.value
+
     def get(self):
         return self.value
 

@@ -2,9 +2,10 @@ import build_buy
 import services
 from distributor.system import Distributor
 from lot51_core.lib.game_version import is_game_version
-from plex.plex_enums import PlexBuildingType
+from plex.plex_enums import PlexBuildingType, INVALID_PLEX_ID
 from protocolbuffers import InteractionOps_pb2, Consts_pb2
 from protocolbuffers.FileSerialization_pb2 import HouseholdAccountPair
+from sims4.geometry import Polygon
 from sims4.resources import Types
 from world.travel_service import travel_sim_to_zone
 
@@ -269,3 +270,55 @@ def set_zone_owner(zone_id, sim_info, force_ownership=False, set_residential_own
 
             return True
     return False
+
+
+def get_level_area(level_index):
+    plex_service = services.get_plex_service()
+    plex_id = plex_service.get_active_zone_plex_id() or INVALID_PLEX_ID
+    plex_type = plex_service.get_plex_building_type(services.current_zone_id())
+    is_penthouse = plex_type in (PlexBuildingType.PENTHOUSE_PLEX, PlexBuildingType.BT_PENTHOUSE_RENTAL,)
+
+    def get_area(block_polys):
+        area = 0
+        for (poly_data, block_level_index) in block_polys:
+            if block_level_index != level_index:
+                pass
+            else:
+                for p in poly_data:
+                    polygon = Polygon(list(reversed(p)))
+                    polygon.normalize()
+                    area += polygon.area()
+        return area
+
+    area = get_area(build_buy.get_all_block_polygons(plex_id).values())
+
+    # Updated Jun 2, 2024
+    # Residential rental common area polys are stored in plex id of 0,
+    # so perform additional query. This does not apply to CL apartments.
+    # Updated Aug 3, 2024 - Penthouse apartments also have this same "issue"
+    if plex_id != INVALID_PLEX_ID and is_penthouse:
+        area += get_area(build_buy.get_all_block_polygons(INVALID_PLEX_ID).values())
+    return area
+
+
+def get_total_building_area():
+    lot = services.active_lot()
+    total_area = 0
+    if lot is None:
+        return total_area
+    for level_index, lot_level in lot.lot_levels.items():
+        area = get_level_area(level_index)
+        total_area += area
+    return int(total_area)
+
+
+def get_lot_size():
+    lot = services.active_lot()
+    if lot is None:
+        return 0, 0
+    return int(lot.size_x), int(lot.size_z)
+
+
+def get_total_lot_area():
+    x, z = get_lot_size()
+    return int(x * z)

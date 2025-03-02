@@ -41,6 +41,8 @@ def merge_dict(original_dict, force_frozen=False, new_items=None, **other_new_it
     :param other_new_items:
     :return:
     """
+    if original_dict is None:
+        original_dict = dict()
     if new_items is None:
         new_items = dict()
     if isinstance(original_dict, _ImmutableSlotsBase):

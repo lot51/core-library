@@ -1,7 +1,9 @@
+import lot51_core
 import pickle
 import weakref
 import services
 import sims4.reload
+from lot51_core.lib.sims import get_sim_name
 from lot51_core.utils.injection import inject_to
 from sims.sim_info import SimInfo
 from sims.sim_info_lod import SimInfoLODLevel
@@ -107,11 +109,11 @@ class SaveBasedConfig:
 
 
 @inject_to(SimInfo, 'get_culling_immunity_reasons')
-def _save_based_config_get_culling_immunity_reasons(original, self, *args, **kwargs):
+def lot51_save_based_config_get_culling_immunity_reasons(original, self, *args, **kwargs):
     global instanced_configs
-    # lot51_core.logger.debug("[SavedBasedConfig] getting culling immunity reasons for sim {}".format(get_sim_name(self)))
+    lot51_core.logger.debug("[SavedBasedConfig] getting culling immunity reasons for sim {}".format(get_sim_name(self)))
     reasons = original(self, *args, **kwargs)
-    if len(reasons):
+    if len(reasons) or self.household is None:
         return reasons
     household_name = self.household.name
     for config in instanced_configs:

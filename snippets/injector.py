@@ -15,6 +15,7 @@ from lot51_core.tunables.part_injection import TunableObjectPartInjection
 from lot51_core.tunables.pregnancy_tracker_injector import TunablePregnancyTrackerInjection
 from lot51_core.tunables.relationship_bit_injection import TunableRelationshipBitInjection
 from lot51_core.tunables.role_state_injection import TunableRoleStateInjection
+from lot51_core.tunables.sim_filter_injection import TunableSimFilterInjection
 from lot51_core.tunables.sim_info_injection import TunableSimInfoInjection
 from lot51_core.tunables.buff_injection import TunableBuffInjection
 from lot51_core.tunables.club_injection import TunableClubInteractionGroupInjection
@@ -175,6 +176,9 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_to_service_picker_deliveries": TunableList(
             description="Inject to service_npcs in the order a delivery picker",
             tunable=TunableHireableServicePickerInjection.TunableFactory(locked_args={'picker_tuning':261896}),
+        ),
+        "inject_to_sim_filters": TunableList(
+            tunable=TunableSimFilterInjection.TunableFactory(),
         ),
         "inject_to_situations": TunableList(
             tunable=TunableSituationInjection.TunableFactory(),

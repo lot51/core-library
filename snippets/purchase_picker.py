@@ -244,6 +244,14 @@ class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMe
         return dialog
 
     @classmethod
+    def has_valid_choice(cls, target, context, **kwargs):
+        resolver = SingleActorAndObjectResolver(context.sim, target, 'yourmom')
+        picker = cls(resolver)
+        for row in picker._picker_rows_gen():
+            return True
+        return False
+
+    @classmethod
     def get_stock_manager(cls):
         if cls.stock_management is not None:
             return StockManager.get_stock_manager(cls, refresh_period=cls.stock_management.refresh_period)

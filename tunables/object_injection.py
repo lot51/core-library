@@ -160,7 +160,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
                 overrides.state_triggers = merge_list(state_component.state_triggers, self.state_triggers)
 
             if self.timed_state_triggers is not None:
-                overrides.timed_state_triggers = merge_dict(state_component.timed_state_triggers, **self.timed_state_triggers)
+                overrides.timed_state_triggers = merge_dict(state_component.timed_state_triggers, new_items=self.timed_state_triggers)
 
             if len(overrides):
                 new_state_component = clone_factory_wrapper_with_overrides(state_component, **overrides)

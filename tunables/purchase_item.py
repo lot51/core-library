@@ -86,7 +86,7 @@ class TunablePurchaseItem(HasTunableSingletonFactory, AutoFactoryInit):
         'quality_states': TunableList(
             description="An item from this list will be randomly selected to add additional value/quality to an object",
             tunable=TunableTuple(
-                states=TunableList(tunable=TunableReference(manager=get_instance_manager(Types.OBJECT_STATE))),
+                states=TunableList(tunable=TunableReference(manager=get_instance_manager(Types.OBJECT_STATE), pack_safe=True)),
                 static_price_multiplier=Tunable(tunable_type=float, default=1),
                 static_depreciation_multiplier=Tunable(tunable_type=float, default=1),
                 weight=TunableMultiplier.TunableFactory(),

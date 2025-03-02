@@ -2,6 +2,7 @@
 # at https://frankkmods.medium.com/custom-tuning-tests-sims-4-script-modding-3837e214fb68
 from lot51_core.tests.daytime import DaytimeTest
 from lot51_core.tests.distance_2d import Distance2dTest
+from lot51_core.tests.flag_stat_test import FlagStatTest
 from lot51_core.tests.food_restriction import CustomFoodRestrictionTest
 from lot51_core.tests.has_owned_zone import OwnedZoneThresholdTest
 from lot51_core.tests.identity_comparison import IdentityComparisonTest
@@ -21,6 +22,7 @@ from lot51_core.tests.stolen import ObjectStolenTest
 from lot51_core.tests.stored_sim_component import StoredSimComponentTest
 from lot51_core.tests.terrain import TerrainTest
 from lot51_core.tests.resource_test import ResourceExistenceTest
+from lot51_core.tests.valid_picker_choice import ValidPickerChoiceTest, ValidPurchasePickerChoiceTest
 from lot51_core.tests.walkstyle import WalkstyleTest
 from event_testing.tests import TestSetInstance, TunableTestVariant, _TunableTestSetBase
 
@@ -33,6 +35,7 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'daytime': DaytimeTest,
         'distance_2d': Distance2dTest,
         'has_pack': PackTest,
+        'flag_stat_test': FlagStatTest,
         'identity_comparison': IdentityComparisonTest,
         'inventory_owner': InventoryOwnerTest,
         'lot_size': LotSizeTest,
@@ -49,6 +52,8 @@ class LotFiftyOneCoreTestSet(_TunableTestSetBase, is_fragment=True):
         'statistic_locked': StatisticLockedTest,
         'stored_sim_test': StoredSimComponentTest,
         'terrain_features': TerrainTest,
+        'valid_picker_choice': ValidPickerChoiceTest,
+        'valid_purchase_picker_choice': ValidPurchasePickerChoiceTest,
         'walkstyle': WalkstyleTest,
     }
 
