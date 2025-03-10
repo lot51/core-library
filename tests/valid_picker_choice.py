@@ -1,6 +1,6 @@
 from event_testing.results import TestResult
 from event_testing.test_base import BaseTest
-from lot51_hotels import logger
+from lot51_core import logger
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableReference
