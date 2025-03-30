@@ -60,11 +60,13 @@ class FlagStatPickerSuperInteraction(PickerSuperInteraction):
                 picker_row_data = aop.affordance.picker_row_data
                 flag_value = 1 << picker_row_data.tag
                 flag_data = cls.flag_values.get(picker_row_data.tag, None)
-
-                if not flag_data.tests.run_tests(resolver):
+                test_result = flag_data.tests.run_tests(resolver)
+                if not test_result:
+                    tooltip = test_result.tooltip
                     picker_row_data.is_enable = False
                     if flag_data.tooltip is not None:
-                        picker_row_data.row_tooltip = flag_data.tooltip
+                         tooltip = flag_data.tooltip
+                    picker_row_data.row_tooltip = tooltip
 
                 if flag.has(flag_value):
                     if cls._active_icon is not None:

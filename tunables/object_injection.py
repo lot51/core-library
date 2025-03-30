@@ -52,6 +52,14 @@ class BaseTunableObjectInjection(BaseTunableInjection):
                 pack_safe=True,
             )
         ),
+        'preroll_super_affordances': TunableList(
+            description='List of affordances to inject to _preroll_super_affordances',
+            tunable=TunableReference(
+                description='Affordance to inject',
+                manager=services.get_instance_manager(Types.INTERACTION),
+                pack_safe=True,
+            )
+        ),
         'proximity_buffs': TunableList(
             description="Proximity Buffs to inject to the proximity component",
             tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF), pack_safe=True),
@@ -109,7 +117,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         ),
     }
 
-    __slots__ = ('affordances', 'phone_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'object_relationship_component_override', 'tooltip_component_override',)
+    __slots__ = ('affordances', 'phone_affordances', 'preroll_super_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'object_relationship_component_override', 'tooltip_component_override',)
 
     def get_objects_gen(self):
         raise NotImplementedError
@@ -119,6 +127,8 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             add_affordances(obj, self.affordances)
         if len(self.phone_affordances) > 0:
             add_phone_affordances(obj, self.phone_affordances)
+        if len(self.preroll_super_affordances) > 0:
+            add_affordances(obj, self.preroll_super_affordances, key="_preroll_super_affordances")
         if len(self.relation_panel_affordances) > 0:
             add_affordances(obj, self.relation_panel_affordances, key='_relation_panel_affordances')
 

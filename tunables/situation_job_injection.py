@@ -17,8 +17,14 @@ class TunableSituationJobInjection(BaseTunableInjection):
         'additional_location_based_filter_terms': TunableList(
             tunable=TunableLocationBasedFilterTermsSnippet(pack_safe=True)
         ),
+        'additional_commodities': TunableList(
+            tunable=TunableReference(manager=get_instance_manager(Types.STATISTIC), pack_safe=True)
+        ),
         'died_or_left_action_override': OptionalTunable(
             tunable=TunableEnumEntry(JobHolderNoShowAction, default=JobHolderNoShowAction.DO_NOTHING)
+        ),
+        'filter_override': OptionalTunable(
+            tunable=TunableReference(manager=get_instance_manager(Types.SIM_FILTER), pack_safe=True),
         ),
         'no_show_action_override': OptionalTunable(
             tunable=TunableEnumEntry(JobHolderNoShowAction, default=JobHolderNoShowAction.DO_NOTHING)
@@ -36,7 +42,7 @@ class TunableSituationJobInjection(BaseTunableInjection):
         )
     }
 
-    __slots__ = ('situation_jobs', 'additional_location_based_filter_terms', 'died_or_left_action_override', 'no_show_action_override', 'spawn_action_override', 'alternative_spawn_behaviors',)
+    __slots__ = ('situation_jobs', 'additional_location_based_filter_terms', 'additional_commodities', 'died_or_left_action_override', 'filter_override', 'no_show_action_override', 'spawn_action_override', 'alternative_spawn_behaviors',)
 
     def inject(self):
         for job in self.situation_jobs:
@@ -47,8 +53,14 @@ class TunableSituationJobInjection(BaseTunableInjection):
             if self.additional_location_based_filter_terms is not None:
                 inject_list(job, 'location_based_filter_terms', self.additional_location_based_filter_terms)
 
+            if self.additional_commodities is not None:
+                inject_list(job, 'commodities', self.additional_commodities)
+
             if self.died_or_left_action_override is not None:
                 job.died_or_left_action = self.died_or_left_action_override
+
+            if self.filter_override is not None:
+                job.filter = self.filter_override
 
             if self.no_show_action_override is not None:
                 job.no_show_action = self.no_show_action_override
