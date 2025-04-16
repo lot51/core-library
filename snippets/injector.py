@@ -22,7 +22,9 @@ from lot51_core.tunables.club_injection import TunableClubInteractionGroupInject
 from lot51_core.tunables.death_injection import TunableCustomDeath
 from lot51_core.tunables.loot_injection import TunableLootInjection, TunableRandomWeightedLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
-from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags
+from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, \
+    TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags, \
+    TunableObjectInjectionByManyTuningId
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection
 from lot51_core.tunables.preference_item_injection import TunableCharacteristicPreferenceItemInjection
@@ -76,6 +78,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
         "inject_by_object_tuning": TunableList(
             description="Inject to object tuning",
             tunable=TunableObjectInjectionByTuningId.TunableFactory(),
+        ),
+        "inject_by_many_object_tuning": TunableList(
+            description="Inject to many object tuning",
+            tunable=TunableObjectInjectionByManyTuningId.TunableFactory(),
         ),
         "inject_by_object_tags": TunableList(
             description="Inject to object tuning by tags",

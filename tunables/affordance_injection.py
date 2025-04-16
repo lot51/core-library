@@ -14,11 +14,12 @@ from lot51_core.tunables.crafting_interaction_injection import TunableCraftingIn
 from lot51_core.tunables.map_view_picker_injection import TunableMapViewPickerInteractionInjection
 from lot51_core.tunables.purchase_interaction_injection import TunablePurchaseInteractionInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
-from lot51_core.utils.injection import inject_list, merge_list, inject_affordance_filter
-from lot51_core.utils.tunables import clone_factory_with_overrides
+from lot51_core.utils.injection import inject_list, merge_list, inject_affordance_filter, inject_dict, merge_dict
+from lot51_core.utils.tunables import clone_factory_with_overrides, clone_factory_wrapper_with_overrides
 from sims.household_utilities.utility_types import Utilities
 from sims.outfits.outfit_change import TunableOutfitChange, InteractionOnRouteOutfitChange
 from sims.outfits.outfit_generator import TunableOutfitGeneratorSnippet
+from sims.template_affordance_provider.tunable_provided_template_affordance import TunableProvidedTemplateAffordance
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types, get_resource_key
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableTuple, TunableVariant, \
@@ -100,6 +101,9 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
             carry_target_default=ParticipantType.Invalid,
             class_restrictions=('SuperInteraction',)
         ),
+        'provided_template_affordances': OptionalTunable(
+            tunable=TunableProvidedTemplateAffordance()
+        ),
         'static_commodities': OptionalTunable(
             tunable=TunableList(
                 tunable=TunableTuple(
@@ -138,10 +142,10 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
     'allow_from_portrait_override', 'allow_from_sim_inventory_override', 'allow_from_world_override', 'basic_content',
     'basic_extras', 'basic_liabilities', 'cheat_override', 'category_override', 'debug_override', 'display_name_overrides',
     'display_name_wrappers', 'false_advertisements', 'inject_to_purchase_interaction', 'inject_to_crafting_interaction',
-    'inject_to_map_view_picker_interaction',
-    'interaction_category_tags', 'modify_tests', 'modify_autonomous_tests', 'modify_global_tests', 'outfit_change',
-    'outfit_change_on_exit', 'provided_affordances', 'pie_menu_priority', 'static_commodities',
-    'super_affordance_compatibility', 'super_affordance_klobberers', 'tests', 'utility_info',)
+    'inject_to_map_view_picker_interaction', 'interaction_category_tags', 'modify_tests', 'modify_autonomous_tests',
+    'modify_global_tests', 'outfit_change', 'outfit_change_on_exit', 'provided_affordances', 'provided_template_affordances',
+    'pie_menu_priority', 'static_commodities', 'super_affordance_compatibility', 'super_affordance_klobberers',
+    'tests', 'utility_info',)
 
     def get_affordances_gen(self):
         raise NotImplementedError
@@ -249,6 +253,13 @@ class BaseTunableAffordanceInjection(BaseTunableInjection):
 
             if self.provided_affordances is not None and len(self.provided_affordances):
                 inject_list(affordance, 'provided_affordances', self.provided_affordances, safe=True)
+
+            if self.provided_template_affordances is not None:
+                if affordance.provided_template_affordances is None:
+                    affordance.provided_template_affordances = merge_dict(self.provided_template_affordances)
+                else:
+                    merged_template_affordances = merge_list(affordance.provided_template_affordances.template_affordances, self.provided_template_affordances.template_affordances)
+                    affordance.provided_template_affordances = merge_dict(affordance.provided_template_affordances, template_affordances=merged_template_affordances)
 
             if self.super_affordance_compatibility is not None:
                 inject_affordance_filter(

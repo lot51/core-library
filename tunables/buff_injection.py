@@ -7,7 +7,8 @@ from interactions.utils.tunable_provided_affordances import TunableProvidedAffor
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.tunables.test_injection import TestInjectionVariant
 from lot51_core.utils.injection import inject_mapping_lists, inject_list, merge_list, inject_dict, get_tuned_value
-from lot51_core.utils.tunables import create_factory_wrapper
+from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides
+from sims.template_affordance_provider.tunable_provided_template_affordance import TunableProvidedTemplateAffordance
 from sims4.resources import Types
 from sims4.tuning.tunable import TunableReference, TunableList, TunableMapping, TunableSet, OptionalTunable, Tunable
 from sims4.collections import make_immutable_slots_class
@@ -36,6 +37,9 @@ class TunableBuffInjection(BaseTunableInjection):
             key_type=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True),
             value_type=TunableSet(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True))
         ),
+        'provided_template_affordances': OptionalTunable(
+            tunable=TunableProvidedTemplateAffordance()
+        ),
         'refresh_lock': OptionalTunable(
             description="If True, all portals on the lot will refresh their locks when this buff is added or removed from a sim. Note: This is not a tunable and will not appear in the buff tdesc.",
             tunable=Tunable(tunable_type=bool, default=True),
@@ -44,7 +48,7 @@ class TunableBuffInjection(BaseTunableInjection):
         'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False})
     }
 
-    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'modify_add_test_set', 'provided_mixers', 'super_affordances', 'target_super_affordances', 'refresh_lock',)
+    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'modify_add_test_set', 'provided_mixers', 'provided_template_affordances', 'super_affordances', 'target_super_affordances', 'refresh_lock',)
 
     _create_interaction_items = make_immutable_slots_class({'interaction_items', 'scored_commodity', 'weight'})
 
@@ -75,6 +79,14 @@ class TunableBuffInjection(BaseTunableInjection):
 
             if self.modify_add_test_set is not None:
                 self.modify_add_test_set.inject(buff_type, '_add_test_set')
+
+            if self.provided_template_affordances is not None:
+                if buff_type.provided_template_affordances is None:
+                    buff_type.provided_template_affordances = clone_factory_wrapper_with_overrides(self.provided_template_affordances)
+                else:
+                    merged_template_affordances = merge_list(buff_type.provided_template_affordances.template_affordances, self.provided_template_affordances.template_affordances)
+                    buff_type.provided_template_affordances = clone_factory_wrapper_with_overrides(buff_type.provided_template_affordances, template_affordances=merged_template_affordances)
+
 
             if self.target_super_affordances is not None:
                 inject_list(buff_type, 'target_super_affordances', self.target_super_affordances)

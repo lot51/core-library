@@ -1,4 +1,5 @@
 import os
+import re
 
 
 def get_mod_root(file, depth=2):
@@ -35,9 +36,9 @@ def get_game_dir():
     :return: str
     """
     root = get_mod_root(__file__, depth=3)
-    search = os.path.join('The Sims 4', 'Mods')
     attempt = 0
-    while not root.endswith(search) and attempt < 10:
+
+    while not re.search('(?:The|De|Die|Los|Les) Sims 4/Mods$', root) and attempt < 10:
         attempt += 1
         root = os.path.dirname(root)
     return os.path.dirname(root)

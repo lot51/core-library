@@ -17,7 +17,6 @@ from objects.components.state import StateTrigger, TunableStateValueReference, S
     TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent
 from objects.components.tooltip_component import TooltipComponent
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT, RoutingComponent
-from routing.object_routing.object_routing_behavior import ObjectRoutingBehavior
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
 from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, TunableSimMinute, TunableEnumSet
 from sims4.resources import Types, get_resource_key
@@ -233,11 +232,11 @@ class BaseTunableObjectInjection(BaseTunableInjection):
 
     def _inject_name_component(self, obj):
         if self.name_component_override is not None:
-            inject_dict(obj, '_components', name_component=self.name_component_override)
+            inject_dict(obj, '_components', name=self.name_component_override)
 
     def _inject_object_relationship_component_override(self, obj):
         if self.object_relationship_component_override is not None:
-            inject_dict(obj, '_components', object_relationship_component=self.object_relationship_component_override)
+            inject_dict(obj, '_components', object_relationships=self.object_relationship_component_override)
 
     def _inject(self, obj):
         self._add_affordances(obj)
@@ -266,14 +265,16 @@ class TunableObjectInjectionByTuningId(BaseTunableObjectInjection):
             description='Object tuning to query',
             tunable_type=int,
             default=0
-        )
+        ),
     }
 
     __slots__ = ('query',)
 
     def get_objects_gen(self):
         if self.query is not None:
-            yield services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(self.query, Types.OBJECT))
+            tuning = services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(self.query, Types.OBJECT))
+            if tuning is not None:
+                yield tuning
 
 
 class TunableObjectInjectionByTags(BaseTunableObjectInjection):
@@ -312,8 +313,9 @@ class TunableObjectInjectionByManyTuningId(BaseTunableObjectInjection):
     __slots__ = ('query',)
 
     def get_objects_gen(self):
+        manager = services.get_instance_manager(Types.OBJECT)
         for tuning_id in self.query:
-            tuning = services.get_instance_manager(Types.OBJECT).types.get(get_resource_key(tuning_id, Types.OBJECT))
+            tuning = manager.types.get(get_resource_key(tuning_id, Types.OBJECT))
             if tuning is not None:
                 yield tuning
 
