@@ -38,7 +38,7 @@ def get_game_dir():
     root = get_mod_root(__file__, depth=3)
     attempt = 0
 
-    while not re.search('(?:The|De|Die|Los|Les) Sims 4/Mods$', root) and attempt < 10:
+    while not re.search('(?:The|De|Die|Los|Les) Sims 4[/|\\\]Mods$', root) and attempt < 10:
         attempt += 1
         root = os.path.dirname(root)
     return os.path.dirname(root)
