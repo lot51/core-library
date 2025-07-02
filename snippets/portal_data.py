@@ -17,7 +17,7 @@ from routing.portals.portal_data_variable_jump import _PortalTypeDataVariableJum
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import TunableVariant, HasTunableReference
+from sims4.tuning.tunable import TunableVariant
 
 
 class PortalTraversalTypeVariant(TunableVariant):
@@ -42,7 +42,7 @@ class PortalTraversalTypeVariant(TunableVariant):
         )
 
 
-class AdvancedPortalData(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
+class AdvancedPortalData(metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
     """
     Refer to simulation/portals/portal_data.py for original class
     """

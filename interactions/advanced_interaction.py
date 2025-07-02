@@ -1,9 +1,10 @@
-from interactions import ParticipantTypeSingleSim
+from interactions import ParticipantTypeSingleSim, ParticipantType
 from interactions.base.basic import TunableBasicContentSet
 from interactions.base.super_interaction import SuperInteraction
 from interactions.constraint_variants import TunableConstraintVariant
 from lot51_core.interactions.door_constraint import TunableDoorConstraint
-from sims4.tuning.tunable import TunableList, TunableTuple, TunableEnumEntry
+from lot51_core.interactions.elements.xevt_callback import CallbackXevtElement
+from sims4.tuning.tunable import TunableList, TunableTuple, TunableEnumEntry, Tunable
 
 
 class AdvancedSuperInteraction(SuperInteraction):
@@ -24,6 +25,7 @@ class AdvancedSuperInteraction(SuperInteraction):
                 )
             )
         ),
+        '_xevt_callback_id': Tunable(tunable_type=int, default=100),
         'basic_content': TunableBasicContentSet(
             description='The main animation and periodic stat changes for the interaction. (Same as SuperInteract but uses one_shot as the default instead)',
             one_shot=True,
@@ -31,3 +33,18 @@ class AdvancedSuperInteraction(SuperInteraction):
             default='one_shot',
         ),
     }
+
+    def __init__(self, *args, xevt_callback=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._xevt_callback = xevt_callback
+
+    def build_basic_elements(self, **kwargs):
+        sequence = super().build_basic_elements(**kwargs)
+        if self._xevt_callback is None:
+            return sequence
+
+        def handle_callback():
+            self._xevt_callback(self)
+
+        change_element = CallbackXevtElement(self, sequence, self._xevt_callback_id, callback=handle_callback)
+        return change_element

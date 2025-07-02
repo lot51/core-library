@@ -22,13 +22,13 @@ class ServiceManager:
             return
         self._started = val
 
-    def register_service(self, factory, init_critical=False):
+    def register_service(self, factory, init_critical=False, early_load=False):
         try:
             service = factory()
             if init_critical:
-                self._init_critical_services[factory] = service
+                self._init_critical_services[factory] = (service, early_load,)
             else:
-                self._services[factory] = service
+                self._services[factory] = (service, early_load,)
             return service
         except:
             logger.exception("[ServiceManager] failed registering service: {}".format(factory))
@@ -41,9 +41,9 @@ class ServiceManager:
 
     def get_service(self, factory: Service):
         if factory in self._services:
-            return self._services[factory]
+            return self._services[factory][0]
         if factory in self._init_critical_services:
-            return self._init_critical_services[factory]
+            return self._init_critical_services[factory][0]
 
 
 service_manager = ServiceManager()
@@ -52,15 +52,24 @@ service_manager = ServiceManager()
 @inject_to(GameServiceManager, 'start_services')
 def _start_game_services(original, self, *args, **kwargs):
     try:
-        for key, service in service_manager.get_critical_services_gen():
+        for key, service_tuple in service_manager.get_critical_services_gen():
             try:
-                self.register_service(service, is_init_critical=True)
+                service, early_load = service_tuple
+                if early_load:
+                    self.services.insert(0, service)
+                    self._init_critical_services.insert(0, service)
+                else:
+                    self.register_service(service, is_init_critical=True)
             except:
                 logger.exception("[_start_game_services] failed registering critical service: {}".format(key))
 
-        for key, service in service_manager.get_services_gen():
+        for key, service_tuple in service_manager.get_services_gen():
             try:
-                self.register_service(service, is_init_critical=False)
+                service, early_load = service_tuple
+                if early_load:
+                    self.services.insert(0, service)
+                else:
+                    self.register_service(service, is_init_critical=False)
             except:
                 logger.exception("[_start_game_services] failed registering service: {}".format(key))
 

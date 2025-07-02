@@ -28,7 +28,7 @@ from sims4.localization import TunableLocalizedStringFactory, _create_localized_
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
 from sims4.tuning.tunable import HasTunableSingletonFactory, AutoFactoryInit, TunableVariant, TunableList, \
-    TunableReference, Tunable, OptionalTunable, TunableSimMinute, HasTunableReference, TunableEnumEntry
+    TunableReference, Tunable, OptionalTunable, TunableSimMinute, TunableEnumEntry
 from tunable_multiplier import TunableMultiplier
 from ui.ui_dialog_notification import UiDialogNotification
 from ui.ui_dialog_picker import PurchasePickerRow, UiPurchasePicker
@@ -139,7 +139,7 @@ class TunableStockManagement(HasTunableSingletonFactory, AutoFactoryInit):
     }
 
 
-class PurchasePickerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class PurchasePickerSnippet(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
 
     INSTANCE_TUNABLES = {
         'owner_participant': TunableEnumEntry(

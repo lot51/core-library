@@ -3,10 +3,10 @@ import services
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableReference, TunableReference, TunableList
+from sims4.tuning.tunable import TunableReference, TunableList
 
 
-class PurchasePickerModifier(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class PurchasePickerModifier(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     INSTANCE_TUNABLES = {
         'purchase_picker': TunableReference(
             description="The PurchasePickerSnippet to modify.",

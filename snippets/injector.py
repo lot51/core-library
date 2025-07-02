@@ -48,7 +48,7 @@ from services import get_instance_manager
 from sims4.common import Pack
 from sims4.localization import LocalizationHelperTuning
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import HasTunableReference, TunableList, Tunable, TunableEnumSet
+from sims4.tuning.tunable import TunableList, Tunable, TunableEnumSet
 from sims4.resources import Types
 from ui.ui_dialog_notification import UiDialogNotification
 
@@ -57,7 +57,7 @@ with sims4.reload.protected(globals()):
     SHOWN_VERSION_NOTIFICATION = False
 
 
-class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     VERSION_DIALOG = UiDialogNotification.TunableFactory()
     INVALID_SNIPPETS = set()
 
@@ -87,10 +87,10 @@ class TuningInjector(HasTunableReference, metaclass=HashedTunedInstanceMetaclass
             description="Inject to object tuning by tags",
             tunable=TunableObjectInjectionByTags.TunableFactory(),
         ),
-        "inject_by_object_source": TunableList(
-            description="Inject to objects on zone load",
-            tunable=TunableObjectInjectionByObjectSource.TunableFactory(),
-        ),
+        # "inject_by_object_source": TunableList(
+        #     description="Inject to objects on zone load",
+        #     tunable=TunableObjectInjectionByObjectSource.TunableFactory(),
+        # ),
         "inject_to_affordances": TunableList(
             description="Inject to affordances",
             tunable=TunableAffordanceInjectionByAffordances.TunableFactory()

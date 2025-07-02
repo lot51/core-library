@@ -3,7 +3,7 @@ import services
 from distributor.system import Distributor
 from lot51_core.lib.game_version import is_game_version
 from plex.plex_enums import PlexBuildingType, INVALID_PLEX_ID
-from protocolbuffers import InteractionOps_pb2, Consts_pb2
+from protocolbuffers import InteractionOps_pb2, Consts_pb2, Business_pb2
 from protocolbuffers.FileSerialization_pb2 import HouseholdAccountPair
 from sims4.geometry import Polygon
 from sims4.resources import Types
@@ -175,20 +175,22 @@ def clear_zone_owner(zone_id, sim_info=None, sell_business=True, include_lot_val
     if not business_manager or business_manager.clear_lot_ownership_on_sell:
         zone_manager.clear_lot_ownership(zone_id)
     if business_manager and business_manager.disown_household_objects_on_sell:
-        zone_manager.get(zone_id).disown_household_objects()
+        zone = zone_manager.get(zone_id)
+        if zone is not None:
+            zone.disown_household_objects()
 
     if success_callback is not None:
         success_callback()
 
-    if zone_id == current_zone_id:
-        build_buy.set_venue_owner_id(zone_id, 0)
-        # Reload zone
-        travel_sim_to_zone(sim_info.sim_id, zone_id)
-    elif business_manager is not None:
-        # Forces player to world map if selling active zone
-        msg = InteractionOps_pb2.SellRetailLot()
-        msg.retail_zone_id = zone_id
-        Distributor.instance().add_event(Consts_pb2.MSG_SELL_RETAIL_LOT, msg)
+    build_buy.set_venue_owner_id(zone_id, 0)
+    # Reload zone
+    travel_sim_to_zone(sim_info.sim_id, current_zone_id)
+    # elif business_manager is not None:
+    #     # Forces player to world map if selling active zone
+    #     msg = InteractionOps_pb2.SellRetailLot()
+    #     msg.retail_zone_id = zone_id
+    #     Distributor.instance().add_event(Consts_pb2.MSG_SELL_RETAIL_LOT, msg)
+
     return True
 
 
@@ -242,8 +244,11 @@ def set_zone_owner(zone_id, sim_info, force_ownership=False, set_residential_own
 
             # Create business and set as owner if business type provided
             if business_type is not None:
+                business_data = Business_pb2.SetBusinessData()
+                business_data.sim_id = sim_info.id
+
                 business_service = services.business_service()
-                business_service.make_owner(sim_info.household_id, business_type, zone_id)
+                business_service.make_owner(sim_info.household_id, business_type, zone_id, business_data=business_data)
 
             if set_residential_ownership:
                 # If there are any travel groups on the lot that are not StayOverTravelGroup

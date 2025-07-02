@@ -7,7 +7,7 @@ from lot51_core.tunables.coordinates import TunableCoordinates
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
 from sims4.tuning.tunable import TunableList, HasTunableSingletonFactory, AutoFactoryInit, TunableReference, \
-    OptionalTunable, TunableVariant, TunableEnumEntry, HasTunableReference
+    OptionalTunable, TunableVariant, TunableEnumEntry
 
 
 class SituationAction(HasTunableSingletonFactory, AutoFactoryInit):
@@ -116,7 +116,7 @@ class SituationActionVariant(TunableVariant):
             )
 
 
-class SituationSpawnActionsSnippet(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class SituationSpawnActionsSnippet(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     _snippet_instances = set()
 
     INSTANCE_TUNABLES = {

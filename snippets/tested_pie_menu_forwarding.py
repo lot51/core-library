@@ -6,10 +6,10 @@ from lot51_core.utils.injection import inject_to
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple, HasTunableReference, OptionalTunable
+from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple, OptionalTunable
 
 
-class TestedPieMenuForwarding(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
+class TestedPieMenuForwarding(metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
     INSTANCE_TUNABLES = {
         'forward_data': TunableList(
             tunable=TunableTuple(

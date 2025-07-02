@@ -9,11 +9,11 @@ from sims4.common import Pack, are_packs_available
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import Tunable, TunableMapping, OptionalTunable, HasTunableReference, TunableTuple, TunableEnumSet
+from sims4.tuning.tunable import Tunable, TunableMapping, OptionalTunable, TunableTuple, TunableEnumSet
 from ui.ui_dialog import CommandArgType
 
 
-class ModManifest(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class ModManifest(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     did_notify = False
 
     INSTANCE_TUNABLES = {

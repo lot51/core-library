@@ -59,6 +59,7 @@ class TunableSituationInjection(BaseTunableInjection):
                 )
             )
         ),
+        'compatible_venues': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.VENUE), pack_safe=True)),
         'disallows_curfew_violation': OptionalTunable(
             tunable=Tunable(tunable_type=bool, default=False)
         ),
@@ -76,10 +77,13 @@ class TunableSituationInjection(BaseTunableInjection):
         ),
     }
 
-    __slots__ = ('situations', 'additional_activity_goals', 'additional_activity_selection', 'disallows_curfew_violation', 'duration', 'duration_randomizer', 'situation_display_type_override', 'tags',)
+    __slots__ = ('situations', 'additional_activity_goals', 'additional_activity_selection', 'compatible_venues', 'disallows_curfew_violation', 'duration', 'duration_randomizer', 'situation_display_type_override', 'tags',)
 
     def inject(self):
         for situation_type in self.situations:
+            if self.compatible_venues is not None:
+                inject_list(situation_type, 'compatible_venues', new_items=self.compatible_venues)
+
             if self.disallows_curfew_violation is not None:
                 situation_type.disallows_curfew_violation = self.disallows_curfew_violation
 

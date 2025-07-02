@@ -33,7 +33,7 @@ def _business_tracker_make_owner(original, self, owner_household_id, business_zo
 
     if custom_business_manager_factory is not None:
         logger.info("Using custom business type {} for Household ID: {}, Zone ID: {}".format(self.business_type, owner_household_id, business_zone_id))
-        business_manager = custom_business_manager_factory()
+        business_manager = custom_business_manager_factory(**kwargs)
         self._business_managers[business_zone_id] = business_manager
         business_manager.set_owner_household_id(owner_household_id)
         business_manager.set_zone_id(business_zone_id)

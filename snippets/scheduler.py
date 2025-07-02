@@ -11,10 +11,10 @@ from lot51_core.utils.math import chance_succeeded
 from sims.sim_info import SimInfo
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import Tunable, TunableList, TunableTuple, OptionalTunable, HasTunableReference, TunableReference
+from sims4.tuning.tunable import Tunable, TunableList, TunableTuple, OptionalTunable, TunableReference
 
 
-class TunableSchedulerSnippet(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class TunableSchedulerSnippet(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
     _snippet_instances = set()
 
     INSTANCE_TUNABLES = {

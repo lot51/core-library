@@ -3,6 +3,7 @@ import sims4.random
 from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
@@ -14,7 +15,8 @@ from objects.components.locking_components import ObjectLockingComponent
 from objects.components.name_component import NameComponent
 from objects.components.object_relationship_component import ObjectRelationshipComponent
 from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, \
-    TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent
+    TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent, \
+    TunableClientStateTestedOverrides
 from objects.components.tooltip_component import TooltipComponent
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT, RoutingComponent
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
@@ -64,9 +66,75 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF), pack_safe=True),
         ),
         'state_triggers': TunableList(StateTrigger.TunableFactory()),
-        'states': TunableList(tunable=TunableTuple(default_value=TunableVariant(reference=TunableStateValueReference(pack_safe=True), random=TunableList(tunable=TunableTuple(state=TunableStateValueReference(pack_safe=True), weight=Tunable(tunable_type=float, default=1.0))), default='reference'), client_states=TunableMapping(key_type=TunableStateValueReference(description='\n                            A state value\n                            ', pack_safe=True), value_type=StateChangeOperation.TunableFactory()), reset_to_default=Tunable(tunable_type=bool, default=False), reset_on_load_if_time_passes=Tunable(tunable_type=bool, default=False), tested_states_on_add=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_post_load=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_location_changed=OptionalTunable(tunable=TestedStateValueReference.TunableFactory()), tested_states_on_reset=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})), tested_states_on_save=OptionalTunable(tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})))),
-        'timed_state_triggers': OptionalTunable(tunable=TunableMapping(key_type=TunableStateValueReference(pack_safe=True), value_type=TunableTuple(trigger_on_load=Tunable(tunable_type=bool, default=False), ops=TunableList(tunable=TunableTuple(trigger_time=TunableSimMinute(default=10, minimum=0), trigger_time_random_offset=TunableSimMinute(default=0, minimum=0), states_to_trigger=TunableList(tunable=TunableStateValueReference(pack_safe=True)),random_states_to_trigger=TunableList(    tunable=TunableTuple(weight=Tunable(tunable_type=int, default=1),                         tests=TunableTestSet(),                         state_value=TunableStateValueReference())),loot_list=TunableList(    tunable=TunableReference(        manager=services.get_instance_manager(Types.ACTION),        class_restrictions=('LootActions',), pack_safe=True)),trigger_tests=TunableTuple(tests=TunableTestSet(), reschedule_on_failure=Tunable(tunable_type=bool, default=False))))))),
-        'idle_animation_map': OptionalTunable(tunable=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=TunableReference(manager=services.get_instance_manager(Types.ANIMATION), class_restrictions='ObjectAnimationElement'))),
+        'states': TunableList(description='\n                Supported states for this object\n                ',
+              tunable=TunableTuple(description='\n                    A supported state for this object\n                    ',
+              default_value=TunableVariant(description='\n                        The default value for the state.\n                        ',
+              reference=TunableStateValueReference(pack_safe=True),
+              random=TunableList(description='\n                            A weighted list of object states to randomly choose\n                            between as the default for this state.\n                            ',
+              tunable=TunableTuple(state=TunableStateValueReference(pack_safe=True),
+              weight=Tunable(tunable_type=float,
+              default=1.0))),
+              default='reference'),
+              client_states=TunableMapping(description='\n                        A list of client states. Although ObjectStateValues\n                        have their own State Change Operations (Audio effect\n                        state, Broadcaster, etc), those operations will be\n                        overriden by operations specified here.\n                        ',
+              key_type=TunableStateValueReference(description='\n                            A state value\n                            ',
+              pack_safe=True),
+              value_type=(StateChangeOperation.TunableFactory())),
+              client_states_overrides=TunableMapping(description='\n                        A list of slot-based overrides for client states. \n                        ',
+              key_type=TunableStateValueReference(description='\n                            A state value\n                            ',
+              pack_safe=True),
+              value_type=TunableList(description='\n                            A list of possible override conditions for this state.\n                            ',
+              tunable=(TunableClientStateTestedOverrides.TunableFactory()))),
+              reset_to_default=Tunable(description='\n                        If checked, when the object is reset, the state will be\n                        reset to the default value. Otherwise, it will keep the\n                        current value. This can be overridden by states tuned\n                        in tested_states_on_reset.\n                        ',
+              tunable_type=bool,
+              default=False),
+              reset_on_load_if_time_passes=Tunable(description='\n                        If checked then the object is saved with the default\n                        state rather than the current state.  If we want it\n                        to return to this state we need an interaction that\n                        is saved to put it back into it.\n                        ',
+              tunable_type=bool,
+              default=False),
+              tested_states_on_add=OptionalTunable(description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the Tree Rabbit Hale needs to \n                        default to the open state when it's on the Slyvan Glade\n                        venue.\n                        This runs when the object is added to the world.\n                        ",
+              tunable=(TestedStateValueReference.TunableFactory())),
+              tested_states_post_load=OptionalTunable(description='\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.\n                        This will run after the zone is fully loaded. \n                        This test is mostly used for conditionally applying\n                        a state after loading in, or when taking the object\n                        out of inventory. (The object has to be previously existing,\n                        it will not work for newly created objects.)\n                        For example, the previously active gnomes in our HH inventory \n                        needs to be reset to the inactive state if we place \n                        them after Harvest Fest ends.\n                        ',
+              tunable=(TestedStateValueReference.TunableFactory())),
+              tested_states_on_location_changed=OptionalTunable(description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the boat needs to be set to it's\n                        on water state if it is placed on water.\n                        This runs when the location of the object changes as\n                        long as the object isn't currently routing.\n                        ",
+              tunable=(TestedStateValueReference.TunableFactory())),
+              tested_states_on_reset=OptionalTunable(description='\n                        This is a set of override states for reset_to_default,\n                        run when the owner is reset.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken parented to the coop\n                        is moved in B/B, it should be reset to an InCoop state.\n                        ',
+              tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})),
+              tested_states_on_save=OptionalTunable(description='\n                        This is a set of override states for \n                        reset_on_load_if_time_passes, run when the owner is \n                        saved.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, behavior falls back to the condition\n                        in reset_on_load_if_time_passes.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken is in the coop on\n                        save, it should be reset to an InCoop state.\n                        ',
+              tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})))
+        ),
+        'timed_state_triggers': OptionalTunable(description='\n                If enabled, when states in this key mapping get triggered, it\n                will trigger states changes at each of the tuned intervals.\n                ',
+              tunable=TunableMapping(description='\n                    Map of state when the timed state triggers will be active\n                    and the states to trigger, specific trigger times, and\n                    the options of whether to trigger on load.\n                    ',
+              key_type=TunableStateValueReference(pack_safe=True),
+              value_type=TunableTuple(trigger_on_load=Tunable(description='\n                            If set to True, when the state in the key mapping\n                            is set on an object on load the changes are triggered.\n                            ',
+              tunable_type=bool,
+              default=False),
+              ops=TunableList(description='\n                            List of multiple states and times when they can be \n                            triggered.\n                            ',
+              tunable=TunableTuple(description='\n                                Pair of trigger time and states to trigger when \n                                the time has passed.\n                                ',
+              trigger_time=TunableSimMinute(description='\n                                    How many sim minutes past entering the trigger state that this trigger will be\n                                    enabled.  Each entry must occur at a later time than the previous, including the \n                                    maximum potential of the random offset time. \n                                    Ex: Entry 1 has a trigger time of 10 and a random offset of 5.  Entry 2 must have a\n                                    trigger time of at least 16.\n                                    ',
+              default=10,
+              minimum=0),
+              trigger_time_random_offset=TunableSimMinute(description='\n                                    A random time offset to be applied to the trigger time.\n                                    Ex: Trigger Time is 5 and the random offset is 3, the trigger would occur in 5-8 sim minutes.\n                                    ',
+              default=0,
+              minimum=0),
+              states_to_trigger=TunableList(description='\n                                    List of states to trigger.\n                                    ',
+              tunable=TunableStateValueReference(pack_safe=True)),
+              random_states_to_trigger=TunableList(description='\n                                    List of randomly weighted states to trigger.  Only one will be selected and entries\n                                    that fail their tests will not be eligible for selection.\n                                    ',
+              tunable=TunableTuple(weight=Tunable(tunable_type=int,
+              default=1),
+              tests=(TunableTestSet()),
+              state_value=(TunableStateValueReference()))),
+              loot_list=TunableList(description='\n                                    A list of loot operations to apply when a state change is triggered.\n                                    Note:   Loot will only be applied IF\n                                            there are any tuned states_to_trigger OR \n                                            at least one entry in random_states_to_trigger passes its tests\n                                    ',
+              tunable=TunableReference(manager=(services.get_instance_manager(sims4.resources.Types.ACTION)),
+              class_restrictions=('LootActions', ),
+              pack_safe=True)),
+              trigger_tests=TunableTuple(description='\n                                    After this trigger is activated, these tests will run before any loot or state transitions\n                                    are processed.  Failing these tests will either skip to the next tuned trigger or cause\n                                    the current trigger to be rescheduled if tuned to do so.\n                                    ',
+              tests=(TunableTestSet()),
+              reschedule_on_failure=Tunable(description='\n                                        If tuned to true, this trigger will reschedule on test failure instead of skipping\n                                        to the next trigger.\n                                        ',
+              tunable_type=bool,
+              default=False))))))
+        ),
+        'idle_animation_map': OptionalTunable(
+            tunable=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=TunableReference(manager=services.get_instance_manager(Types.ANIMATION), class_restrictions='ObjectAnimationElement'))
+        ),
         'carryable_component': OptionalTunable(
             tunable=TunableTuple(
                 provided_affordances=TunableProvidedAffordances(class_restrictions=('SuperInteraction',), locked_args={'allow_self': False, 'target': ParticipantType.Object, 'carry_target': ParticipantType.CarriedObject})

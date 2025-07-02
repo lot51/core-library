@@ -2,7 +2,7 @@ import services
 import enum
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import TunableTuple, TunableList, TunableReference, TunableSimMinute, TunableInterval, TunableEnumEntry, HasTunableReference, Tunable
+from sims4.tuning.tunable import TunableTuple, TunableList, TunableReference, TunableSimMinute, TunableInterval, TunableEnumEntry, Tunable
 
 
 class LockCompatibilityType(enum.Int):
@@ -11,7 +11,7 @@ class LockCompatibilityType(enum.Int):
     USER_DIRECTED_ONLY = 2
 
 
-class AffordanceLockOutSnippet(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
+class AffordanceLockOutSnippet(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
 
     INSTANCE_TUNABLES = {
         "version": Tunable(tunable_type=str, allow_empty=True, default='1', description="The schema version of AffordanceLockOutSnippet"),

@@ -7,7 +7,7 @@ from lot51_core.utils.injection import inject_to
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
-from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple, TunableEnumEntry, HasTunableReference
+from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple, TunableEnumEntry
 
 
 class PieMenuCategoryCompatibility(enum.Int):
@@ -16,7 +16,7 @@ class PieMenuCategoryCompatibility(enum.Int):
     FORWARDED_ONLY = 2
 
 
-class TestedPieMenuCategories(HasTunableReference, metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
+class TestedPieMenuCategories(metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
     INSTANCE_TUNABLES = {
         'categories': TunableList(
             tunable=TunableTuple(
