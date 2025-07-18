@@ -94,7 +94,8 @@ def get_neighborhood_data_from_zone_data(zone_data):
 
 def get_neighborhood_data_from_zone_id(zone_id):
     zone_data = get_zone_data(zone_id)
-    return services.get_persistence_service().get_neighborhood_proto_buff(zone_data.neighborhood_id)
+    if zone_data is not None:
+        return get_neighborhood_data_from_zone_data(zone_data)
 
 
 def add_zone_modifier(zone_modifier, zone_id=None, apply_immediately=True):

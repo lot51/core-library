@@ -1,3 +1,5 @@
+import io
+
 import lot51_core
 import pickle
 import weakref
@@ -18,11 +20,12 @@ with sims4.reload.protected(globals()):
 
 class SaveBasedConfig:
 
-    def __init__(self, config_name, logger, default_data: dict = None):
+    def __init__(self, config_name, logger, default_data: dict = None, unpickler=None):
         self._config = dict()
         self._config_name = config_name
         self._default_data = dict(default_data if default_data is not None else {})
         self._config_load_callbacks = CallableList()
+        self._unpickler = unpickler
         self.logger = logger
         instanced_configs.add(self)
 
@@ -97,7 +100,11 @@ class SaveBasedConfig:
         serialized = bytes(household.description, encoding='latin1')
         # self.logger.debug("loaded save based config data: {}".format(serialized))
         try:
-            return pickle.loads(serialized)
+            if self._unpickler:
+                with io.BytesIO(serialized) as f:
+                    return self._unpickler(f).load()
+            else:
+                return pickle.loads(serialized)
         except EOFError:
             return None
 
