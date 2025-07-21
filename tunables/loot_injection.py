@@ -10,6 +10,14 @@ from sims4.tuning.tunable import TunableReference, TunableList, TunableTuple
 from tunable_multiplier import TunableMultiplier
 
 
+# 1.116 Backwards compatibility
+try:
+    from luck.luck_option import TunableLuckOptionData
+except:
+    class TunableLuckOptionData(TunableTuple):
+        pass
+
+
 class TunableLootInjection(BaseTunableInjection):
     FACTORY_TUNABLES = {
         'loot': TunableReference(manager=services.get_instance_manager(Types.ACTION)),
@@ -37,6 +45,7 @@ class TunableRandomWeightedLootInjection(BaseTunableInjection):
             tunable=TunableTuple(
                 action=LotFiftyOneCoreLootActionVariant(do_nothing=DoNothingLootOp.TunableFactory()),
                 weight=TunableMultiplier.TunableFactory(),
+                luck_option_config=TunableLuckOptionData(),
             )
         )
     }

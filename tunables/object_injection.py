@@ -3,7 +3,6 @@ import sims4.random
 from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
-from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
@@ -15,15 +14,23 @@ from objects.components.locking_components import ObjectLockingComponent
 from objects.components.name_component import NameComponent
 from objects.components.object_relationship_component import ObjectRelationshipComponent
 from objects.components.state import StateTrigger, TunableStateValueReference, StateChangeOperation, \
-    TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent, \
-    TunableClientStateTestedOverrides
+    TestedStateValueReference, ObjectStateMetaclass, StateComponent, TunableStateComponent
 from objects.components.tooltip_component import TooltipComponent
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT, RoutingComponent
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
-from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, OptionalTunable, TunableSimMinute, TunableEnumSet
+from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, \
+    OptionalTunable, TunableSimMinute, TunableEnumSet, HasTunableSingletonFactory, AutoFactoryInit
 from sims4.resources import Types, get_resource_key
 from singletons import UNSET
 from tag import Tag
+
+
+# 1.116 Backwards Compatibility
+try:
+    from objects.components.state import TunableClientStateTestedOverrides
+except:
+    class TunableClientStateTestedOverrides(HasTunableSingletonFactory, AutoFactoryInit):
+        pass
 
 
 class BaseTunableObjectInjection(BaseTunableInjection):

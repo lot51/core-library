@@ -23,3 +23,8 @@ class LotFiftyOneTunableModifiers(HasTunableSingletonFactory, AutoFactoryInit):
             if potential_modifier.tests.run_tests(resolver):
                 rate += potential_modifier.modifier
         return rate
+
+    def get_bounds(self):
+        min_score = sum(m.modifier for m in self.modifiers if m.modifier < 0)
+        max_score = sum(m.modifier for m in self.modifiers if m.modifier > 0)
+        return min_score, max_score
