@@ -35,14 +35,14 @@ class EventService(EventEmitter):
         super().__init__()
         self.logger = logger
 
-    def handler(self, event_name: str):
+    def handler(self, event_name: str, weight=1):
         def wrapper(func):
-            self.add_listener(event_name, func)
+            self.add_listener(event_name, func, weight=weight)
             return func
         return wrapper
 
     def process_event(self, event_name: str, *args, **kwargs):
-        for (listener_name, callback) in self._listeners:
+        for (listener_name, callback, weight) in self.get_ordered_listeners():
             if listener_name != event_name:
                 continue
             try:
@@ -54,14 +54,14 @@ class EventService(EventEmitter):
 event_service = EventService()
 
 
-def event_handler(event_name: str):
+def event_handler(event_name: str, weight=1):
     def wrapper(func):
-        event_service.add_listener(event_name, func)
+        event_service.add_listener(event_name, func, weight=weight)
         return func
     return wrapper
 
 
 @sims4.commands.Command('lot51_lib.list_event_listeners', command_type=sims4.commands.CommandType.Live)
 def list_event_listeners(_connection=None):
-    for (listener_name, callback) in event_service._listeners:
-        lot51_core_logger.info("listener: {} {}".format(listener_name, callback))
+    for (listener_name, callback, weight) in event_service.get_ordered_listeners():
+        lot51_core_logger.info("listener: {} {} {}".format(listener_name, callback, weight,))

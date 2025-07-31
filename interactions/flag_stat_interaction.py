@@ -30,14 +30,16 @@ class FlagStatPickerSuperInteraction(PickerSuperInteraction):
         )
     }
 
-    def on_choice_selected(self, flag_value, **kwargs):
+    def on_choice_selected(self, raw_flag_value, **kwargs):
         stat = self.target.get_tracker(self.stat_type).get_statistic(self.stat_type, add=True)
         flag = Flag(stat.get_value() if stat is not None else 0)
+        flag_value = 1 << raw_flag_value
         if flag.has(flag_value):
-            flag.remove(1 << flag_value)
+            flag.remove(flag_value)
+            logger.debug("Removing flag! {} {}".format(flag_value, flag.get()))
         else:
-            flag.add(1 << flag_value)
-        logger.info("Updating flag! {} {}".format(1<<flag_value, flag.get()))
+            flag.add(flag_value)
+            logger.debug("Adding to flag! {} {}".format(flag_value, flag.get()))
         stat.set_value(flag.get())
 
     @flexmethod

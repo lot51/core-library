@@ -10,8 +10,11 @@ class EventEmitter:
     def _on_event_processed(self, event_name: str, result=None, event_args=None, event_kwargs=None):
         pass
 
+    def get_ordered_listeners(self):
+        return sorted(self._listeners, key=lambda item: item[2])
+
     def process_event(self, event_name: str, *args, **kwargs):
-        for (listener_name, callback) in self._listeners:
+        for (listener_name, callback, weight) in self.get_ordered_listeners():
             if listener_name != event_name:
                 continue
             try:
@@ -20,8 +23,8 @@ class EventEmitter:
             except:
                 logger.exception("Failed processing event")
 
-    def add_listener(self, event_name: AnyStr, callback: Callable):
-        self._listeners.append((event_name, callback,))
+    def add_listener(self, event_name: AnyStr, callback: Callable, weight=1):
+        self._listeners.append((event_name, callback, weight,))
 
-    def remove_listener(self, event_name: AnyStr, callback: Callable):
-        self._listeners.remove((event_name, callback,))
+    def remove_listener(self, event_name: AnyStr, callback: Callable, weight=1):
+        self._listeners.remove((event_name, callback, weight,))

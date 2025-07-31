@@ -221,9 +221,11 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
 
     def run_additional_tests(self, original_resolver, target, log_results=False):
         resolver = self.get_test_resolver(original_resolver, target)
-        result = self.tests.run_tests(resolver) and self.additional_tests.run_tests(resolver)
+        tests_result = self.tests.run_tests(resolver)
+        additional_tests_result = self.additional_tests.run_tests(resolver)
+        result = tests_result and additional_tests_result
         if log_results:
-            logger.debug("test result for resolver {}: {}".format(resolver, result))
+            logger.info("test result for resolver {}: tests: {}; additional tests: {}; result: {};".format(resolver, tests_result, additional_tests_result, result))
         return result
 
     def _get_filtered_objects_gen(self, obj_list):
@@ -277,7 +279,7 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
         all_objects = self._get_objects_gen(resolver)
         if log_results:
             all_objects = tuple(all_objects)
-            logger.debug("all objects: {}".format(all_objects))
+            logger.info("all objects: {}".format(all_objects))
         reservation_filtered_objects = self._filter_reservation_gen(all_objects)
         tag_filtered_objects = self._filter_exclude_tags_gen(reservation_filtered_objects)
         tested_objects = self._get_tested_objects_gen(tag_filtered_objects, resolver, log_results=log_results)
@@ -285,7 +287,7 @@ class _GetObjectsBase(HasTunableSingletonFactory, AutoFactoryInit):
         filtered_objects = self._get_filtered_objects_gen(sorted_objects)
         if log_results:
             filtered_objects = tuple(filtered_objects)
-            logger.debug("filtered objects: {}".format(filtered_objects))
+            logger.info("filtered objects: {}".format(filtered_objects))
         yield from filtered_objects
 
 

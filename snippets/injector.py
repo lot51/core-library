@@ -312,7 +312,7 @@ class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.ge
         dialog.show_dialog()
 
 
-@event_handler(CoreEvent.TUNING_LOADED)
+@event_handler(CoreEvent.TUNING_LOADED, weight=-10)
 def _do_injections(*args, **kwargs):
     # This allows definitions to be queried by tag
     # Thank you Scumbumbo
