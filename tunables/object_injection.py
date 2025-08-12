@@ -1,13 +1,20 @@
+import copy
+import inspect
+
 import services
 import sims4.random
+from autonomy.autonomy_modifier import TunableAutonomyModifier
 from event_testing.tests import TunableTestSet
 from interactions import ParticipantType
 from interactions.utils.tunable_provided_affordances import TunableProvidedAffordances
+from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
-from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance, merge_list, merge_dict, merge_mapping_lists, inject_list, inject_dict
-from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides
+from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance, merge_list, \
+    merge_dict, merge_mapping_lists, inject_list, inject_dict, inject_affordance_filter, merge_affordance_filter
+from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides, \
+    clone_factory_with_overrides
 from objects.components.idle_component import IdleComponent
 from objects.components.inventory_enums import InventoryType
 from objects.components.locking_components import ObjectLockingComponent
@@ -19,9 +26,11 @@ from objects.components.tooltip_component import TooltipComponent
 from objects.components.types import IDLE_COMPONENT, OBJECT_ROUTING_COMPONENT, STATE_COMPONENT, PROXIMITY_COMPONENT, OBJECT_LOCKING_COMPONENT, RoutingComponent
 from routing.object_routing.object_routing_component import ObjectRoutingComponent
 from sims4.tuning.tunable import Tunable, TunableList, TunableReference, TunableTuple, TunableMapping, TunableVariant, \
-    OptionalTunable, TunableSimMinute, TunableEnumSet, HasTunableSingletonFactory, AutoFactoryInit
+    OptionalTunable, TunableSimMinute, TunableEnumSet, HasTunableSingletonFactory, AutoFactoryInit, TunableSet
 from sims4.resources import Types, get_resource_key
 from singletons import UNSET
+from snippets import TunableAffordanceFilterSnippet
+from statistics.tunable import CommodityDecayModifierMapping
 from tag import Tag
 
 
@@ -186,6 +195,28 @@ class BaseTunableObjectInjection(BaseTunableInjection):
                 routing_behavior_map=TunableMapping(key_type=TunableReference(manager=services.get_instance_manager(Types.OBJECT_STATE), class_restrictions='ObjectStateValue'), value_type=OptionalTunable(tunable=TunableReference(manager=services.get_instance_manager(Types.SNIPPET), class_restrictions=('ObjectRoutingBehavior',)), enabled_by_default=True, enabled_name='Start_Behavior', disabled_name='Stop_All_Behavior', disabled_value=UNSET))
             )
         ),
+        'slot_component': OptionalTunable(
+            tunable=TunableTuple(
+                additional_autonomy_modifiers=TunableList(tunable=TunableAutonomyModifier(locked_args={'relationship_multipliers': None})),
+                inject_to_autonomy_modifier=TunableList(
+                    tunable=TunableTuple(
+                        index=Tunable(tunable_type=int, default=0),
+                        affordance_compatibility=OptionalTunable(tunable=TunableAffordanceFilterSnippet()),
+                        decay_modifiers=CommodityDecayModifierMapping(),
+                        provided_affordance_compatibility=OptionalTunable(tunable=TunableAffordanceFilterSnippet()),
+                        state_values_tuning=TunableSet(
+                            tunable=TunableTuple(
+                                required_slot_types=TunableList(
+                                    tunable=TunableReference(manager=(services.get_instance_manager(sims4.resources.Types.SLOT_TYPE)), pack_safe=True)
+                                ),
+                                state_to_set=TunableReference(manager=(services.get_instance_manager(sims4.resources.Types.OBJECT_STATE)), class_restrictions=('ObjectStateValue',))
+                            )
+                        ),
+                    )
+                ),
+                slot_provided_affordances=TunableProvidedAffordances(),
+            )
+        ),
         'tooltip_component_override': OptionalTunable(
             tunable=TooltipComponent.TunableFactory(),
         ),
@@ -313,6 +344,47 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         if self.object_relationship_component_override is not None:
             inject_dict(obj, '_components', object_relationships=self.object_relationship_component_override)
 
+    def _inject_slot_component(self, obj):
+        if self.slot_component is None:
+            return
+        if obj._components_native.Slot is None:
+            return
+        # logger.info("Injecting Slot Component")
+        slot_component = obj._components_native.Slot
+        default_slot = slot_component.default_slot
+
+        autonomy_modifiers = merge_list(default_slot.autonomy_modifiers, list_type=list, new_items=self.slot_component.additional_autonomy_modifiers)
+        for inject_data in self.slot_component.inject_to_autonomy_modifier:
+            original_modifier = autonomy_modifiers[inject_data.index]
+            if original_modifier is None:
+                logger.warn("Invalid Autonomy Modifier index ({}) when injecting to Slot Component for obj {}".format(inject_data.index, obj))
+                continue
+
+            # logger.info("Injecting to index {} {}".format(inject_data.index, inspect.getmembers(original_modifier)))
+            new_modifier = copy.copy(original_modifier)
+            if inject_data.affordance_compatibility is not None:
+                new_modifier._affordance_compatibility = merge_affordance_filter(original_modifier._affordance_compatibility, other_filter=inject_data.affordance_compatibility)
+            if inject_data.provided_affordance_compatibility is not None:
+                new_modifier._provided_affordance_compatibility = merge_affordance_filter(original_modifier._provided_affordance_compatibility, other_filter=inject_data.provided_affordance_compatibility)
+            if inject_data.decay_modifiers:
+                new_modifier._decay_modifiers = merge_mapping_lists(original_modifier._decay_modifiers, inject_data.decay_modifiers)
+
+            # logger.debug("New Modifier: {}".format(inspect.getmembers(new_modifier)))
+            autonomy_modifiers[inject_data.index] = new_modifier
+
+        slot_provided_affordances = merge_list(default_slot.slot_provided_affordances, new_items=self.slot_component.slot_provided_affordances)
+        state_values_tuning = merge_list(default_slot.state_values_tuning, new_items=self.slot_component.state_values_tuning)
+
+        new_default_slot = clone_factory_with_overrides(
+            default_slot,
+            autonomy_modifiers=tuple(autonomy_modifiers),
+            slot_provided_affordances=slot_provided_affordances,
+            state_values_tuning=state_values_tuning,
+        )
+        new_slot_component = clone_factory_wrapper_with_overrides(slot_component, default_slot=new_default_slot)
+        inject_dict(obj, '_components_native', Slot=new_slot_component)
+        # logger.info("After: {}".format(obj._components_native.Slot.default_slot.slot_provided_affordances))
+
     def _inject(self, obj):
         self._add_affordances(obj)
         self._inject_idle_component(obj)
@@ -327,6 +399,7 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         self._inject_tooltip_component(obj)
         self._inject_name_component(obj)
         self._inject_object_relationship_component_override(obj)
+        self._inject_slot_component(obj)
 
     def inject(self):
         for obj in self.get_objects_gen():

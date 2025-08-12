@@ -183,9 +183,14 @@ def clear_zone_owner(zone_id, sim_info=None, sell_business=True, include_lot_val
     if success_callback is not None:
         success_callback()
 
-    build_buy.set_venue_owner_id(zone_id, 0)
-    # Reload zone
-    travel_sim_to_zone(sim_info.sim_id, current_zone_id)
+    if zone_id == current_zone_id:
+        build_buy.set_venue_owner_id(zone_id, 0)
+
+    travel_sim_to_zone(sim_info.sim_id, zone_id)
+
+    # else:
+    #     # Reload zone
+    #     travel_sim_to_zone(sim_info.sim_id, zone_id)
     # elif business_manager is not None:
     #     # Forces player to world map if selling active zone
     #     msg = InteractionOps_pb2.SellRetailLot()

@@ -221,7 +221,9 @@ def merge_affordance_filter(tunable, other_filter=None, include_all_by_default=D
     :return: new affordance filter tunable wrapper
     """
     default_inclusion = tunable.default_inclusion
-    overrides = AttributeDict()
+    if debug:
+        logger.info("Injecting Filter • Original Default Inclusion: {}".format(default_inclusion))
+    overrides = AttributeDict({ 'include_affordances': include_affordances, 'exclude_affordances': exclude_affordances, 'exclude_lists': exclude_lists, 'include_lists': include_lists})
     if other_filter is not None:
         other_inclusion = other_filter.default_inclusion
         overrides.include_affordances = merge_list(overrides.include_affordances, other_inclusion.include_affordances)
@@ -230,14 +232,16 @@ def merge_affordance_filter(tunable, other_filter=None, include_all_by_default=D
         overrides.exclude_lists = merge_list(overrides.exclude_lists, other_inclusion.exclude_lists)
         overrides.include_all_by_default = other_inclusion.include_all_by_default
 
-    overrides.include_affordances = merge_list(default_inclusion.include_affordances, include_affordances)
-    overrides.exclude_affordances = merge_list(default_inclusion.exclude_affordances, exclude_affordances)
-    overrides.include_lists = merge_list(default_inclusion.include_lists, include_lists)
-    overrides.exclude_lists = merge_list(default_inclusion.exclude_lists, exclude_lists)
+    overrides.include_affordances = merge_list(default_inclusion.include_affordances, overrides.include_affordances)
+    overrides.exclude_affordances = merge_list(default_inclusion.exclude_affordances, overrides.exclude_affordances)
+    overrides.include_lists = merge_list(default_inclusion.include_lists, overrides.include_lists)
+    overrides.exclude_lists = merge_list(default_inclusion.exclude_lists, overrides.exclude_lists)
     if include_all_by_default is not DEFAULT:
         overrides.include_all_by_default = include_all_by_default
 
     new_default_inclusion = merge_dict(default_inclusion, new_items=overrides)
+    if debug:
+        logger.info("Injecting Filter • New Default Inclusion: {}".format(new_default_inclusion))
     return create_factory_wrapper(_TunableAffordanceFilter, default_inclusion=new_default_inclusion)
 
 
