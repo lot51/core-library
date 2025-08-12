@@ -52,19 +52,24 @@ class ParameterizedRequestContinuationMixin:
 
     def _run_paramaterized_request(self, obj):
         parameters = self.paramaterized_autonomy_continuation
-        static_commodity_list = parameters.static_commodities
+
         exclude_static_commodity_list = parameters.exclude_static_commodities
 
         resolver = self.get_resolver(target=obj)
         actor_info = resolver.get_participant(ParticipantType.Actor)
         actor = actor_info.get_sim_instance()
         autonomy_rule = actor.get_off_lot_autonomy_rule()
-        obj_available = parameters.test_autonomous_availability is None or actor.autonomy_component.get_autonomous_availability_of_object(obj, autonomy_rule, reference_object=actor)
+        obj_available = (obj.is_sim and obj == self.sim) or parameters.test_autonomous_availability is None or actor.autonomy_component.get_autonomous_availability_of_object(obj, autonomy_rule, reference_object=actor)
+
+        static_commodity_list = set([stat for stat in parameters.static_commodities if actor_info.has_statistic(stat)])
+        commodity_list = set([stat for stat in parameters.commodities if actor_info.has_statistic(stat)])
 
         if obj_available:
             ctx = self.context.clone_for_continuation(self, source=parameters.context_source_override if parameters.context_source_override is not None else self.context.source, carry_target=self.carry_target)
             potential_aops = list()
             for aop in obj.potential_interactions(ctx):
+                if aop.affordance == self.get_interaction_type():
+                    continue
                 try:
                     if ctx.source == InteractionContext.SOURCE_AUTONOMY:
                         if not aop.affordance.allow_autonomous or not aop.affordance.test_autonomous.run_tests(resolver, skip_safe_tests=False, search_for_tooltip=False):
@@ -82,21 +87,18 @@ class ParameterizedRequestContinuationMixin:
                         if sc_data.static_commodity in static_commodity_list and sc_data.static_commodity not in exclude_static_commodity_list:
                             total_desire += sc_data.desire * sc_data.static_commodity.ad_data
 
-                    if len(parameters.commodities):
-                        for stat_op_list in interaction.autonomy_ads_gen(target=obj, include_hidden_false_ads=False):
-                            if stat_op_list.is_valid(interaction):
+                    if commodity_list:
+                        for stat_op_list in interaction.autonomy_ads_gen(target=obj, include_hidden_false_ads=True):
+                            if stat_op_list.stat in commodity_list and stat_op_list.is_valid(interaction):
                                 stat = actor.get_tracker(stat_op_list.stat).get_statistic(stat_op_list.stat, False)
                                 if stat is not None:
-                                    logger.debug("Testing stat {}".format(stat.stat_type))
-                                    if stat.stat_type in parameters.commodities:
-                                        fulfillment_rate = stat_op_list.get_fulfillment_rate(interaction)
-                                        scored_value = stat.autonomous_desire * actor.get_score_multiplier(stat.stat_type) * stat.autonomy_weight * fulfillment_rate
-                                        logger.debug("Scored value {}".format(scored_value))
-                                        total_desire += scored_value
+                                    fulfillment_rate = stat_op_list.get_fulfillment_rate(interaction)
+                                    scored_value = stat.autonomous_desire * actor.get_score_multiplier(stat.stat_type) * stat.autonomy_weight * fulfillment_rate
+                                    total_desire += scored_value
 
                     if total_desire > 0:
                         test_result = aop.test(ctx)
-                        logger.debug("[{}] affordance {}, desire {}, result {}".format(self, interaction, total_desire, test_result))
+                        logger.debug("[{}] affordance {}, desire {}, result {}".format(self, aop.affordance, total_desire, test_result))
                         if test_result:
                             potential_aops.append((total_desire, aop))
                 except BaseException:
@@ -104,15 +106,20 @@ class ParameterizedRequestContinuationMixin:
                     # logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
 
             if len(potential_aops):
-                aop_select = sims4.random.weighted_random_item(potential_aops)
-                if aop_select is not None:
-                    if aop_select.execute(ctx):
+                while list(potential_aops):
+                    aop_index = sims4.random.weighted_random_index(potential_aops)
+                    if aop_index is None:
+                        break
+                    try:
+                        aop_select = potential_aops.pop(aop_index)
+                    except:
+                        break
+                    if aop_select[1].execute(ctx):
                         logger.debug("executed aop {}".format(aop_select))
                         return True
                     logger.debug("failed to execute aop {}".format(aop_select))
         logger.debug("no aops found for obj {}".format(obj))
         return False
-
 
 class SpecificInteractionContinuationMixin:
     INSTANCE_TUNABLES = {
@@ -169,7 +176,7 @@ class BaseParameterizedSuperInteraction(SuperInteraction):
 
     def _perform_paramaterized_request_gen(self, timeline):
         resolver = self.get_resolver()
-        # logger.debug("Running interaction {}".format(self))
+        logger.debug("Running interaction {}".format(self))
         for chosen_obj in self.object_source.get_objects_gen(resolver=resolver, log_results=False):
             if self._run_paramaterized_request(chosen_obj):
                 self._handle_success(resolver)
