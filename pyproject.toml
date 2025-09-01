@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "s4filter"
+version = "1.0.0"
+description = "utilities for sims4 modding"
+readme = "README.md"
+license = {text = "MIT"}
+keywords = ["sims4", "mod", "modding", "utilities", "filter"]
+requires-python = "==3.7.0"
+classifiers = [
+  "Programming Language :: Python"
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[project.urls]
+Repository = "https://github.com/bsd-ac/s4filter"
+License = "https://github.com/bsd-ac/s4filter/blob/main/LICENSE"
+
+[tool.setuptools.packages.find]
+where = ["src"]

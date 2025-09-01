@@ -1,0 +1,65 @@
+name: Python Lints
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: 
+      - "*"
+
+env:
+  SIMS4_VERSION: "1.116.240.1020"
+  SIMS4_SCRIPTS_URL: "https://files.bsd.ac/gamez/sims4-decompiled-1.116.240.1020.zip"
+  SHA256_SUM: "fb1243ed87819db8509336943850285db766a6b8441387018db6cac7d4fbc4cd"
+
+jobs:
+  python-lints:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: 'pyproject.toml'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+
+      - name: Download Sims 4 scripts
+        run: |
+          curl -L ${{ env.SIMS4_SCRIPTS_URL }} -o sims4_scripts.zip
+
+      - name: Check that sims4 scripts hash is correct
+        run: |
+          echo "${{ env.SHA256_SUM }}  sims4_scripts.zip" | sha256sum -c
+
+      - name: Unzip Sims 4 scripts
+        run: |
+          unzip -o sims4_scripts.zip -d ../sims4_scripts
+
+      - name: Run ruff formatter
+        run: |
+          uv run ruff format --check .
+
+      - name: Run ruff linter
+        if: ${{ success() || failure() }}
+        run: |
+          uv run ruff check --preview .
+
+      - name: Ensure uv lockfile is up-to-date
+        if: ${{ success() || failure() }}
+        run: |
+          uv lock --check
+
+      - name: Check that mypy is happy
+        if: ${{ success() || failure() }}
+        run: |
+          uv run mypy .

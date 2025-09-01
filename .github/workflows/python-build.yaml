@@ -1,0 +1,37 @@
+name: Python Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: 
+      - "*"
+
+jobs:
+  python-build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: 'pyproject.toml'
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+
+      - name: Compile all python files
+        run: |
+          uv run python -m compileall src
+
+      - name: Create mod
+        run: |
+          uv run tools/build.py
