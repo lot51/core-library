@@ -12,7 +12,7 @@ from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTi
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance, merge_list, \
-    merge_dict, merge_mapping_lists, inject_list, inject_dict, inject_affordance_filter, merge_affordance_filter
+    merge_dict, merge_mapping_lists, inject_list, inject_dict, merge_affordance_filter
 from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides, \
     clone_factory_with_overrides
 from objects.components.idle_component import IdleComponent

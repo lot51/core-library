@@ -2,6 +2,7 @@ import services
 import sims4
 from lot51_core import logger, __version__, __minimum_game_version__
 from lot51_core.lib.game_version import get_game_version, GameVersion
+from lot51_core.pack_selection import is_pack_hot_load_triggered
 from lot51_core.services.events import event_handler, CoreEvent
 from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionByAffordances, \
     TunableAffordanceInjectionByUtility, TunableAffordanceInjectionByAffordanceList, \
@@ -55,6 +56,7 @@ from ui.ui_dialog_notification import UiDialogNotification
 
 with sims4.reload.protected(globals()):
     SHOWN_VERSION_NOTIFICATION = False
+    SHOWN_PACK_HOT_LOAD_NOTIFICATION = False
 
 
 class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.get_instance_manager(Types.SNIPPET)):
@@ -311,9 +313,22 @@ class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.ge
         dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
         dialog.show_dialog()
 
+    @staticmethod
+    def show_pack_hot_load_dialog():
+        active_sim = services.get_active_sim()
+        dialog = TuningInjector.VERSION_DIALOG(active_sim)
+        dialog.title = lambda *_: LocalizationHelperTuning.get_raw_text("Lot 51 Core Library Disabled")
+        text = "A Pack Selection change without a game restart has been detected. Core Library has disabled itself to prevent unexpected errors.\n\n<i>Please restart your game to ensure it is in a safe state for Core Library to run.</i>"
+        dialog.text = lambda *_: LocalizationHelperTuning.get_raw_text(text)
+        dialog.urgency = UiDialogNotification.UiDialogNotificationUrgency.URGENT
+        dialog.show_dialog()
+
 
 @event_handler(CoreEvent.TUNING_LOADED, weight=-10)
 def _do_injections(*args, **kwargs):
+    if is_pack_hot_load_triggered():
+        logger.warn("[TuningInjector] Pack Hot Load Detected! Core Library has been disabled.")
+        return
     # This allows definitions to be queried by tag
     # Thank you Scumbumbo
     definition_manager = services.definition_manager()
@@ -356,8 +371,14 @@ def _do_zone_dependent_injections(*args, **kwargs):
 @event_handler(CoreEvent.LOADING_SCREEN_LIFTED)
 def _do_version_notifier(*args, **kwargs):
     global SHOWN_VERSION_NOTIFICATION
+    global SHOWN_PACK_HOT_LOAD_NOTIFICATION
+
     if not SHOWN_VERSION_NOTIFICATION:
         for snippet in TuningInjector.INVALID_SNIPPETS:
             snippet.show_version_dialog()
         SHOWN_VERSION_NOTIFICATION = True
         TuningInjector.INVALID_SNIPPETS.clear()
+
+    if is_pack_hot_load_triggered() and not SHOWN_PACK_HOT_LOAD_NOTIFICATION:
+        TuningInjector.show_pack_hot_load_dialog()
+        SHOWN_PACK_HOT_LOAD_NOTIFICATION = True

@@ -3,7 +3,7 @@ import os
 import lot51_core
 from lot51_core.lib.game_version import get_game_version
 from lot51_core.lib.time import get_wallclock_now
-from lot51_core.utils.game_state import get_game_state_flag
+from lot51_core.utils.game_state import get_game_state_flag, get_installed_packs_flag
 
 
 def Logger(name, root, filename, prefix='', version='N/A', mode='development', is_first_party=False, **kwargs):
@@ -27,8 +27,11 @@ def Logger(name, root, filename, prefix='', version='N/A', mode='development', i
     flag = get_game_state_flag()
     state = f"{int(flag):#0{10}x}"
 
+    pack_flag = get_installed_packs_flag()
+    packs = f"{int(pack_flag):#0{10}x}"
+
     logger.info(
-        '{prefix}[{name}] Version: {version}; Mode: {mode}; Core Library Version: {lib}; Game Version: {game_version}; Generated: {timestamp} UTC; State: {state}'.format(
+        '{prefix}[{name}] Version: {version}; Mode: {mode}; Core Library Version: {lib}; Game Version: {game_version}; Generated: {timestamp} UTC; State: {state}; Packs: {packs}'.format(
             prefix=prefix,
             name=name,
             version=version,
@@ -36,7 +39,8 @@ def Logger(name, root, filename, prefix='', version='N/A', mode='development', i
             lib=lot51_core.__version__,
             game_version=get_game_version(),
             timestamp=timestamp,
-            state=state
+            state=state,
+            packs=packs,
         )
     )
     if is_first_party:

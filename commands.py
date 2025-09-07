@@ -53,8 +53,30 @@ def command_toggle_debug_logging(_connection=None):
     output("Logging Debug Mode: {}".format(mode), _connection)
 
 
-@Command("lot51_core.config_debug", command_type=CommandType.Live)
+@Command("lot51_core.list_save_data", command_type=CommandType.Live)
 def command_print_config_debug(_connection=None):
     output("Save Based Configs:", _connection)
     for config in instanced_configs:
-        output("Name: {}, Household Name: {}".format(config.config_name, config.household_name), _connection)
+        output("Config Name: {}, Household Name: {}".format(config.config_name, config.household_name), _connection)
+
+
+@Command("lot51_core.clear_save_data", command_type=CommandType.Live)
+def command_clear_save_data(name:str='', _connection=None):
+    output("Clearing Config with Name: {}".format(name), _connection)
+    config = None
+    for cfg in instanced_configs:
+        if cfg.config_name == name:
+            config = cfg
+            break
+    if not config:
+        output("Config Not Found!", _connection)
+        return
+    output("Found Config!", _connection)
+    household = config._find_household()
+    if household is None:
+        output("Unable to find household for config", _connection)
+        return
+    services.get_persistence_service().del_household_proto_buff(household.id)
+    services.household_manager().remove(household)
+    output("Config cleared. Please save game and restart to commit changes.", _connection)
+

@@ -1,4 +1,5 @@
 import paths
+import sims4.common
 from lot51_core.utils.flags import Flag
 import os
 import base64
@@ -66,4 +67,12 @@ def get_game_state_flag():
             flag.add(GameStateFlag.FLAG3)
     except:
         pass
+    return flag
+
+
+def get_installed_packs_flag():
+    flag = Flag()
+    for pack in sims4.common.Pack:
+        if sims4.common.are_packs_available(pack):
+            flag.add(1 << pack)
     return flag

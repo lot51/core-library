@@ -360,7 +360,6 @@ class GetObjectsOnActiveLot(_GetObjectsBase):
     def _get_objects_gen(self, resolver=None):
         for obj in services.object_manager().valid_objects():
             if obj.is_on_active_lot() and (not obj.is_sim or (obj.is_sim and self.allow_sims)):
-                logger.info("Yielding obj: {}".format(obj))
                 yield obj
 
 
