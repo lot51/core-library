@@ -24,7 +24,7 @@ from lot51_core.tunables.death_injection import TunableCustomDeath
 from lot51_core.tunables.loot_injection import TunableLootInjection, TunableRandomWeightedLootInjection
 from lot51_core.tunables.mixer_list_injection import TunableMixerListInjection
 from lot51_core.tunables.object_injection import TunableObjectInjectionByAffordance, TunableObjectInjectionByTuningId, \
-    TunableObjectInjectionByDefinitions, TunableObjectInjectionByObjectSource, TunableObjectInjectionByTags, \
+    TunableObjectInjectionByDefinitions, TunableObjectInjectionByTags, \
     TunableObjectInjectionByManyTuningId
 from lot51_core.tunables.object_state_injection import TunableObjectStateInjection, TunableObjectStateValueInjection
 from lot51_core.tunables.posture_injection import TunablePostureInjection

@@ -163,7 +163,7 @@ class TunableTraitInjection(BaseTunableInjection):
             for food_restriction in self.custom_food_restrictions:
                 # inject to FoodRestrictionEnum
                 enum_data = {food_restriction.restriction_key: food_restriction.restriction_id}
-                inject_to_enum(FoodRestrictionUtils.FoodRestrictionEnum, enum_data)
+                inject_to_enum(enum_data, FoodRestrictionUtils.FoodRestrictionEnum)
 
                 # get resolved enum
                 restriction_type = FoodRestrictionUtils.FoodRestrictionEnum[food_restriction.restriction_key]
