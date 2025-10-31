@@ -11,6 +11,8 @@ from lot51_core.tunables.affordance_injection import TunableAffordanceInjectionB
 from lot51_core.tunables.affordance_list_injection import TunableAffordanceListInjection
 from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTiming
 from lot51_core.tunables.business_tuning_injection import TunableBusinessTuningInjection
+from lot51_core.tunables.club_tuning_injection import TunableClubTuningInjection
+from lot51_core.tunables.custom_schedule_tuning_injection import TunableCustomScheduleTuningInjection
 from lot51_core.tunables.interaction_cancel_compatibility_injection import InteractionCancelCompatibilityInjection
 from lot51_core.tunables.part_injection import TunableObjectPartInjection
 from lot51_core.tunables.pregnancy_tracker_injector import TunablePregnancyTrackerInjection
@@ -35,6 +37,7 @@ from lot51_core.tunables.satisfaction_store_injection import TunableSatisfaction
 from lot51_core.tunables.service_picker_injection import TunableServicePickerInjection, TunableHireableServicePickerInjection
 from lot51_core.tunables.situation_injection import TunableSituationInjection
 from lot51_core.tunables.situation_job_injection import TunableSituationJobInjection
+from lot51_core.tunables.skill_injection import TunableSkillInjection
 from lot51_core.tunables.social_bunny_injection import TunableSocialBunnyInjection
 from lot51_core.tunables.test_set_injection import TunableTestSetInjection
 from lot51_core.tunables.tradition_injection import TunableHolidayTraditionInjection
@@ -194,6 +197,9 @@ class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.ge
         "inject_to_situation_jobs": TunableList(
             tunable=TunableSituationJobInjection.TunableFactory(),
         ),
+        "inject_to_skills": TunableList(
+            tunable=TunableSkillInjection.TunableFactory(),
+        ),
         "inject_to_test_sets": TunableList(
             tunable=TunableTestSetInjection.TunableFactory()
         ),
@@ -211,6 +217,8 @@ class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.ge
         ),
         "inject_to_sim_info": TunableSimInfoInjection.TunableFactory(),
         "business_tuning": TunableBusinessTuningInjection.TunableFactory(),
+        "club_tuning": TunableClubTuningInjection.TunableFactory(),
+        "custom_schedule_tuning": TunableCustomScheduleTuningInjection.TunableFactory(),
         "interaction_cancel_compatibility": TunableList(
             tunable=InteractionCancelCompatibilityInjection.TunableFactory()
         ),

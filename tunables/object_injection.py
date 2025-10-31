@@ -1,5 +1,6 @@
 import copy
 import inspect
+from collections import defaultdict
 
 import services
 import sims4.random
@@ -82,40 +83,92 @@ class BaseTunableObjectInjection(BaseTunableInjection):
             tunable=TunableReference(manager=services.get_instance_manager(Types.BUFF), pack_safe=True),
         ),
         'state_triggers': TunableList(StateTrigger.TunableFactory()),
-        'states': TunableList(description='\n                Supported states for this object\n                ',
-              tunable=TunableTuple(description='\n                    A supported state for this object\n                    ',
-              default_value=TunableVariant(description='\n                        The default value for the state.\n                        ',
-              reference=TunableStateValueReference(pack_safe=True),
-              random=TunableList(description='\n                            A weighted list of object states to randomly choose\n                            between as the default for this state.\n                            ',
-              tunable=TunableTuple(state=TunableStateValueReference(pack_safe=True),
-              weight=Tunable(tunable_type=float,
-              default=1.0))),
-              default='reference'),
-              client_states=TunableMapping(description='\n                        A list of client states. Although ObjectStateValues\n                        have their own State Change Operations (Audio effect\n                        state, Broadcaster, etc), those operations will be\n                        overriden by operations specified here.\n                        ',
-              key_type=TunableStateValueReference(description='\n                            A state value\n                            ',
-              pack_safe=True),
-              value_type=(StateChangeOperation.TunableFactory())),
-              client_states_overrides=TunableMapping(description='\n                        A list of slot-based overrides for client states. \n                        ',
-              key_type=TunableStateValueReference(description='\n                            A state value\n                            ',
-              pack_safe=True),
-              value_type=TunableList(description='\n                            A list of possible override conditions for this state.\n                            ',
-              tunable=(TunableClientStateTestedOverrides.TunableFactory()))),
-              reset_to_default=Tunable(description='\n                        If checked, when the object is reset, the state will be\n                        reset to the default value. Otherwise, it will keep the\n                        current value. This can be overridden by states tuned\n                        in tested_states_on_reset.\n                        ',
-              tunable_type=bool,
-              default=False),
-              reset_on_load_if_time_passes=Tunable(description='\n                        If checked then the object is saved with the default\n                        state rather than the current state.  If we want it\n                        to return to this state we need an interaction that\n                        is saved to put it back into it.\n                        ',
-              tunable_type=bool,
-              default=False),
-              tested_states_on_add=OptionalTunable(description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the Tree Rabbit Hale needs to \n                        default to the open state when it's on the Slyvan Glade\n                        venue.\n                        This runs when the object is added to the world.\n                        ",
-              tunable=(TestedStateValueReference.TunableFactory())),
-              tested_states_post_load=OptionalTunable(description='\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.\n                        This will run after the zone is fully loaded. \n                        This test is mostly used for conditionally applying\n                        a state after loading in, or when taking the object\n                        out of inventory. (The object has to be previously existing,\n                        it will not work for newly created objects.)\n                        For example, the previously active gnomes in our HH inventory \n                        needs to be reset to the inactive state if we place \n                        them after Harvest Fest ends.\n                        ',
-              tunable=(TestedStateValueReference.TunableFactory())),
-              tested_states_on_location_changed=OptionalTunable(description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the boat needs to be set to it's\n                        on water state if it is placed on water.\n                        This runs when the location of the object changes as\n                        long as the object isn't currently routing.\n                        ",
-              tunable=(TestedStateValueReference.TunableFactory())),
-              tested_states_on_reset=OptionalTunable(description='\n                        This is a set of override states for reset_to_default,\n                        run when the owner is reset.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken parented to the coop\n                        is moved in B/B, it should be reset to an InCoop state.\n                        ',
-              tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})),
-              tested_states_on_save=OptionalTunable(description='\n                        This is a set of override states for \n                        reset_on_load_if_time_passes, run when the owner is \n                        saved.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, behavior falls back to the condition\n                        in reset_on_load_if_time_passes.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken is in the coop on\n                        save, it should be reset to an InCoop state.\n                        ',
-              tunable=TestedStateValueReference.TunableFactory(locked_args={'fallback_state': None})))
+        'states': TunableList(
+            description='\n                Supported states for this object\n                ',
+            tunable=TunableTuple(
+                description='\n                    A supported state for this object\n                    ',
+                default_value=TunableVariant(
+                    description='\n                        The default value for the state.\n                        ',
+                    reference=TunableStateValueReference(
+                        pack_safe=True
+                    ),
+                    random=TunableList(
+                        description='\n                            A weighted list of object states to randomly choose\n                            between as the default for this state.\n                            ',
+                        tunable=TunableTuple(
+                            state=TunableStateValueReference(
+                                pack_safe=True
+                            ),
+                            weight=Tunable(
+                                tunable_type=float,
+                                default=1.0
+                            )
+                        )
+                    ),
+                    default='reference'
+                ),
+                apply_tested_states_on_bb_save=Tunable(
+                    description='\n                        If enabled, we will apply results of Tested States On Save\n                        and run triggers, client state changes, etc when this state\n                        is changed on Build Buy save.\n                        Otherwise, we will only distribute the new state.\n                        ',
+                    tunable_type=bool,
+                    default=False
+                ),
+                client_states=TunableMapping(
+                    description='\n                        A list of client states. Although ObjectStateValues\n                        have their own State Change Operations (Audio effect\n                        state, Broadcaster, etc), those operations will be\n                        overriden by operations specified here.\n                        ',
+                    key_type=TunableStateValueReference(
+                        description='\n                            A state value\n                            ',
+                        pack_safe=True
+                    ),
+                    value_type=(StateChangeOperation.TunableFactory())
+                ),
+                client_states_overrides=TunableMapping(
+                    description='\n                        A list of slot-based overrides for client states. \n                        ',
+                    key_type=TunableStateValueReference(
+                        description='\n                            A state value\n                            ',
+                        pack_safe=True
+                    ),
+                    value_type=TunableList(
+                        description='\n                            A list of possible override conditions for this state.\n                            ',
+                        tunable=(TunableClientStateTestedOverrides.TunableFactory())
+                    )
+                ),
+                reset_to_default=Tunable(
+                    description='\n                        If checked, when the object is reset, the state will be\n                        reset to the default value. Otherwise, it will keep the\n                        current value. This can be overridden by states tuned\n                        in tested_states_on_reset.\n                        ',
+                    tunable_type=bool,
+                    default=False
+                ),
+                reset_on_load_if_time_passes=Tunable(
+                    description='\n                        If checked then the object is saved with the default\n                        state rather than the current state.  If we want it\n                        to return to this state we need an interaction that\n                        is saved to put it back into it.\n                        ',
+                    tunable_type=bool,
+                    default=False
+                ),
+                tested_states_on_add=OptionalTunable(
+                    description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the Tree Rabbit Hale needs to \n                        default to the open state when it's on the Slyvan Glade\n                        venue.\n                        This runs when the object is added to the world.\n                        ",
+                    tunable=(TestedStateValueReference.TunableFactory())
+                ),
+                tested_states_post_load=OptionalTunable(
+                    description='\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.\n                        This will run after the zone is fully loaded. \n                        This test is mostly used for conditionally applying\n                        a state after loading in, or when taking the object\n                        out of inventory. (The object has to be previously existing,\n                        it will not work for newly created objects.)\n                        For example, the previously active gnomes in our HH inventory \n                        needs to be reset to the inactive state if we place \n                        them after Harvest Fest ends.\n                        ',
+                    tunable=(TestedStateValueReference.TunableFactory())
+                ),
+                tested_states_on_location_changed=OptionalTunable(
+                    description="\n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, the boat needs to be set to it's\n                        on water state if it is placed on water.\n                        This runs when the location of the object changes as\n                        long as the object isn't currently routing.\n                        ",
+                    tunable=(TestedStateValueReference.TunableFactory())
+                ),
+                tested_states_on_reset=OptionalTunable(
+                    description='\n                        This is a set of override states for reset_to_default,\n                        run when the owner is reset.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, the fallback state will be applied.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken parented to the coop\n                        is moved in B/B, it should be reset to an InCoop state.\n                        ',
+                    tunable=TestedStateValueReference.TunableFactory(
+                        locked_args={
+                            'fallback_state': None
+                        }
+                    )
+                ),
+                tested_states_on_save=OptionalTunable(
+                    description='\n                        This is a set of override states for \n                        reset_on_load_if_time_passes, run when the owner is \n                        saved.\n                        \n                        The first test that passes will have its state applied.\n                        If no tests pass, behavior falls back to the condition\n                        in reset_on_load_if_time_passes.\n                        This can be used to conditionally apply a state to an\n                        object.  For example, if a chicken is in the coop on\n                        save, it should be reset to an InCoop state.\n                        ',
+                    tunable=TestedStateValueReference.TunableFactory(
+                        locked_args={
+                            'fallback_state': None
+                        }
+                    )
+                )
+            )
         ),
         'timed_state_triggers': OptionalTunable(description='\n                If enabled, when states in this key mapping get triggered, it\n                will trigger states changes at each of the tuned intervals.\n                ',
               tunable=TunableMapping(description='\n                    Map of state when the timed state triggers will be active\n                    and the states to trigger, specific trigger times, and\n                    the options of whether to trigger on load.\n                    ',
@@ -385,6 +438,31 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         inject_dict(obj, '_components_native', Slot=new_slot_component)
         # logger.info("After: {}".format(obj._components_native.Slot.default_slot.slot_provided_affordances))
 
+    def _handle_tuning_loaded_callback_fixup(self, obj):
+        """
+        Rerun tuning_loaded_callback functions from the ScriptObject to fixup postures
+        """
+
+        obj._has_reservation_tests = any((sa.object_reservation_tests for sa in obj._super_affordances))
+
+        specific_supported_posture_types = defaultdict(set)
+        supported_posture_families = set()
+
+        for super_affordance in self.affordances:
+            provided_posture_type = super_affordance.provided_posture_type
+            if provided_posture_type is not  None:
+                specific_supported_posture_types[provided_posture_type].add(super_affordance)
+                supported_posture_families.add(provided_posture_type.family_name)
+
+        if specific_supported_posture_types:
+            obj._specific_supported_posture_types = merge_mapping_lists(obj._specific_supported_posture_types, specific_supported_posture_types)
+
+        if supported_posture_families:
+            obj._supported_posture_families = merge_list(obj._supported_posture_families, supported_posture_families)
+
+        # if obj.provided_mobile_posture_affordances:
+        #     obj._provided_mobile_posture_types = frozenset({affordance.provided_posture_type for affordance in obj.provided_mobile_posture_affordances})
+
     def _inject(self, obj):
         self._add_affordances(obj)
         self._inject_idle_component(obj)
@@ -400,6 +478,8 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         self._inject_name_component(obj)
         self._inject_object_relationship_component_override(obj)
         self._inject_slot_component(obj)
+
+        self._handle_tuning_loaded_callback_fixup(obj)
 
     def inject(self):
         for obj in self.get_objects_gen():
@@ -435,7 +515,7 @@ class TunableObjectInjectionByTags(BaseTunableObjectInjection):
 
     def _get_definitions_gen(self):
         for definition in services.definition_manager().get_definitions_for_tags_gen(self.tags):
-            if self.exclude_tags is None or not definition.has_build_buy_tag(self.exclude_tags):
+            if self.exclude_tags is None or not any(definition.has_build_buy_tag(tag) for tag in self.exclude_tags):
                 yield definition
 
     def get_objects_gen(self):

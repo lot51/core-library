@@ -72,8 +72,10 @@ class TunableTestMergeInjection(HasTunableSingletonFactory, AutoFactoryInit):
                                   prepend_and=self.prepend_and,
                                   add_if_empty_list=self.add_if_empty_list)
         setattr(target, key, new_list)
-        logger.debug("tuned_values {}".format(getattr(target, '_tuned_values', None)))
-        logger.debug("original {}: final {}".format(original_list, getattr(target, key, None)))
+        # logger.info("[TunableTestMergeInjection] AND {}".format(self.AND))
+        # logger.info("[TunableTestMergeInjection] OR {}".format(self.OR))
+        # logger.info("[TunableTestMergeInjection] tuned_values {}".format(getattr(target, '_tuned_values', None)))
+        # logger.info("[TunableTestMergeInjection] original {}: final {}".format(original_list, getattr(target, key, None)))
 
 
 class TestInjectionVariant(TunableVariant):
