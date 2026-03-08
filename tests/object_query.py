@@ -26,7 +26,7 @@ class ObjectQueryTest(HasTunableSingletonFactory, AutoFactoryInit, BaseTest):
         results = tuple(self.object_query.get_objects_gen(resolver=resolver))
         total_items = len(results)
         threshold_met = self.threshold.compare(total_items)
-        # logger.debug("object query test: {} {}, results: {}, total items {}, threshold met? {}".format(self, resolver, results, total_items, threshold_met))
+        # logger.info("Object Query Test: {} {}, results: {}, total items {}, threshold met? {}".format(self, resolver, results, total_items, threshold_met))
         if not threshold_met:
             return TestResult(False, "Object query does not meet threshold", tooltip=self.tooltip)
         return TestResult.TRUE

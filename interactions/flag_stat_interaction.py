@@ -1,6 +1,7 @@
 import services
-from event_testing.resolver import SingleObjectResolver
+from event_testing.resolver import SingleObjectResolver, SingleActorAndObjectResolver
 from event_testing.tests import TunableTestSet
+from interactions import ParticipantType
 from interactions.base.picker_interaction import PickerSuperInteraction
 from interactions.utils.tunable_icon import TunableIconVariant
 from lot51_core import logger
@@ -8,7 +9,8 @@ from lot51_core.utils.flags import Flag
 from sims4.localization import TunableLocalizedStringFactory
 from sims4.math import MAX_INT32
 from sims4.resources import Types
-from sims4.tuning.tunable import OptionalTunable, TunableMapping, TunableTuple, TunableRange, TunableReference
+from sims4.tuning.tunable import OptionalTunable, TunableMapping, TunableTuple, TunableRange, TunableReference, \
+    TunableEnumEntry, Tunable, TunableList
 from sims4.utils import flexmethod
 from ui.ui_dialog_picker import ObjectPickerRow
 
@@ -18,7 +20,9 @@ class FlagStatPickerSuperInteraction(PickerSuperInteraction):
     INSTANCE_TUNABLES = {
         '_active_icon': OptionalTunable(tunable=TunableIconVariant()),
         '_inactive_icon': OptionalTunable(tunable=TunableIconVariant()),
+        'single_value': Tunable(tunable_type=bool, default=False),
         'stat_type': TunableReference(manager=services.get_instance_manager(Types.STATISTIC)),
+        'stat_participant': TunableEnumEntry(tunable_type=ParticipantType, default=ParticipantType.Object),
         'flag_values': TunableMapping(
             key_type=TunableRange(tunable_type=int, default=1, minimum=0, maximum=MAX_INT32),
             value_type=TunableTuple(
@@ -26,38 +30,61 @@ class FlagStatPickerSuperInteraction(PickerSuperInteraction):
                 display_description=TunableLocalizedStringFactory(),
                 tests=TunableTestSet(),
                 tooltip=OptionalTunable(tunable=TunableLocalizedStringFactory()),
+                loot_on_select=TunableList(
+                    tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True)
+                ),
             )
+        ),
+        'loot_on_select': TunableList(
+            tunable=TunableReference(manager=services.get_instance_manager(Types.ACTION), pack_safe=True)
         )
     }
 
     def on_choice_selected(self, raw_flag_value, **kwargs):
-        stat = self.target.get_tracker(self.stat_type).get_statistic(self.stat_type, add=True)
+        stat_target = self.get_participant(self.stat_participant)
+        stat = stat_target.get_tracker(self.stat_type).get_statistic(self.stat_type, add=True)
         flag = Flag(stat.get_value() if stat is not None else 0)
         flag_value = 1 << raw_flag_value
-        if flag.has(flag_value):
-            flag.remove(flag_value)
-            logger.debug("Removing flag! {} {}".format(flag_value, flag.get()))
+        if self.single_value:
+            if flag.has(flag_value):
+                logger.debug("Flag value is already set! {} {}".format(flag_value, flag.get()))
+                return
+            flag.set(flag_value)
         else:
-            flag.add(flag_value)
-            logger.debug("Adding to flag! {} {}".format(flag_value, flag.get()))
+            if flag.has(flag_value):
+                flag.remove(flag_value)
+                logger.debug("Removing flag! {} {}".format(flag_value, flag.get()))
+            else:
+                flag.add(flag_value)
+                logger.debug("Adding to flag! {} {}".format(flag_value, flag.get()))
+
         stat.set_value(flag.get())
+
+        flag_data = self.flag_values.get(raw_flag_value)
+        resolver = self.get_resolver()
+        if flag.has(flag_value):
+            for loot in flag_data.loot_on_select:
+                loot.apply_to_resolver(resolver)
+            for loot in self.loot_on_select:
+                loot.apply_to_resolver(resolver)
 
     @flexmethod
     def picker_rows_gen(cls, inst, target, context, **kwargs):
         inst_or_cls = inst if inst is not None else cls
         for flag_value, flag_data in inst_or_cls.flag_values.items():
-            yield ObjectPickerRow(name=flag_data.flag_name(), row_description=flag_data.display_description(), tag=flag_value)
+            yield ObjectPickerRow(name=flag_data.flag_name(), row_description=flag_data.display_description(), row_tooltip=flag_data.display_description, tag=flag_value)
 
     def _run_interaction_gen(self, timeline):
         self._show_picker_dialog(self.sim)
-        yield from ()
+        yield from super()._run_interaction_gen(timeline)
 
     @classmethod
     def potential_interactions(cls, target, context, **kwargs):
         if cls.use_pie_menu():
-            resolver = SingleObjectResolver(target)
-            stat = target.get_tracker(cls.stat_type).get_statistic(cls.stat_type)
-            flag = Flag(stat.get_value() if stat is not None else 0)
+            resolver = SingleActorAndObjectResolver(context.sim, target, source='NA')
+            stat_target = resolver.get_participant(cls.stat_participant)
+            value = stat_target.get_tracker(cls.stat_type).get_value(cls.stat_type)
+            flag = Flag(value)
             for aop in super().potential_interactions(target, context, **kwargs):
                 picker_row_data = aop.affordance.picker_row_data
                 flag_value = 1 << picker_row_data.tag

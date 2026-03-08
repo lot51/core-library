@@ -18,15 +18,15 @@ DEFAULT_SA_KEY = '_super_affordances'
 DEFAULT_PHONE_SA_KEY = '_phone_affordances'
 
 
-def clone_immutable_slots(target, **overrides):
+def clone_immutable_slots(t, **overrides):
     """
     A helper function to clone an immutable slots object with overrides.
 
-    :param target: original immutable slots
+    :param t: original immutable slots
     :param overrides: key/values of items to override
     :return: new immutable slots object
     """
-    return target.clone_with_overrides(**overrides)
+    return t.clone_with_overrides(**overrides)
 
 
 def merge_dict(original_dict, force_frozen=False, new_items=None, **other_new_items):
@@ -172,7 +172,7 @@ def merge_mapping_lists(owner_map, user_map, prepend=False, list_type=None, uniq
     :param list_type:
     :return: new mapping frozendict
     """
-    new_mapping = dict(owner_map)
+    new_mapping = dict(owner_map if owner_map is not None else {})
     for k, v in user_map.items():
         if k in new_mapping:
             new_mapping[k] = merge_list(new_mapping[k], v, prepend=prepend, list_type=list_type, unique_entries=unique_entries)

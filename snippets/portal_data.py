@@ -1,4 +1,3 @@
-from lot51_core import logger
 from lot51_core.portals.advanced_teleport import _PortalTypeDataAdvancedTeleport
 from routing.portals.portal_data import _Portal
 from routing.portals.portal_data_animation import _PortalTypeDataAnimation
@@ -14,10 +13,8 @@ from routing.portals.portal_data_posture import _PortalTypeDataPosture
 from routing.portals.portal_data_stairs import _PortalTypeDataStairs
 from routing.portals.portal_data_teleport import _PortalTypeDataTeleport
 from routing.portals.portal_data_variable_jump import _PortalTypeDataVariableJump
-from services import get_instance_manager
-from sims4.resources import Types
-from sims4.tuning.instances import HashedTunedInstanceMetaclass
 from sims4.tuning.tunable import TunableVariant
+from snippets import define_snippet
 
 
 class PortalTraversalTypeVariant(TunableVariant):
@@ -42,31 +39,16 @@ class PortalTraversalTypeVariant(TunableVariant):
         )
 
 
-class AdvancedPortalData(metaclass=HashedTunedInstanceMetaclass, manager=get_instance_manager(Types.SNIPPET)):
+
+class _AdvancedPortalData(_Portal):
     """
     Refer to simulation/portals/portal_data.py for original class
     """
 
-    INSTANCE_TUNABLES = {
+    FACTORY_TUNABLES = {
         'traversal_type': PortalTraversalTypeVariant(
             advanced_teleport=_PortalTypeDataAdvancedTeleport.TunableFactory(),
         ),
     }
 
-    for key, value in _Portal.FACTORY_TUNABLES.items():
-        if key not in INSTANCE_TUNABLES and key not in ('verify_tunable_callback',):
-            INSTANCE_TUNABLES[key] = value
-
-    _PortalInstance = _Portal._PortalInstance
-
-    @classmethod
-    def _validate_portal_positions(cls, *args, **kwargs):
-        return _Portal._validate_portal_positions(cls, *args, **kwargs)
-
-    @classmethod
-    def get_portal_instances(cls, *args, **kwargs):
-        return _Portal.get_portal_instances(cls, *args, **kwargs)
-
-    @classmethod
-    def get_dynamic_portal_locations_gen(cls, *args, **kwargs):
-        return _Portal.get_dynamic_portal_locations_gen(cls, *args, **kwargs)
+TunableAdvancedPortalReference, _ = define_snippet('Core_Lib_Advanced_Portal_Data', _AdvancedPortalData.TunableFactory())

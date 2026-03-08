@@ -36,4 +36,4 @@ class TunablePostureInjection(BaseTunableInjection):
                     Posture._posture_transitions[(source, dest)] = transition_data._replace(transition_cost=_PostureCostCustom(cost=self.cost))
 
         for posture in self.postures:
-            inject_list(posture, 'override_outfit_changes', self.prepend_override_outfit_changes, prepend=True)
+            inject_list(posture, 'override_outfit_changes', new_items=self.prepend_override_outfit_changes, prepend=True)

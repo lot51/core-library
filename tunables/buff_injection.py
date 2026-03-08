@@ -1,4 +1,5 @@
 import services
+import statistics
 from game_effect_modifier.game_effect_modifiers import TunableGameEffectVariant, GameEffectModifiers
 from interactions import ParticipantType
 from interactions.base.mixer_interaction import MixerInteraction
@@ -45,10 +46,13 @@ class TunableBuffInjection(BaseTunableInjection):
             tunable=Tunable(tunable_type=bool, default=True),
         ),
         'super_affordances': TunableList(tunable=TunableReference(manager=services.get_instance_manager(Types.INTERACTION), pack_safe=True)),
+        'static_commodity_to_add':TunableSet(
+           tunable=TunableReference(manager=services.get_instance_manager(Types.STATIC_COMMODITY), class_restrictions=statistics.static_commodity.StaticCommodity, pack_safe=True)
+        ),
         'target_super_affordances': TunableProvidedAffordances(locked_args={'target': ParticipantType.Object, 'carry_target': ParticipantType.Invalid, 'is_linked': False, 'unlink_if_running': False})
     }
 
-    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'modify_add_test_set', 'provided_mixers', 'provided_template_affordances', 'super_affordances', 'target_super_affordances', 'refresh_lock',)
+    __slots__ = ('buff', 'actor_mixers', 'interaction_items', 'loot_on_addition', 'loot_on_instance', 'loot_on_removal', 'game_effect_modifiers', 'modify_add_test_set', 'provided_mixers', 'provided_template_affordances', 'super_affordances', 'target_super_affordances', 'refresh_lock', 'static_commodity_to_add',)
 
     _create_interaction_items = make_immutable_slots_class({'interaction_items', 'scored_commodity', 'weight'})
 
@@ -90,6 +94,8 @@ class TunableBuffInjection(BaseTunableInjection):
 
             if self.target_super_affordances is not None:
                 inject_list(buff_type, 'target_super_affordances', self.target_super_affordances)
+
+            inject_list(buff_type, 'static_commodity_to_add', self.static_commodity_to_add)
 
             if self.interaction_items is not None:
                 if buff_type.interactions is not None:

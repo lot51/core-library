@@ -17,10 +17,11 @@ class TunableRegionInjection(BaseTunableInjection):
             description="Allows regions to save their statistic component",
             tunable=Tunable(tunable_type=bool, default=True)
         ),
-        'compatible_venues': TunableList(tunable=TunableReference(manager=get_instance_manager(Types.VENUE), pack_safe=True))
+        'compatible_venues': TunableList(tunable=TunableReference(manager=get_instance_manager(Types.VENUE), pack_safe=True)),
+        'region_buffs': TunableList(tunable=TunableReference(manager=get_instance_manager(Types.BUFF), pack_safe=True))
     }
 
-    __slots__ = ('region_source', 'is_persistable', 'compatible_venues',)
+    __slots__ = ('region_source', 'is_persistable', 'compatible_venues', 'region_buffs',)
 
     def inject(self):
         for region in self.region_source.get_regions_gen():
@@ -29,3 +30,4 @@ class TunableRegionInjection(BaseTunableInjection):
                     region.is_persistable = self.is_persistable
 
                 inject_list(region, 'compatible_venues', new_items=self.compatible_venues)
+                inject_list(region, 'region_buffs', new_items=self.region_buffs)

@@ -1,7 +1,5 @@
 import copy
-import inspect
 from collections import defaultdict
-
 import services
 import sims4.random
 from autonomy.autonomy_modifier import TunableAutonomyModifier
@@ -13,7 +11,7 @@ from lot51_core.tunables.base_injection import BaseTunableInjection, InjectionTi
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.injection import add_affordances, add_phone_affordances, obj_has_affordance, merge_list, \
-    merge_dict, merge_mapping_lists, inject_list, inject_dict, merge_affordance_filter
+    merge_dict, merge_mapping_lists, inject_list, inject_dict, merge_affordance_filter, get_tuned_value
 from lot51_core.utils.tunables import create_factory_wrapper, clone_factory_wrapper_with_overrides, \
     clone_factory_with_overrides
 from objects.components.idle_component import IdleComponent
@@ -273,9 +271,12 @@ class BaseTunableObjectInjection(BaseTunableInjection):
         'tooltip_component_override': OptionalTunable(
             tunable=TooltipComponent.TunableFactory(),
         ),
+        'tooltip_component': OptionalTunable(
+            tunable=TooltipComponent.TunableFactory(),
+        ),
     }
 
-    __slots__ = ('affordances', 'phone_affordances', 'preroll_super_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'object_relationship_component_override', 'tooltip_component_override',)
+    __slots__ = ('affordances', 'phone_affordances', 'preroll_super_affordances', 'relation_panel_affordances', 'proximity_buffs', 'state_triggers', 'states', 'timed_state_triggers', 'idle_animation_map',  'portal_component', 'routing_component', 'carryable_component', 'inventory_item_component', 'object_locking_component', 'name_component_override', 'object_relationship_component_override', 'tooltip_component_override', 'tooltip_component',)
 
     def get_objects_gen(self):
         raise NotImplementedError
@@ -388,6 +389,15 @@ class BaseTunableObjectInjection(BaseTunableInjection):
     def _inject_tooltip_component(self, obj):
         if self.tooltip_component_override is not None:
             inject_dict(obj, '_components', tooltip_component=self.tooltip_component_override)
+        if self.tooltip_component is not None:
+            tooltip_component = obj._components.tooltip_component
+            if tooltip_component is None:
+                logger.warn("Object ({}) does not have an existing tooltip component;".format(obj))
+                return
+            new_custom_tooltips = merge_list(get_tuned_value(tooltip_component, 'custom_tooltips'), new_items=self.tooltip_component.custom_tooltips)
+            new_tooltip_component = clone_factory_wrapper_with_overrides(tooltip_component, custom_tooltips=new_custom_tooltips)
+            inject_dict(obj, '_components', tooltip_component=new_tooltip_component)
+
 
     def _inject_name_component(self, obj):
         if self.name_component_override is not None:
@@ -454,10 +464,10 @@ class BaseTunableObjectInjection(BaseTunableInjection):
                 specific_supported_posture_types[provided_posture_type].add(super_affordance)
                 supported_posture_families.add(provided_posture_type.family_name)
 
-        if specific_supported_posture_types:
+        if len(specific_supported_posture_types):
             obj._specific_supported_posture_types = merge_mapping_lists(obj._specific_supported_posture_types, specific_supported_posture_types)
 
-        if supported_posture_families:
+        if len(supported_posture_families):
             obj._supported_posture_families = merge_list(obj._supported_posture_families, supported_posture_families)
 
         # if obj.provided_mobile_posture_affordances:
