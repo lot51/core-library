@@ -47,7 +47,9 @@ from lot51_core.tunables.trait_injection import TunableTraitInjection
 from lot51_core.tunables.trait_tracker_injector import TunableTraitTrackerInjection
 from lot51_core.tunables.university_injection import TunableUniversityInjection
 from lot51_core.tunables.university_tuning_injection import TunableUniversityTuningInjection
+from lot51_core.tunables.venue_injection import TunableVenueInjection
 from lot51_core.tunables.whim_set_injection import TunableWhimSetInjection
+from lot51_core.tunables.zone_director_injection import TunableZoneDirectorInjection
 from lot51_core.tunables.zone_modifier_injection import TunableZoneModifierInjection
 from lot51_core.utils.injection_tracker import injection_tracker
 from lot51_core.utils.semver import Version
@@ -219,8 +221,14 @@ class TuningInjector(metaclass=HashedTunedInstanceMetaclass, manager=services.ge
         "inject_to_universities": TunableList(
             tunable=TunableUniversityInjection.TunableFactory(),
         ),
+        "inject_to_venues": TunableList(
+            tunable=TunableVenueInjection.TunableFactory(),
+        ),
         "inject_to_whim_sets": TunableList(
             tunable=TunableWhimSetInjection.TunableFactory(),
+        ),
+        "inject_to_zone_directors": TunableList(
+            tunable=TunableZoneDirectorInjection.TunableFactory(),
         ),
         "inject_to_zone_modifiers": TunableList(
             tunable=TunableZoneModifierInjection.TunableFactory(),
