@@ -1,6 +1,4 @@
 import services
-from interactions.base.super_interaction import SuperInteraction
-from lot51_core import logger
 from lot51_core.tunables.base_injection import BaseTunableInjection
 from lot51_core.utils.injection import inject_list
 from sims4.resources import Types

@@ -101,7 +101,7 @@ class ParameterizedRequestContinuationMixin:
                         logger.debug("[{}] affordance {}, desire {}, result {}".format(self, aop.affordance, total_desire, test_result))
                         if test_result:
                             potential_aops.append((total_desire, aop))
-                except BaseException:
+                except:
                     pass
                     # logger.exception("Failed scoring aop for request: {} -> {}".format(self, aop))
 
