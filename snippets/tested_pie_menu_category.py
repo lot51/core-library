@@ -4,6 +4,7 @@ from event_testing.tests import TunableTestSet
 from interactions.choices import ChoiceMenu
 from lot51_core import logger
 from lot51_core.utils.injection import inject_to
+from lot51_core.utils.tuning import get_ordered_snippets
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
@@ -34,7 +35,7 @@ class TestedPieMenuCategories(metaclass=HashedTunedInstanceMetaclass, manager=ge
 
     @classmethod
     def all_snippets_gen(cls):
-        yield from get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=TestedPieMenuCategories)
+        yield from get_ordered_snippets(TestedPieMenuCategories)
 
     @classmethod
     def get_category(cls, affordance, resolver, from_inventory_to_owner=False):

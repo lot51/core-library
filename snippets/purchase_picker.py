@@ -21,6 +21,7 @@ from lot51_core.tunables.payment_destination import TunablePaymentDestinationVar
 from lot51_core.tunables.purchase_item import TunablePurchaseItem
 from lot51_core.utils.collections import AttributeDict
 from lot51_core.utils.math import chance_succeeded
+from lot51_core.utils.tuning import get_ordered_snippets
 from objects.components.name_component import NameComponent
 from objects.components.types import NAME_COMPONENT
 from objects.system import create_object
@@ -259,7 +260,7 @@ class PurchasePickerSnippet(metaclass=HashedTunedInstanceMetaclass, manager=serv
     def get_purchase_items_gen(self, include_modifiers=True):
         yield from self.purchase_items
         if include_modifiers:
-            for snippet in services.get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=(PurchasePickerModifier,)):
+            for snippet in get_ordered_snippets((PurchasePickerModifier,)):
                 if snippet.purchase_picker is not None and snippet.purchase_picker.guid64 == self.guid64:
                     yield from snippet.additional_purchase_items
 

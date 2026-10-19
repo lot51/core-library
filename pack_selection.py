@@ -1,6 +1,7 @@
 import sims4.reload
 from lot51_core.lib.game_version import is_game_version
 from lot51_core.utils.injection import inject_to
+from lot51_core.utils.tuning import clear_ordered_snippets_cache
 from services import InstanceTuningManagers
 
 
@@ -21,4 +22,7 @@ if is_game_version(">=1.117.0"):
     def _lot51_pack_hot_load_callback(original, *args, **kwargs):
         global _pack_hot_load_triggered
         _pack_hot_load_triggered = True
-        return original(*args, **kwargs)
+        try:
+            return original(*args, **kwargs)
+        finally:
+            clear_ordered_snippets_cache()

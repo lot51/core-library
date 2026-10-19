@@ -3,6 +3,7 @@ from interactions.choices import ChoiceMenu
 from lot51_core import logger
 from lot51_core.tunables.object_query import ObjectSearchMethodVariant
 from lot51_core.utils.injection import inject_to
+from lot51_core.utils.tuning import get_ordered_snippets
 from services import get_instance_manager
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
@@ -28,7 +29,7 @@ class TestedPieMenuForwarding(metaclass=HashedTunedInstanceMetaclass, manager=ge
 
     @classmethod
     def all_snippets_gen(cls):
-        yield from get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=TestedPieMenuForwarding)
+        yield from get_ordered_snippets(TestedPieMenuForwarding)
 
     @classmethod
     def add_additional_aops(cls, add_potential_aops, target, context):

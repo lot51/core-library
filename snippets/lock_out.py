@@ -1,5 +1,6 @@
 import services
 import enum
+from lot51_core.utils.tuning import get_ordered_snippets
 from sims4.resources import Types
 from sims4.tuning.instances import HashedTunedInstanceMetaclass
 from sims4.tuning.tunable import TunableTuple, TunableList, TunableReference, TunableSimMinute, TunableInterval, TunableEnumEntry, Tunable
@@ -30,4 +31,4 @@ class AffordanceLockOutSnippet(metaclass=HashedTunedInstanceMetaclass, manager=s
 
     @classmethod
     def all_snippets_gen(cls):
-        yield from services.get_instance_manager(Types.SNIPPET).get_ordered_types(only_subclasses_of=cls)
+        yield from get_ordered_snippets(cls)
